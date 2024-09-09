@@ -41,7 +41,8 @@ input[type="time"] {
 }
 
 button {
-    padding: 10px 20px;
+    width: 150px;
+    padding: 10px 10px;
     border: none;
     border-radius: 4px;
     background-color: #50C9B5;
@@ -50,9 +51,30 @@ button {
 }
 
 button.volver {
+    width: 150px;
     background-color: #963942;
 }
 
 button:hover {
     opacity: 0.9;
+}
+
+/* Estilos para la imagen */
+.map-container img {
+    width: 50%; /* Ajusta el tamaño a la mitad, puedes cambiar este valor */
+    height: auto; /* Mantiene la proporción de la imagen */
+    border-radius: 10px; /* Opcional: añade bordes redondeados */
+    transition: transform 0.3s ease-in-out; /* Configura la animación */
+}
+
+/* Animación cuando el cursor está sobre la imagen */
+.map-container img:hover {
+    transform: scale(1.1); /* Hace que la imagen se agrande al pasar el cursor */
+}
+.map-container {
+    text-align: center; /* Centra el contenido, incluida la imagen */
+}
+
+.map-container img {
+    display: inline-block; /* Asegura que la imagen se comporte como un elemento en línea */
 }
