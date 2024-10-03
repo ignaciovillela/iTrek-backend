@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:pergeo/Pages/mapaRuta.dart';
 import 'dart:async'; // Para el uso de Timer
 
 class MyApp extends StatelessWidget {
@@ -31,8 +32,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   LocationPermission? _permissionStatus;
   bool _locationServiceEnabled = false;
-  String? _location;
-  Timer? _locationTimer;
 
   @override
   void initState() {
@@ -43,9 +42,6 @@ class _HomePageState extends State<HomePage> {
   Future<void> _checkPermissionsAndServices() async {
     _locationServiceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!_locationServiceEnabled) {
-      setState(() {
-        _location = 'Los servicios de ubicación están deshabilitados.';
-      });
       return;
     }
 
@@ -55,56 +51,15 @@ class _HomePageState extends State<HomePage> {
     }
 
     if (_permissionStatus == LocationPermission.deniedForever) {
-      setState(() {
-        _location =
-            'Permisos de ubicación permanentemente denegados, no se pueden solicitar.';
-      });
-    }
-  }
-
-  void _startLocationUpdates() {
-    _locationTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      _getCurrentLocation();
-    });
-  }
-
-  void _stopLocationUpdates() {
-    if (_locationTimer != null) {
-      _locationTimer!.cancel();
-      setState(() {
-        _location = 'Toma de ubicación finalizada.';
-      });
-    }
-  }
-
-  Future<void> _getCurrentLocation() async {
-    if (!_locationServiceEnabled) {
-      setState(() {
-        _location = 'Los servicios de ubicación están deshabilitados.';
-      });
       return;
     }
+  }
 
-    if (_permissionStatus == LocationPermission.denied ||
-        _permissionStatus == LocationPermission.deniedForever) {
-      setState(() {
-        _location =
-            'No se puede obtener la ubicación debido a la falta de permisos.';
-      });
-      return;
-    }
-
-    try {
-      Position position = await Geolocator.getCurrentPosition();
-      setState(() {
-        _location =
-            'Latitud: ${position.latitude}, Longitud: ${position.longitude}';
-      });
-    } catch (e) {
-      setState(() {
-        _location = 'Error obteniendo ubicación: $e';
-      });
-    }
+  void _navigateToMapaRutaScreen(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const MapaRutaScreen()),
+    );
   }
 
   @override
@@ -144,44 +99,23 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-            if (_location != null)
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: Colors.green[100],
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  _location!,
-                  style: const TextStyle(color: Colors.black),
-                  textAlign: TextAlign.center,
+            const SizedBox(height: 20),
+            // Estirar el botón "Iniciar Ruta"
+            ElevatedButton(
+              onPressed: () => _navigateToMapaRutaScreen(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF50C2C9), // Color azul pastel
+                padding:
+                    const EdgeInsets.symmetric(vertical: 16), // Alto del botón
+                textStyle: const TextStyle(fontSize: 20),
+                minimumSize:
+                    const Size(double.infinity, 50), // Estirar el botón
+                shape: RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.circular(8), // Bordes menos redondeados
                 ),
               ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: _startLocationUpdates,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[400],
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 16),
-                    textStyle: const TextStyle(fontSize: 20),
-                  ),
-                  child: const Text('Iniciar Ruta'),
-                ),
-                ElevatedButton(
-                  onPressed: _stopLocationUpdates,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[400],
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 16),
-                    textStyle: const TextStyle(fontSize: 20),
-                  ),
-                  child: const Text('Finalizar Ruta'),
-                ),
-              ],
+              child: const Text('Iniciar Ruta'),
             ),
           ],
         ),
