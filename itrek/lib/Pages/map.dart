@@ -124,7 +124,24 @@ class _MapaRutaScreenState extends State<MapaRutaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mapa de Ruta'),
+        title: Row(
+          children: [
+            const Text(
+              'iTrek',
+              style: TextStyle(
+                fontSize: 28, // Texto más pequeño
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 10), // Espacio entre el texto y el logo
+            Image.asset(
+              'assets/images/logo.png', // Asegúrate de tener la imagen logo.png en la carpeta assets/images/
+              width: 40, // Tamaño del logo
+              height: 40,
+            ),
+          ],
+        ),
         backgroundColor: Colors.green[300],
       ),
       body: Stack(

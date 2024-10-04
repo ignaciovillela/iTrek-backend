@@ -4,7 +4,7 @@
             "outputFile": "com.example.itrek.app-mergeDebugResources-26:/values-night-v8/values-night-v8.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\elias\\Documents\\visgualGitiTrek\\iTrek-front\\itrek\\android\\app\\src\\main\\res\\values-night\\styles.xml",
+                    "source": "C:\\Users\\elias\\Documents\\GitHub\\iTrek-front\\itrek\\android\\app\\src\\main\\res\\values-night\\styles.xml",
                     "from": {
                         "startLines": "3,14",
                         "startColumns": "4,4",

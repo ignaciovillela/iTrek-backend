@@ -1,9 +1,9 @@
-#Fri Oct 04 16:15:02 CLST 2024
-base.0=C\:\\Users\\elias\\Documents\\visgualGitiTrek\\iTrek-front\\itrek\\build\\app\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes.dex
-base.1=C\:\\Users\\elias\\Documents\\visgualGitiTrek\\iTrek-front\\itrek\\build\\app\\intermediates\\dex\\debug\\mergeLibDexDebug\\0\\classes.dex
-base.2=C\:\\Users\\elias\\Documents\\visgualGitiTrek\\iTrek-front\\itrek\\build\\app\\intermediates\\dex\\debug\\mergeProjectDexDebug\\0\\classes.dex
-base.3=C\:\\Users\\elias\\Documents\\visgualGitiTrek\\iTrek-front\\itrek\\build\\app\\intermediates\\dex\\debug\\mergeProjectDexDebug\\1\\classes.dex
-base.4=C\:\\Users\\elias\\Documents\\visgualGitiTrek\\iTrek-front\\itrek\\build\\app\\intermediates\\dex\\debug\\mergeProjectDexDebug\\9\\classes.dex
+#Fri Oct 04 17:05:51 CLST 2024
+base.0=C\:\\Users\\elias\\Documents\\GitHub\\iTrek-front\\itrek\\build\\app\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes.dex
+base.1=C\:\\Users\\elias\\Documents\\GitHub\\iTrek-front\\itrek\\build\\app\\intermediates\\dex\\debug\\mergeLibDexDebug\\0\\classes.dex
+base.2=C\:\\Users\\elias\\Documents\\GitHub\\iTrek-front\\itrek\\build\\app\\intermediates\\dex\\debug\\mergeProjectDexDebug\\0\\classes.dex
+base.3=C\:\\Users\\elias\\Documents\\GitHub\\iTrek-front\\itrek\\build\\app\\intermediates\\dex\\debug\\mergeProjectDexDebug\\1\\classes.dex
+base.4=C\:\\Users\\elias\\Documents\\GitHub\\iTrek-front\\itrek\\build\\app\\intermediates\\dex\\debug\\mergeProjectDexDebug\\9\\classes.dex
 path.0=classes.dex
 path.1=0/classes.dex
 path.2=0/classes.dex

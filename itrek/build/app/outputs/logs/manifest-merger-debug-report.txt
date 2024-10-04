@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 application
-INJECTED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:7:5-38:19
-INJECTED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml
-MERGED from [:geolocator_android] C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-13:19
-MERGED from [:geolocator_android] C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-13:19
+INJECTED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:7:5-38:19
+INJECTED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml
+MERGED from [:geolocator_android] C:\Users\elias\Documents\GitHub\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-13:19
+MERGED from [:geolocator_android] C:\Users\elias\Documents\GitHub\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:7:5-13:19
 MERGED from [com.google.android.gms:play-services-location:21.2.0] C:\Users\elias\.gradle\caches\transforms-3\810da246ace89bb704ea311999d645f6\transformed\jetified-play-services-location-21.2.0\AndroidManifest.xml:7:5-20
 MERGED from [com.google.android.gms:play-services-location:21.2.0] C:\Users\elias\.gradle\caches\transforms-3\810da246ace89bb704ea311999d645f6\transformed\jetified-play-services-location-21.2.0\AndroidManifest.xml:7:5-20
 MERGED from [androidx.window:window:1.2.0] C:\Users\elias\.gradle\caches\transforms-3\3e108fe9d597d03770ae82acaebb5b63\transformed\jetified-window-1.2.0\AndroidManifest.xml:22:5-29:19
@@ -25,18 +25,18 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\elias\.gradle\cach
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\elias\.gradle\caches\transforms-3\ee01e2b20f52029a052c42ac95f9e8b2\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:24:5-25:19
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\elias\.gradle\caches\transforms-3\ee01e2b20f52029a052c42ac95f9e8b2\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:24:5-25:19
 	android:extractNativeLibs
-		INJECTED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml
+		INJECTED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.13.1] C:\Users\elias\.gradle\caches\transforms-3\c666c258fca39b3353b46678a6b928ab\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
 	android:name
-		INJECTED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml
+		INJECTED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml
 manifest
-ADDED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:1:1-50:12
-MERGED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:1:1-50:12
-INJECTED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml:1:1-7:12
-INJECTED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml:1:1-7:12
-INJECTED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml:1:1-7:12
-MERGED from [:geolocator_android] C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-15:12
+ADDED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:1:1-50:12
+MERGED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:1:1-50:12
+INJECTED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml:1:1-7:12
+INJECTED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml:1:1-7:12
+INJECTED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml:1:1-7:12
+MERGED from [:geolocator_android] C:\Users\elias\Documents\GitHub\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-15:12
 MERGED from [com.google.android.gms:play-services-location:21.2.0] C:\Users\elias\.gradle\caches\transforms-3\810da246ace89bb704ea311999d645f6\transformed\jetified-play-services-location-21.2.0\AndroidManifest.xml:2:1-9:12
 MERGED from [androidx.window:window:1.2.0] C:\Users\elias\.gradle\caches\transforms-3\3e108fe9d597d03770ae82acaebb5b63\transformed\jetified-window-1.2.0\AndroidManifest.xml:17:1-31:12
 MERGED from [androidx.window:window-java:1.2.0] C:\Users\elias\.gradle\caches\transforms-3\bf78d940cc78ca45c77421e3af64376e\transformed\jetified-window-java-1.2.0\AndroidManifest.xml:17:1-21:12
@@ -67,47 +67,47 @@ MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\el
 MERGED from [androidx.arch.core:core-runtime:2.2.0] C:\Users\elias\.gradle\caches\transforms-3\08235bf0a8760a790ea7b8b4eab82236\transformed\core-runtime-2.2.0\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.window.extensions.core:core:1.0.0] C:\Users\elias\.gradle\caches\transforms-3\6dde453803d512b3f23cc981e264e9e0\transformed\jetified-core-1.0.0\AndroidManifest.xml:2:1-7:12
 	package
-		INJECTED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml
+		INJECTED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml
 	android:versionName
-		INJECTED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml
+		INJECTED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml
 	android:versionCode
-		INJECTED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml
+		INJECTED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml
 	xmlns:android
-		ADDED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:1:11-69
+		ADDED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:1:11-69
 uses-permission#android.permission.ACCESS_FINE_LOCATION
-ADDED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:3:5-79
+ADDED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:3:5-79
 	android:name
-		ADDED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:3:22-76
+		ADDED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:3:22-76
 uses-permission#android.permission.ACCESS_COARSE_LOCATION
-ADDED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:4:5-81
+ADDED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:4:5-81
 	android:name
-		ADDED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:4:22-78
+		ADDED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:4:22-78
 uses-permission#android.permission.ACCESS_BACKGROUND_LOCATION
-ADDED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:5:5-85
+ADDED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:5:5-85
 	android:name
-		ADDED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:5:22-82
+		ADDED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:5:22-82
 queries
-ADDED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:44:5-49:15
+ADDED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:44:5-49:15
 intent#action:name:android.intent.action.PROCESS_TEXT+data:mimeType:text/plain
-ADDED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:45:9-48:18
+ADDED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:45:9-48:18
 action#android.intent.action.PROCESS_TEXT
-ADDED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:46:13-72
+ADDED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:46:13-72
 	android:name
-		ADDED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:46:21-70
+		ADDED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:46:21-70
 data
-ADDED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:47:13-50
+ADDED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:47:13-50
 	android:mimeType
-		ADDED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:47:19-48
+		ADDED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\main\AndroidManifest.xml:47:19-48
 uses-permission#android.permission.INTERNET
-ADDED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml:6:5-66
+ADDED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml:6:5-66
 	android:name
-		ADDED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml:6:22-64
+		ADDED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml:6:22-64
 uses-sdk
-INJECTED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml reason: use-sdk injection requested
-INJECTED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml
-INJECTED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml
-MERGED from [:geolocator_android] C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
-MERGED from [:geolocator_android] C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
+INJECTED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml
+INJECTED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml
+MERGED from [:geolocator_android] C:\Users\elias\Documents\GitHub\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
+MERGED from [:geolocator_android] C:\Users\elias\Documents\GitHub\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
 MERGED from [com.google.android.gms:play-services-location:21.2.0] C:\Users\elias\.gradle\caches\transforms-3\810da246ace89bb704ea311999d645f6\transformed\jetified-play-services-location-21.2.0\AndroidManifest.xml:5:5-44
 MERGED from [com.google.android.gms:play-services-location:21.2.0] C:\Users\elias\.gradle\caches\transforms-3\810da246ace89bb704ea311999d645f6\transformed\jetified-play-services-location-21.2.0\AndroidManifest.xml:5:5-44
 MERGED from [androidx.window:window:1.2.0] C:\Users\elias\.gradle\caches\transforms-3\3e108fe9d597d03770ae82acaebb5b63\transformed\jetified-window-1.2.0\AndroidManifest.xml:20:5-44
@@ -167,19 +167,19 @@ MERGED from [androidx.arch.core:core-runtime:2.2.0] C:\Users\elias\.gradle\cache
 MERGED from [androidx.window.extensions.core:core:1.0.0] C:\Users\elias\.gradle\caches\transforms-3\6dde453803d512b3f23cc981e264e9e0\transformed\jetified-core-1.0.0\AndroidManifest.xml:5:5-44
 MERGED from [androidx.window.extensions.core:core:1.0.0] C:\Users\elias\.gradle\caches\transforms-3\6dde453803d512b3f23cc981e264e9e0\transformed\jetified-core-1.0.0\AndroidManifest.xml:5:5-44
 	android:targetSdkVersion
-		INJECTED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml
+		INJECTED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml
 	android:minSdkVersion
-		INJECTED from C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml
+		INJECTED from C:\Users\elias\Documents\GitHub\iTrek-front\itrek\android\app\src\debug\AndroidManifest.xml
 service#com.baseflow.geolocator.GeolocatorLocationService
-ADDED from [:geolocator_android] C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:8:9-12:56
+ADDED from [:geolocator_android] C:\Users\elias\Documents\GitHub\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:8:9-12:56
 	android:enabled
-		ADDED from [:geolocator_android] C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:10:13-35
+		ADDED from [:geolocator_android] C:\Users\elias\Documents\GitHub\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:10:13-35
 	android:exported
-		ADDED from [:geolocator_android] C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:11:13-37
+		ADDED from [:geolocator_android] C:\Users\elias\Documents\GitHub\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:11:13-37
 	android:foregroundServiceType
-		ADDED from [:geolocator_android] C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:12:13-53
+		ADDED from [:geolocator_android] C:\Users\elias\Documents\GitHub\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:12:13-53
 	android:name
-		ADDED from [:geolocator_android] C:\Users\elias\Documents\visgualGitiTrek\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:9:13-77
+		ADDED from [:geolocator_android] C:\Users\elias\Documents\GitHub\iTrek-front\itrek\build\geolocator_android\intermediates\merged_manifest\debug\AndroidManifest.xml:9:13-77
 uses-library#androidx.window.extensions
 ADDED from [androidx.window:window:1.2.0] C:\Users\elias\.gradle\caches\transforms-3\3e108fe9d597d03770ae82acaebb5b63\transformed\jetified-window-1.2.0\AndroidManifest.xml:23:9-25:40
 	android:required
