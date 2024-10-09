@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'inicio.dart'; // Asegúrate de importar la pantalla de inicio de sesión
 
 class RecuperarContrasenaScreen extends StatefulWidget {
   const RecuperarContrasenaScreen({super.key});
@@ -8,7 +9,8 @@ class RecuperarContrasenaScreen extends StatefulWidget {
       _RecuperarContrasenaScreenState();
 }
 
-class _RecuperarContrasenaScreenState extends State<RecuperarContrasenaScreen> {
+class _RecuperarContrasenaScreenState extends State<RecuperarContrasenaScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _correoController = TextEditingController();
 
@@ -16,15 +18,42 @@ class _RecuperarContrasenaScreenState extends State<RecuperarContrasenaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Recuperar Contraseña'),
+        backgroundColor: const Color(0xFF50C9B5), // Color de fondo del AppBar
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/logo.png', // Asegúrate de que el logo esté en la carpeta assets
+              height: 30, // Tamaño pequeño del logo
+            ),
+            const SizedBox(width: 10), // Espacio entre el logo y el texto
+            const Text(
+              'Recuperar Cuenta',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
+            mainAxisAlignment:
+                MainAxisAlignment.center, // Centrar contenido verticalmente
             children: [
-              const Spacer(), // Espacio flexible para centrar el formulario verticalmente
+              const SizedBox(height: 40), // Espacio debajo del título
+
+              // Imagen logo debajo del título
+              Image.asset(
+                'assets/images/logo.png', // Asegúrate de que la imagen esté en assets
+                height: 180, // Tamaño de la imagen
+              ),
+              const SizedBox(
+                  height: 160), // Espacio entre la imagen y el campo de texto
 
               // Campo para ingresar el correo
               TextFormField(
@@ -45,8 +74,12 @@ class _RecuperarContrasenaScreenState extends State<RecuperarContrasenaScreen> {
               ),
               const SizedBox(height: 20), // Espacio entre el campo y el botón
 
-              // Botón para recuperar la contraseña
+              // Botón para recuperar la cuenta
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF50C9B5), // Color del botón
+                  minimumSize: const Size(double.infinity, 50), // Botón ancho
+                ),
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
                     // Lógica para enviar el correo de recuperación
@@ -57,20 +90,26 @@ class _RecuperarContrasenaScreenState extends State<RecuperarContrasenaScreen> {
                     );
                   }
                 },
-                child: const Text('Recuperar Contraseña'),
+                child: const Text('Recuperar Cuenta'),
               ),
               const SizedBox(height: 20), // Espacio entre los botones
 
               // Botón para cancelar
-              TextButton(
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(
+                      0xFFC95052), // Color rojo del botón de cancelar
+                  minimumSize: const Size(double.infinity, 50), // Botón ancho
+                ),
                 onPressed: () {
-                  // Volver atrás o cancelar el proceso
-                  Navigator.pop(context);
+                  // Regresar a la pantalla de inicio de sesión (LoginScreen)
+                  Navigator.pop(context); // Volver atrás
                 },
-                child: const Text('Cancelar'),
+                child: const Text(
+                  'Cancelar',
+                  style: TextStyle(color: Colors.white), // Texto en blanco
+                ),
               ),
-
-              const Spacer(), // Espacio al final para mantener la estructura
             ],
           ),
         ),

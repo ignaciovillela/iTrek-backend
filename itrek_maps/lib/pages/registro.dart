@@ -2,25 +2,6 @@ import 'package:flutter/material.dart';
 import 'login.dart'; // Importa la pantalla de login
 import 'inicio.dart'; // Importa la pantalla de inicio (HomeScreen)
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Formulario de Registro',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const RegistroScreen(),
-    );
-  }
-}
-
 class RegistroScreen extends StatefulWidget {
   const RegistroScreen({super.key});
 
@@ -43,22 +24,45 @@ class _RegistroScreenState extends State<RegistroScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Formulario de Registro'),
+        backgroundColor: const Color(0xFF50C9B5), // Color del AppBar
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/logo.png', // Asegúrate de que el logo esté en la carpeta assets
+              height: 30, // Tamaño pequeño del logo
+            ),
+            const SizedBox(width: 10), // Espacio entre el logo y el texto
+            const Text('Registro de Usuario'),
+          ],
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Spacer(),
+
+              // Logo encima del campo de nombre
+              Center(
+                child: Image.asset(
+                  'assets/images/perfil.png', // Asegúrate de que el logo esté en la carpeta assets
+                  height: 200, // Tamaño más grande del logo
+                ),
+              ),
+              const SizedBox(height: 30), // Espacio debajo del logo
 
               // Campo para el nombre
               TextFormField(
                 controller: _nombreController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Nombre',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  prefixIcon: const Icon(Icons.person),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -72,9 +76,12 @@ class _RegistroScreenState extends State<RegistroScreen> {
               // Campo para el correo
               TextFormField(
                 controller: _correoController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Correo',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  prefixIcon: const Icon(Icons.email),
                 ),
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
@@ -89,9 +96,12 @@ class _RegistroScreenState extends State<RegistroScreen> {
               // Campo para el número de contacto
               TextFormField(
                 controller: _numeroController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Número de contacto',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  prefixIcon: const Icon(Icons.phone),
                 ),
                 keyboardType: TextInputType.phone,
                 validator: (value) {
@@ -106,9 +116,12 @@ class _RegistroScreenState extends State<RegistroScreen> {
               // Selector para el sexo
               DropdownButtonFormField<String>(
                 value: _sexo,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Sexo',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  prefixIcon: const Icon(Icons.wc),
                 ),
                 items: const [
                   DropdownMenuItem(
@@ -127,9 +140,12 @@ class _RegistroScreenState extends State<RegistroScreen> {
               // Campo para la edad
               TextFormField(
                 controller: _edadController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Edad',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  prefixIcon: const Icon(Icons.calendar_today),
                 ),
                 keyboardType: TextInputType.number,
                 validator: (value) {
@@ -163,6 +179,15 @@ class _RegistroScreenState extends State<RegistroScreen> {
                         );
                       }
                     },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(
+                          0xFF50C9B5), // Botón de registrar color verde
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 15, horizontal: 30),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                    ),
                     child: const Text('Registrar'),
                   ),
                   ElevatedButton(
@@ -177,6 +202,11 @@ class _RegistroScreenState extends State<RegistroScreen> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red, // Botón de cancelar en rojo
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 15, horizontal: 30),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
                     ),
                     child: const Text('Cancelar'),
                   ),

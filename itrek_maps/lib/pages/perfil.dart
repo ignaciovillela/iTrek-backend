@@ -21,12 +21,21 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
       TextEditingController(text: '25');
 
   String _sexo = 'Masculino'; // Valor inicial para el selector de sexo
+  bool _editMode = false; // Controla si los campos están en modo edición
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFDFF0D8), // Fondo verde pastel
       appBar: AppBar(
+        backgroundColor: const Color(0xFF50C9B5),
         title: const Text('Perfil de Usuario'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context); // Regresa a la pantalla anterior
+          },
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -37,12 +46,14 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
               // Icono para personalizar el perfil (simulando una imagen de perfil)
               GestureDetector(
                 onTap: () {
-                  // Lógica para personalizar o cambiar la imagen de perfil
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Cambiar imagen de perfil'),
-                    ),
-                  );
+                  if (_editMode) {
+                    // Solo permitir cambiar la imagen si está en modo edición
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Cambiar imagen de perfil'),
+                      ),
+                    );
+                  }
                 },
                 child: const CircleAvatar(
                   radius: 50,
@@ -63,6 +74,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                   labelText: 'Nombre',
                   border: OutlineInputBorder(),
                 ),
+                enabled: _editMode, // Deshabilitado si no está en modo edición
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, ingrese su nombre';
@@ -80,6 +92,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.emailAddress,
+                enabled: _editMode, // Deshabilitado si no está en modo edición
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, ingrese su correo';
@@ -97,6 +110,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.phone,
+                enabled: _editMode, // Deshabilitado si no está en modo edición
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, ingrese su número de contacto';
@@ -119,11 +133,13 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                   DropdownMenuItem(value: 'Femenino', child: Text('Femenino')),
                   DropdownMenuItem(value: 'Otro', child: Text('Otro')),
                 ],
-                onChanged: (value) {
-                  setState(() {
-                    _sexo = value ?? 'Masculino';
-                  });
-                },
+                onChanged: _editMode
+                    ? (value) {
+                        setState(() {
+                          _sexo = value ?? 'Masculino';
+                        });
+                      }
+                    : null, // Deshabilitado si no está en modo edición
               ),
               const SizedBox(height: 20),
 
@@ -135,6 +151,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
+                enabled: _editMode, // Deshabilitado si no está en modo edición
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, ingrese su edad';
@@ -142,22 +159,51 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                   return null;
                 },
               ),
+              const SizedBox(
+                  height: 40), // Espacio mayor antes del botón de editar
+
+              // Botón para editar el perfil
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      const Color(0xFF50C9B5), // Color verde pastel del botón
+                  minimumSize: const Size(double.infinity, 50), // Botón grande
+                ),
+                onPressed: () {
+                  setState(() {
+                    _editMode = !_editMode; // Habilitar o deshabilitar edición
+                  });
+                },
+                icon: const Icon(Icons.edit),
+                label: Text(_editMode ? 'Cancelar Edición' : 'Editar Perfil'),
+              ),
+
               const SizedBox(height: 20),
 
               // Botón para guardar los cambios
-              ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    // Lógica para guardar los cambios
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Cambios guardados exitosamente'),
-                      ),
-                    );
-                  }
-                },
-                child: const Text('Guardar Cambios'),
-              ),
+              if (_editMode)
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF50C9B5),
+                    minimumSize:
+                        const Size(double.infinity, 50), // Botón grande
+                  ),
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      // Lógica para guardar los cambios
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Cambios guardados exitosamente'),
+                        ),
+                      );
+                      setState(() {
+                        _editMode =
+                            false; // Desactivar modo edición después de guardar
+                      });
+                    }
+                  },
+                  child: const Text('Guardar Cambios'),
+                ),
             ],
           ),
         ),
