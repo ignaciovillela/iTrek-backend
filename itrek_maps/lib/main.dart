@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'pages/login.dart'; // Importar la página que contiene el mapa
-import 'pages/maps_google.dart';
+import 'pages/inicio.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,7 +12,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      home: LoginScreen(), // Llama a la nueva página de Google Maps
+      home: MenuScreen(), // Llama a la nueva página de Google Maps
     );
   }
 }
