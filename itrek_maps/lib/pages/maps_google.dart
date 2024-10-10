@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'guardarRuta.dart';
 import 'dart:async';
 
 class GoogleMapsPage extends StatefulWidget {
@@ -23,14 +22,12 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
   );
   bool _isRecording = false; // Controlar si el registro está activo o no
   Timer? _timer; // Cronómetro para el tiempo de registro
-  Timer?
-      _locationTimer; // Temporizador para obtener la ubicación cada 1.5 segundos
+  Timer? _locationTimer; // Temporizador para simular el movimiento
   int _seconds = 0; // Segundos transcurridos
   double _distanceTraveled = 0.0; // Distancia recorrida en metros
   LatLng? _lastPosition; // Última posición conocida
-  final List<Map<String, dynamic>> _locationData =
-      []; // Lista para almacenar latitud y longitud
-  LatLng? _initialPosition; // Posición inicial del dispositivo
+  LatLng? _initialPosition = const LatLng(
+      -12.046374, -77.042793); // Posición inicial simulada (Lima, Perú)
 
   @override
   void initState() {
@@ -46,20 +43,15 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
     super.dispose();
   }
 
-  // Obtener la ubicación actual y establecerla como posición inicial
+  // Simulación de la ubicación actual
   Future<void> _getCurrentLocation() async {
-    Position position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
-
     setState(() {
-      _initialPosition = LatLng(position.latitude, position.longitude);
-      _markers['initialPosition'] = Marker(
-        markerId: const MarkerId('initialPosition'),
+      _markers['currentPosition'] = Marker(
+        markerId: const MarkerId('currentPosition'),
         position: _initialPosition!,
         infoWindow: const InfoWindow(
           title: 'Posición Actual',
-          snippet: 'Esta es tu ubicación actual',
+          snippet: 'Simulación de inicio',
         ),
       );
     });
@@ -69,22 +61,23 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
     _mapController = controller;
     if (_initialPosition != null) {
       _mapController?.animateCamera(
-        CameraUpdate.newLatLngZoom(_initialPosition!, 14),
+        CameraUpdate.newLatLngZoom(
+            _initialPosition!, 18), // Zoom ajustado a 18 para acercar más
       );
     }
   }
 
   Future<void> _centrarEnPosicionActual() async {
-    Position position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
-    _moverCamara(LatLng(position.latitude, position.longitude));
+    if (_lastPosition != null) {
+      _moverCamara(_lastPosition!);
+    }
   }
 
   void _moverCamara(LatLng nuevaPosicion) {
     _mapController?.animateCamera(CameraUpdate.newLatLng(nuevaPosicion));
   }
 
+  // Iniciar el registro y simular el movimiento
   void _iniciarRegistro() {
     setState(() {
       _isRecording = !_isRecording;
@@ -100,42 +93,54 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
         }
       });
 
-      // Temporizador para obtener la ubicación cada 1.5 segundos
+      // Simulación de movimiento, agregando nuevas coordenadas cada 1.5 segundos
       _locationTimer =
-          Timer.periodic(const Duration(milliseconds: 1500), (timer) async {
-        Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
+          Timer.periodic(const Duration(milliseconds: 1500), (timer) {
+        if (_lastPosition == null) {
+          _lastPosition = _initialPosition;
+        }
+
+        // Simulamos un pequeño desplazamiento en la latitud y longitud
+        LatLng newPosition = LatLng(
+          _lastPosition!.latitude + 0.0001,
+          _lastPosition!.longitude + 0.0001,
         );
 
-        LatLng newPosition = LatLng(position.latitude, position.longitude);
+        // Calcular la distancia recorrida
+        double distance = Geolocator.distanceBetween(
+          _lastPosition!.latitude,
+          _lastPosition!.longitude,
+          newPosition.latitude,
+          newPosition.longitude,
+        );
+        _distanceTraveled += distance;
 
-        if (_lastPosition != null) {
-          _distanceTraveled += Geolocator.distanceBetween(
-            _lastPosition!.latitude,
-            _lastPosition!.longitude,
-            position.latitude,
-            position.longitude,
+        // Agregar las nuevas coordenadas a la ruta y mover el marcador
+        setState(() {
+          _routeCoords.add(newPosition);
+          _lastPosition = newPosition;
+
+          // Actualizar polilínea
+          _routePolyline = Polyline(
+            polylineId: const PolylineId('route'),
+            points: _routeCoords,
+            width: 5,
+            color: Colors.blue,
           );
-        }
 
-        // Guardar las coordenadas en _locationData
-        _locationData.add({
-          'latitude': position.latitude,
-          'longitude': position.longitude,
+          // Mover marcador a la nueva posición
+          _markers['currentPosition'] = Marker(
+            markerId: const MarkerId('currentPosition'),
+            position: newPosition,
+            infoWindow: InfoWindow(
+              title: 'Distancia Recorrida',
+              snippet: '${(_distanceTraveled / 1000).toStringAsFixed(2)} km',
+            ),
+          );
         });
 
-        if (mounted) {
-          setState(() {
-            _routeCoords.add(newPosition);
-            _lastPosition = newPosition;
-            _routePolyline = Polyline(
-              polylineId: const PolylineId('route'),
-              points: _routeCoords,
-              width: 5,
-              color: Colors.blue,
-            );
-          });
-        }
+        // Mover la cámara al nuevo punto
+        _moverCamara(newPosition);
       });
     } else {
       // Detener ambos temporizadores cuando se detiene el registro
@@ -144,10 +149,20 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
     }
   }
 
+  // Finalizar el registro de la ruta
+  void _finalizarRegistro() {
+    if (_isRecording) {
+      _timer?.cancel();
+      _locationTimer?.cancel();
+      setState(() {
+        _isRecording = false;
+      });
+    }
+  }
+
   // Enviar la lista de coordenadas al backend
   Future<void> _enviarCoordenadasAlBackend() async {
-    print(
-        _locationData); // Esto es solo para verificar que las coordenadas se están guardando
+    print(_routeCoords); // Simulación de envío de coordenadas
   }
 
   // Función para mostrar el diálogo de confirmación
@@ -161,27 +176,15 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context)
-                    .pop(); // Cierra el diálogo, continúa la ruta
+                Navigator.of(context).pop(); // Cierra el diálogo
               },
               child: const Text('Cancelar'),
             ),
             TextButton(
               onPressed: () {
+                _finalizarRegistro(); // Finalizar la toma de ruta
                 Navigator.of(context).pop(); // Cierra el diálogo
-                // Enviar las coordenadas al backend
                 _enviarCoordenadasAlBackend();
-
-                // Navegar a la página del resumen
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ResumenRutaPage(
-                      tiempoEnSegundos: _seconds,
-                      distanciaEnKm: _distanceTraveled / 1000,
-                    ),
-                  ),
-                );
               },
               child: const Text('Aceptar'),
             ),
@@ -196,6 +199,15 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
     int minutes = (seconds % 3600) ~/ 60;
     int remainingSeconds = seconds % 60;
     return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+
+  // Mostrar distancia en metros y kilómetros
+  String _formatDistance(double distance) {
+    if (distance < 1000) {
+      return '${distance.toStringAsFixed(2)} m';
+    } else {
+      return '${(distance / 1000).toStringAsFixed(2)} km';
+    }
   }
 
   @override
@@ -215,7 +227,7 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
                   onMapCreated: _onMapCreated,
                   initialCameraPosition: CameraPosition(
                     target: _initialPosition!,
-                    zoom: 14,
+                    zoom: 18, // Zoom más cercano
                   ),
                   markers: _markers.values.toSet(),
                   polylines: {_routePolyline},
@@ -230,8 +242,7 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
                         color: Colors.black,
                         fontSize: 18,
                         fontWeight: FontWeight.bold)),
-                Text(
-                    'Distancia: ${(_distanceTraveled / 1000).toStringAsFixed(2)} km',
+                Text('Distancia: ${_formatDistance(_distanceTraveled)}',
                     style: const TextStyle(
                         color: Colors.black,
                         fontSize: 18,
@@ -257,8 +268,9 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
                   : _iniciarRegistro,
               child: Text(_isRecording ? 'Guardar Ruta' : 'Iniciar Registro'),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 15),
-                textStyle: const TextStyle(fontSize: 18),
+                padding: const EdgeInsets.symmetric(
+                    vertical: 10, horizontal: 20), // Tamaño más pequeño
+                textStyle: const TextStyle(fontSize: 16), // Fuente más pequeña
               ),
             ),
           ),
