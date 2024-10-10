@@ -3,6 +3,54 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
 
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+List<Map<String, dynamic>> convertirAFormato(List<LatLng> listaCoords) {
+  return List<Map<String, dynamic>>.generate(listaCoords.length, (index) {
+    return {
+      "latitud": listaCoords[index].latitude,
+      "longitud": listaCoords[index].longitude,
+      "orden": index + 1, // El índice más 1 para el campo orden
+    };
+  });
+}
+
+Future<void> postRuta(List<LatLng> puntos) async {
+  // URL de la API
+  const String url = 'http://192.168.46.186:8000/api/rutas/';
+  List<Map<String, dynamic>> rutasGeo = convertirAFormato(puntos);
+
+  // Cuerpo de la solicitud en formato JSON
+  final Map<String, dynamic> rutaData = {
+    "nombre": "Prueba Dart2",
+    "descripcion": "Caminando al interior de duoc antonio varas.",
+    "dificultad": "facil",
+    "distancia_km": 1.0,
+    "tiempo_estimado_horas": 1.0,
+    "puntos": rutasGeo
+  };
+
+  try {
+    // Realizar la solicitud POST
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(rutaData),
+    );
+
+    // Verificar la respuesta
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      print('Ruta creada con éxito: ${response.body}');
+    } else {
+      print('Error al crear la ruta: ${response.statusCode}');
+      print('Respuesta: ${response.body}');
+    }
+  } catch (e) {
+    print('Error en la solicitud: $e');
+  }
+}
+
 class GoogleMapsPage extends StatefulWidget {
   const GoogleMapsPage({Key? key}) : super(key: key);
 
@@ -163,6 +211,7 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
   // Enviar la lista de coordenadas al backend
   Future<void> _enviarCoordenadasAlBackend() async {
     print(_routeCoords); // Simulación de envío de coordenadas
+    postRuta(_routeCoords);
   }
 
   // Función para mostrar el diálogo de confirmación
@@ -214,7 +263,7 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Registro de Ruta'),
+        title: const Text('Registro de Ruta2'),
         backgroundColor: Colors.green[700],
       ),
       body: Stack(
