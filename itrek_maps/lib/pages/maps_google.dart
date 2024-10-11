@@ -2,55 +2,49 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
-
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+// Función para convertir una lista de coordenadas LatLng a un formato JSON
 List<Map<String, dynamic>> convertirAFormato(List<LatLng> listaCoords) {
   return List<Map<String, dynamic>>.generate(listaCoords.length, (index) {
     return {
-      "latitud": listaCoords[index].latitude,
-      "longitud": listaCoords[index].longitude,
-      "orden": index + 1, // El índice más 1 para el campo orden
+      "latitud": listaCoords[index].latitude, // Latitud de la coordenada
+      "longitud": listaCoords[index].longitude, // Longitud de la coordenada
+      "orden": index + 1, // Orden en la lista (empezando desde 1)
     };
   });
 }
 
-Future<void> postRuta(List<LatLng> puntos) async {
-  // URL de la API
-  const String url = 'http://192.168.46.186:8000/api/rutas/';
-  List<Map<String, dynamic>> rutasGeo = convertirAFormato(puntos);
-
-  // Cuerpo de la solicitud en formato JSON
-  final Map<String, dynamic> rutaData = {
-    "nombre": "Prueba Dart2",
-    "descripcion": "Caminando al interior de duoc antonio varas.",
-    "dificultad": "facil",
-    "distancia_km": 1.0,
-    "tiempo_estimado_horas": 1.0,
-    "puntos": rutasGeo
-  };
-
+// Función para enviar una ruta al backend mediante una solicitud HTTP POST
+Future<void> postRuta(Map<String, dynamic> rutaData) async {
+  const String url = 'http://192.168.1.85:8000/api/rutas/';
   try {
-    // Realizar la solicitud POST
     final response = await http.post(
       Uri.parse(url),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode(rutaData),
+      headers: {
+        "Content-Type": "application/json"
+      }, // Headers indicando que el contenido es JSON
+      body: jsonEncode(rutaData), // Cuerpo de la solicitud en formato JSON
     );
 
-    // Verificar la respuesta
+    // Si la solicitud fue exitosa
     if (response.statusCode == 200 || response.statusCode == 201) {
-      print('Ruta creada con éxito: ${response.body}');
+      print(
+          'Ruta creada con éxito: ${response.body}'); // Imprimir respuesta exitosa
     } else {
-      print('Error al crear la ruta: ${response.statusCode}');
-      print('Respuesta: ${response.body}');
+      print(
+          'Error al crear la ruta: ${response.statusCode}'); // Imprimir código de error
+      print(
+          'Respuesta: ${response.body}'); // Imprimir la respuesta del servidor
     }
   } catch (e) {
-    print('Error en la solicitud: $e');
+    print(
+        'Error en la solicitud: $e'); // Capturar e imprimir cualquier error en la solicitud
   }
 }
 
+// Página principal del mapa de Google donde se graba la ruta
 class GoogleMapsPage extends StatefulWidget {
   const GoogleMapsPage({Key? key}) : super(key: key);
 
@@ -61,114 +55,123 @@ class GoogleMapsPage extends StatefulWidget {
 class _GoogleMapsPageState extends State<GoogleMapsPage> {
   final Map<String, Marker> _markers = {}; // Mapa de marcadores
   GoogleMapController? _mapController; // Controlador del mapa
-  final List<LatLng> _routeCoords =
-      []; // Lista de coordenadas para el camino recorrido
+  final List<LatLng> _routeCoords = []; // Lista de coordenadas de la ruta
   Polyline _routePolyline = const Polyline(
-    polylineId: PolylineId('route'),
-    width: 5,
-    color: Colors.blue,
+    polylineId: PolylineId('route'), // ID de la línea polilínea
+    width: 5, // Grosor de la línea
+    color: Colors.blue, // Color de la línea
   );
-  bool _isRecording = false; // Controlar si el registro está activo o no
-  Timer? _timer; // Cronómetro para el tiempo de registro
-  Timer? _locationTimer; // Temporizador para simular el movimiento
-  int _seconds = 0; // Segundos transcurridos
-  double _distanceTraveled = 0.0; // Distancia recorrida en metros
+  bool _isRecording = false; // Bandera para saber si se está grabando
+  Timer? _timer; // Temporizador para el registro del tiempo
+  Timer? _locationTimer; // Temporizador para simular movimiento
+  int _seconds = 0; // Segundos transcurridos durante la grabación
+  double _distanceTraveled = 0.0; // Distancia total recorrida
   LatLng? _lastPosition; // Última posición conocida
-  LatLng? _initialPosition = const LatLng(
-      -12.046374, -77.042793); // Posición inicial simulada (Lima, Perú)
+  LatLng? _initialPosition; // Posición inicial del dispositivo
 
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation();
+    _getCurrentLocation(); // Obtener la ubicación actual al iniciar
   }
 
   @override
   void dispose() {
-    // Cancelar los temporizadores cuando el widget se destruye
-    _timer?.cancel();
+    _timer?.cancel(); // Cancelar temporizadores cuando el widget se destruye
     _locationTimer?.cancel();
     super.dispose();
   }
 
-  // Simulación de la ubicación actual
+  // Función para obtener la ubicación actual del dispositivo
   Future<void> _getCurrentLocation() async {
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy:
+          LocationAccuracy.high, // Usar alta precisión para obtener la posición
+    );
     setState(() {
+      _initialPosition = LatLng(position.latitude,
+          position.longitude); // Establecer la ubicación inicial
       _markers['currentPosition'] = Marker(
-        markerId: const MarkerId('currentPosition'),
-        position: _initialPosition!,
+        markerId: const MarkerId('currentPosition'), // ID del marcador
+        position: _initialPosition!, // Posición del marcador
         infoWindow: const InfoWindow(
           title: 'Posición Actual',
-          snippet: 'Simulación de inicio',
+          snippet: 'Ubicación obtenida del dispositivo',
         ),
       );
     });
+
+    // Mover la cámara a la posición inicial
+    _mapController
+        ?.animateCamera(CameraUpdate.newLatLngZoom(_initialPosition!, 18));
   }
 
+  // Función que se ejecuta cuando se crea el mapa de Google
   Future<void> _onMapCreated(GoogleMapController controller) async {
     _mapController = controller;
     if (_initialPosition != null) {
-      _mapController?.animateCamera(
-        CameraUpdate.newLatLngZoom(
-            _initialPosition!, 18), // Zoom ajustado a 18 para acercar más
-      );
+      _mapController
+          ?.animateCamera(CameraUpdate.newLatLngZoom(_initialPosition!, 18));
     }
   }
 
+  // Centrar la cámara en la posición actual del dispositivo
   Future<void> _centrarEnPosicionActual() async {
     if (_lastPosition != null) {
       _moverCamara(_lastPosition!);
     }
   }
 
+  // Mover la cámara a una nueva posición
   void _moverCamara(LatLng nuevaPosicion) {
     _mapController?.animateCamera(CameraUpdate.newLatLng(nuevaPosicion));
   }
 
-  // Iniciar el registro y simular el movimiento
+  // Iniciar el registro de la ruta
   void _iniciarRegistro() {
     setState(() {
-      _isRecording = !_isRecording;
+      _isRecording = !_isRecording; // Alternar el estado de grabación
     });
 
     if (_isRecording) {
-      // Temporizador para actualizar el tiempo
+      // Temporizador para contar los segundos
       _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
         if (mounted) {
           setState(() {
-            _seconds++;
+            _seconds++; // Incrementar el contador de segundos
           });
         }
       });
 
-      // Simulación de movimiento, agregando nuevas coordenadas cada 1.5 segundos
+      // Temporizador para simular el movimiento
       _locationTimer =
           Timer.periodic(const Duration(milliseconds: 1500), (timer) {
         if (_lastPosition == null) {
           _lastPosition = _initialPosition;
         }
 
-        // Simulamos un pequeño desplazamiento en la latitud y longitud
+        // Generar una nueva posición simulada
         LatLng newPosition = LatLng(
-          _lastPosition!.latitude + 0.0001,
-          _lastPosition!.longitude + 0.0001,
+          _lastPosition!.latitude +
+              0.0001, // Cambiar latitud para simular movimiento
+          _lastPosition!.longitude +
+              0.0001, // Cambiar longitud para simular movimiento
         );
 
-        // Calcular la distancia recorrida
+        // Calcular la distancia entre la última posición y la nueva
         double distance = Geolocator.distanceBetween(
           _lastPosition!.latitude,
           _lastPosition!.longitude,
           newPosition.latitude,
           newPosition.longitude,
         );
-        _distanceTraveled += distance;
+        _distanceTraveled += distance; // Acumular la distancia recorrida
 
-        // Agregar las nuevas coordenadas a la ruta y mover el marcador
         setState(() {
-          _routeCoords.add(newPosition);
+          _routeCoords.add(newPosition); // Agregar la nueva posición a la ruta
           _lastPosition = newPosition;
 
-          // Actualizar polilínea
+          // Actualizar la línea polilínea para mostrar la ruta
           _routePolyline = Polyline(
             polylineId: const PolylineId('route'),
             points: _routeCoords,
@@ -176,23 +179,24 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
             color: Colors.blue,
           );
 
-          // Mover marcador a la nueva posición
+          // Actualizar el marcador de posición actual
           _markers['currentPosition'] = Marker(
             markerId: const MarkerId('currentPosition'),
             position: newPosition,
             infoWindow: InfoWindow(
               title: 'Distancia Recorrida',
-              snippet: '${(_distanceTraveled / 1000).toStringAsFixed(2)} km',
+              snippet:
+                  '${(_distanceTraveled / 1000).toStringAsFixed(2)} km', // Mostrar distancia en km
             ),
           );
         });
 
-        // Mover la cámara al nuevo punto
+        // Mover la cámara a la nueva posición
         _moverCamara(newPosition);
       });
     } else {
-      // Detener ambos temporizadores cuando se detiene el registro
-      _timer?.cancel();
+      _timer
+          ?.cancel(); // Cancelar el temporizador cuando se detiene el registro
       _locationTimer?.cancel();
     }
   }
@@ -208,13 +212,32 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
     }
   }
 
-  // Enviar la lista de coordenadas al backend
-  Future<void> _enviarCoordenadasAlBackend() async {
-    print(_routeCoords); // Simulación de envío de coordenadas
-    postRuta(_routeCoords);
+  // Mostrar la pantalla para agregar detalles de la ruta
+  void _mostrarPantallaFormulario() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RutaFormPage(
+          routeCoords: _routeCoords, // Pasamos las coordenadas aquí
+          distanceTraveled:
+              _distanceTraveled, // Pasar distancia total recorrida
+          secondsElapsed: _seconds, // Pasar tiempo transcurrido
+          onSave: (rutaData) {
+            _finalizarRegistro(); // Finalizar el registro
+            rutaData['puntos'] =
+                convertirAFormato(_routeCoords); // Convertir coordenadas
+            postRuta(rutaData); // Enviar la ruta al backend
+            Navigator.of(context).pop(); // Volver al mapa
+          },
+          onCancel: () {
+            Navigator.of(context).pop(); // Volver al mapa sin guardar
+          },
+        ),
+      ),
+    );
   }
 
-  // Función para mostrar el diálogo de confirmación
+  // Mostrar un diálogo de confirmación antes de finalizar la ruta
   void _mostrarConfirmacionFinalizar() {
     showDialog(
       context: context,
@@ -225,15 +248,15 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Cierra el diálogo
+                Navigator.of(context).pop(); // Cerrar el diálogo
               },
               child: const Text('Cancelar'),
             ),
             TextButton(
               onPressed: () {
-                _finalizarRegistro(); // Finalizar la toma de ruta
-                Navigator.of(context).pop(); // Cierra el diálogo
-                _enviarCoordenadasAlBackend();
+                _finalizarRegistro(); // Finalizar el registro
+                Navigator.of(context).pop(); // Cerrar el diálogo
+                _mostrarPantallaFormulario(); // Mostrar el formulario
               },
               child: const Text('Aceptar'),
             ),
@@ -243,6 +266,7 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
     );
   }
 
+  // Formatear el tiempo en formato hh:mm:ss
   String _formatTime(int seconds) {
     int hours = seconds ~/ 3600;
     int minutes = (seconds % 3600) ~/ 60;
@@ -250,37 +274,40 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
     return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
-  // Mostrar distancia en metros y kilómetros
+  // Formatear la distancia para mostrar metros o kilómetros
   String _formatDistance(double distance) {
     if (distance < 1000) {
-      return '${distance.toStringAsFixed(2)} m';
+      return '${distance.toStringAsFixed(2)} m'; // Si es menor a 1 km, mostrar en metros
     } else {
-      return '${(distance / 1000).toStringAsFixed(2)} km';
+      return '${(distance / 1000).toStringAsFixed(2)} km'; // Mostrar en kilómetros
     }
   }
 
+  // Construir la interfaz gráfica de la página principal del mapa
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Registro de Ruta2'),
+        title: const Text('Registro de Ruta'),
         backgroundColor: Colors.green[700],
       ),
       body: Stack(
         children: [
+          // Mostrar un cargador mientras se obtiene la posición
           _initialPosition == null
               ? const Center(
-                  child:
-                      CircularProgressIndicator()) // Mostrar cargando mientras se obtiene la posición
+                  child: CircularProgressIndicator(),
+                )
               : GoogleMap(
                   onMapCreated: _onMapCreated,
                   initialCameraPosition: CameraPosition(
                     target: _initialPosition!,
-                    zoom: 18, // Zoom más cercano
+                    zoom: 18,
                   ),
                   markers: _markers.values.toSet(),
                   polylines: {_routePolyline},
                 ),
+          // Mostrar tiempo y distancia en la parte superior
           Positioned(
             top: 20,
             left: 20,
@@ -299,6 +326,7 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
               ],
             ),
           ),
+          // Botón para centrar la cámara en la posición actual
           Positioned(
             bottom: 120,
             right: 20,
@@ -307,6 +335,7 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
               child: const Icon(Icons.my_location),
             ),
           ),
+          // Botón para iniciar o finalizar el registro
           Positioned(
             bottom: 20,
             left: 20,
@@ -317,13 +346,151 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
                   : _iniciarRegistro,
               child: Text(_isRecording ? 'Guardar Ruta' : 'Iniciar Registro'),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                    vertical: 10, horizontal: 20), // Tamaño más pequeño
-                textStyle: const TextStyle(fontSize: 16), // Fuente más pequeña
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                textStyle: const TextStyle(fontSize: 16),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// Página para agregar los detalles de la ruta después de finalizarla
+class RutaFormPage extends StatefulWidget {
+  final List<LatLng> routeCoords; // Recibir las coordenadas
+  final double distanceTraveled; // Distancia recorrida
+  final int secondsElapsed; // Tiempo transcurrido
+  final Function(Map<String, dynamic>)
+      onSave; // Función que se ejecuta al guardar
+  final VoidCallback onCancel; // Función que se ejecuta al cancelar
+
+  const RutaFormPage({
+    required this.routeCoords,
+    required this.distanceTraveled,
+    required this.secondsElapsed,
+    required this.onSave,
+    required this.onCancel,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  _RutaFormPageState createState() => _RutaFormPageState();
+}
+
+class _RutaFormPageState extends State<RutaFormPage> {
+  final _formKey = GlobalKey<FormState>(); // Clave para el formulario
+  String _nombre = ''; // Nombre de la ruta
+  String _descripcion = ''; // Descripción de la ruta
+  String _dificultad = 'facil'; // Dificultad de la ruta
+
+  @override
+  Widget build(BuildContext context) {
+    // Convertir los segundos a horas decimales para el tiempo estimado
+    double _tiempoEstimado = widget.secondsElapsed / 3600;
+    // Convertir la distancia a kilómetros
+    double _distancia = widget.distanceTraveled / 1000;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Agregar Detalles de la Ruta'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey, // Asociar el formulario a la clave
+          child: Column(
+            children: [
+              // Campo para el nombre de la ruta
+              TextFormField(
+                decoration: const InputDecoration(labelText: 'Nombre'),
+                onSaved: (value) {
+                  _nombre = value ?? '';
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor ingresa un nombre';
+                  }
+                  return null;
+                },
+              ),
+              // Campo para la descripción de la ruta
+              TextFormField(
+                decoration: const InputDecoration(labelText: 'Descripción'),
+                onSaved: (value) {
+                  _descripcion = value ?? '';
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor ingresa una descripción';
+                  }
+                  return null;
+                },
+              ),
+              // Menú desplegable para seleccionar la dificultad de la ruta
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(labelText: 'Dificultad'),
+                value: _dificultad,
+                items: const [
+                  DropdownMenuItem(value: 'facil', child: Text('Fácil')),
+                  DropdownMenuItem(value: 'mediano', child: Text('Mediano')),
+                  DropdownMenuItem(value: 'dificil', child: Text('Difícil')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _dificultad = value!;
+                  });
+                },
+              ),
+              // Mostrar distancia calculada
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Text('Distancia: ${_distancia.toStringAsFixed(2)} km'),
+              ),
+              // Mostrar tiempo estimado calculado
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Text(
+                    'Tiempo estimado: ${_tiempoEstimado.toStringAsFixed(2)} horas'),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Botón para guardar la ruta
+                  ElevatedButton(
+                    onPressed: () {
+                      if (_formKey.currentState?.validate() ?? false) {
+                        _formKey.currentState?.save();
+                        Map<String, dynamic> rutaData = {
+                          "nombre": _nombre,
+                          "descripcion": _descripcion,
+                          "dificultad": _dificultad,
+                          "distancia_km": _distancia,
+                          "tiempo_estimado_horas": _tiempoEstimado,
+                          "puntos": convertirAFormato(
+                              widget.routeCoords), // Agregar los puntos
+                        };
+
+                        widget.onSave(rutaData); // Enviar los datos
+                      }
+                    },
+                    child: const Text('Guardar Ruta'),
+                  ),
+                  // Botón para cancelar y volver al mapa
+                  ElevatedButton(
+                    onPressed: widget.onCancel,
+                    child: const Text('Cancelar'),
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
