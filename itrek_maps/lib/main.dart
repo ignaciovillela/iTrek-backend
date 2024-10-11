@@ -12,7 +12,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      home: GoogleMapsPage(), // Llama a la nueva página de Google Maps
+      home: LoginScreen(), // Llama a la nueva página de Google Maps
     );
   }
 }
