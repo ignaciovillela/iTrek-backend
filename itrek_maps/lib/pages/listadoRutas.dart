@@ -1,27 +1,56 @@
 import 'package:flutter/material.dart';
+import 'dart:convert'; // Para manejar JSON
+import 'package:http/http.dart' as http;
 import 'inicio.dart'; // Importar la pantalla del menú
 
-class ListadoRutasScreen extends StatelessWidget {
+class ListadoRutasScreen extends StatefulWidget {
   const ListadoRutasScreen({super.key});
 
-  // Lista ficticia de rutas guardadas
-  final List<Map<String, String>> rutasGuardadas = const [
-    {
-      'nombre': 'Ruta de la montaña',
-      'descripcion': 'Una ruta espectacular por la montaña.',
-      'dificultad': 'Difícil',
-    },
-    {
-      'nombre': 'Sendero del río',
-      'descripcion': 'Un paseo tranquilo junto al río.',
-      'dificultad': 'Fácil',
-    },
-    {
-      'nombre': 'Camino del bosque',
-      'descripcion': 'Una ruta intermedia a través del bosque.',
-      'dificultad': 'Medio',
-    },
-  ];
+  @override
+  _ListadoRutasScreenState createState() => _ListadoRutasScreenState();
+}
+
+class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
+  List<dynamic> rutasGuardadas = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRutas(); // Llamar a la API cuando se inicializa el widget
+  }
+
+  Future<void> _fetchRutas() async {
+    final response =
+        await http.get(Uri.parse('http://10.20.4.151:8000/api/rutas/'));
+
+    if (response.statusCode == 200) {
+      setState(() {
+        rutasGuardadas = jsonDecode(response.body);
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al cargar las rutas')),
+      );
+    }
+  }
+
+  Future<void> _deleteRuta(int id) async {
+    final response =
+        await http.delete(Uri.parse('http://10.20.4.151:8000/api/rutas/$id/'));
+
+    if (response.statusCode == 204) {
+      setState(() {
+        rutasGuardadas.removeWhere((ruta) => ruta['id'] == id);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ruta eliminada con éxito')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al eliminar la ruta')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,59 +68,57 @@ class ListadoRutasScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: ListView.builder(
-        itemCount: rutasGuardadas.length,
-        itemBuilder: (context, index) {
-          final ruta = rutasGuardadas[index];
+      body: rutasGuardadas.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: rutasGuardadas.length,
+              itemBuilder: (context, index) {
+                final ruta = rutasGuardadas[index];
 
-          return Card(
-            margin: const EdgeInsets.all(8.0),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
-            ),
-            elevation: 5,
-            child: ListTile(
-              title: Text(
-                ruta['nombre']!,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(ruta['descripcion']!),
-                  const SizedBox(height: 5),
-                  Text('Dificultad: ${ruta['dificultad']}'),
-                ],
-              ),
-              leading: const Icon(Icons.map, color: Color(0xFF50C9B5)),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red),
-                onPressed: () {
-                  // Lógica para eliminar la ruta
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Ruta ${ruta['nombre']} eliminada')),
-                  );
-                },
-              ),
-              onTap: () {
-                // Lógica para ver detalles de la ruta
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DetalleRutaScreen(ruta: ruta),
+                return Card(
+                  margin: const EdgeInsets.all(8.0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  elevation: 5,
+                  child: ListTile(
+                    title: Text(
+                      ruta['nombre'],
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(ruta['descripcion']),
+                        const SizedBox(height: 5),
+                        Text('Dificultad: ${ruta['dificultad']}'),
+                      ],
+                    ),
+                    leading: const Icon(Icons.map, color: Color(0xFF50C9B5)),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () {
+                        _deleteRuta(ruta['id']);
+                      },
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DetalleRutaScreen(ruta: ruta),
+                        ),
+                      );
+                    },
                   ),
                 );
               },
             ),
-          );
-        },
-      ),
     );
   }
 }
 
 class DetalleRutaScreen extends StatefulWidget {
-  final Map<String, String> ruta;
+  final Map<String, dynamic> ruta;
 
   const DetalleRutaScreen({super.key, required this.ruta});
 
@@ -119,6 +146,69 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     super.dispose();
   }
 
+  Future<void> _updateRuta(int id) async {
+    // Verificar que los puntos, distancia y tiempo estimado no son nulos
+    if (widget.ruta['puntos'] == null || widget.ruta['puntos'].isEmpty) {
+      print('Error: Los puntos son obligatorios');
+      return;
+    }
+
+    if (widget.ruta['distancia_km'] == null) {
+      print('Error: La distancia es obligatoria');
+      return;
+    }
+
+    if (widget.ruta['tiempo_estimado_horas'] == null) {
+      print('Error: El tiempo estimado es obligatorio');
+      return;
+    }
+
+    // Crear el cuerpo de la solicitud
+    final response = await http.put(
+      Uri.parse('http://10.20.4.151:8000/api/rutas/$id/'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'id': id, // Incluimos el id en el cuerpo
+        'nombre': _nombreController.text, // Actualizamos el nombre
+        'descripcion':
+            _descripcionController.text, // Actualizamos la descripción
+        'dificultad':
+            widget.ruta['dificultad'], // Asegúrate de que el valor sea correcto
+        'puntos': widget.ruta[
+                'puntos'] // Lista de puntos, asegúrate de que esté correctamente estructurada
+            .map((punto) => {
+                  'latitud': punto['latitud'],
+                  'longitud': punto['longitud'],
+                  'orden': punto['orden'],
+                })
+            .toList(), // Convertimos la lista de puntos en un formato adecuado para el backend
+        'distancia_km': widget.ruta['distancia_km'], // Distancia en km
+        'tiempo_estimado_horas':
+            widget.ruta['tiempo_estimado_horas'], // Tiempo estimado en horas
+        'usuario': widget.ruta['usuario'] != null
+            ? widget.ruta['usuario']['id']
+            : null, // Usuario relacionado, si es requerido
+      }),
+    );
+
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ruta actualizada con éxito')),
+      );
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Error al actualizar la ruta: ${response.body}')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,11 +216,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            // Navegar a MenuScreen en lugar de regresar al listado de rutas
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const MenuScreen()),
-            );
+            Navigator.pop(context);
           },
         ),
         title: Row(
@@ -140,7 +226,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
               height: 30, // Tamaño pequeño del logo
             ),
             const SizedBox(width: 10), // Espacio entre el logo y el texto
-            Text(widget.ruta['nombre']!),
+            Text("iTrek Editar Ruta"),
           ],
         ),
         backgroundColor: const Color(0xFF50C9B5),
@@ -149,13 +235,10 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
             icon: Icon(_isEditing ? Icons.save : Icons.edit),
             onPressed: () {
               setState(() {
-                _isEditing = !_isEditing; // Cambiar entre modo edición y vista
-                if (!_isEditing) {
-                  // Guardar cambios
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Cambios guardados')),
-                  );
+                if (_isEditing) {
+                  _updateRuta(widget.ruta['id']);
                 }
+                _isEditing = !_isEditing;
               });
             },
           ),
@@ -185,8 +268,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 20),
-
-            // Botón de "Volver" en la parte inferior
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor:
@@ -194,11 +275,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                 minimumSize: const Size(double.infinity, 50), // Botón ancho
               ),
               onPressed: () {
-                // Navegar a MenuScreen
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MenuScreen()),
-                );
+                Navigator.pop(context);
               },
               child: const Text(
                 'Volver',

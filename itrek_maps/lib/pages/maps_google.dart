@@ -18,7 +18,7 @@ List<Map<String, dynamic>> convertirAFormato(List<LatLng> listaCoords) {
 
 // Función para enviar una ruta al backend mediante una solicitud HTTP POST
 Future<void> postRuta(Map<String, dynamic> rutaData) async {
-  const String url = 'http://192.168.1.85:8000/api/rutas/';
+  const String url = 'http://10.20.4.151:8000/api/rutas/';
   try {
     final response = await http.post(
       Uri.parse(url),
