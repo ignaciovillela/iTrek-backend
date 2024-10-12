@@ -288,7 +288,7 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Registro de Ruta'),
+        title: const Text('Registro de Ruta test'),
         backgroundColor: Colors.green[700],
       ),
       body: Stack(
