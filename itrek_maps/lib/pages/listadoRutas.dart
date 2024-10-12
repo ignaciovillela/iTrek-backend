@@ -3,6 +3,8 @@ import 'dart:convert'; // Para manejar JSON
 import 'package:http/http.dart' as http;
 import 'inicio.dart'; // Importar la pantalla del menú
 
+const baseUrl = 'http://192.168.1.10:8000';
+
 class ListadoRutasScreen extends StatefulWidget {
   const ListadoRutasScreen({super.key});
 
@@ -19,9 +21,14 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
     _fetchRutas(); // Llamar a la API cuando se inicializa el widget
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _fetchRutas(); // Llamar a la API cada vez que se muestra la pantalla
+  }
+
   Future<void> _fetchRutas() async {
-    final response =
-        await http.get(Uri.parse('http://10.20.4.151:8000/api/rutas/'));
+    final response = await http.get(Uri.parse('$baseUrl/api/rutas/'));
 
     if (response.statusCode == 200) {
       setState(() {
@@ -35,8 +42,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   }
 
   Future<void> _deleteRuta(int id) async {
-    final response =
-        await http.delete(Uri.parse('http://10.20.4.151:8000/api/rutas/$id/'));
+    final response = await http.delete(Uri.parse('$baseUrl/api/rutas/$id/'));
 
     if (response.statusCode == 204) {
       setState(() {
@@ -101,13 +107,19 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                         _deleteRuta(ruta['id']);
                       },
                     ),
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      // Esperamos el resultado de la pantalla de detalles
+                      final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => DetalleRutaScreen(ruta: ruta),
                         ),
                       );
+
+                      // Si result es true, recargamos las rutas
+                      if (result == true) {
+                        _fetchRutas();
+                      }
                     },
                   ),
                 );
@@ -147,12 +159,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   }
 
   Future<void> _updateRuta(int id) async {
-    // Verificar que los puntos, distancia y tiempo estimado no son nulos
-    if (widget.ruta['puntos'] == null || widget.ruta['puntos'].isEmpty) {
-      print('Error: Los puntos son obligatorios');
-      return;
-    }
-
     if (widget.ruta['distancia_km'] == null) {
       print('Error: La distancia es obligatoria');
       return;
@@ -164,32 +170,20 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     }
 
     // Crear el cuerpo de la solicitud
-    final response = await http.put(
-      Uri.parse('http://10.20.4.151:8000/api/rutas/$id/'),
+    final response = await http.patch(
+      Uri.parse('$baseUrl/api/rutas/$id/'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
       },
       body: jsonEncode(<String, dynamic>{
-        'id': id, // Incluimos el id en el cuerpo
         'nombre': _nombreController.text, // Actualizamos el nombre
         'descripcion':
             _descripcionController.text, // Actualizamos la descripción
         'dificultad':
             widget.ruta['dificultad'], // Asegúrate de que el valor sea correcto
-        'puntos': widget.ruta[
-                'puntos'] // Lista de puntos, asegúrate de que esté correctamente estructurada
-            .map((punto) => {
-                  'latitud': punto['latitud'],
-                  'longitud': punto['longitud'],
-                  'orden': punto['orden'],
-                })
-            .toList(), // Convertimos la lista de puntos en un formato adecuado para el backend
         'distancia_km': widget.ruta['distancia_km'], // Distancia en km
         'tiempo_estimado_horas':
             widget.ruta['tiempo_estimado_horas'], // Tiempo estimado en horas
-        'usuario': widget.ruta['usuario'] != null
-            ? widget.ruta['usuario']['id']
-            : null, // Usuario relacionado, si es requerido
       }),
     );
 
@@ -200,7 +194,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ruta actualizada con éxito')),
       );
-      Navigator.pop(context);
+      Navigator.pop(context, true); // Aquí retornamos true
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -213,12 +207,12 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
+        //leading: IconButton(
+        //  icon: const Icon(Icons.arrow_back),
+        //onPressed: (_) {
+        //  Navigator.pop(context);
+        //},
+        //),
         title: Row(
           children: [
             Image.asset(
