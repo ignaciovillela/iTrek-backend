@@ -3,7 +3,7 @@ import 'dart:convert'; // Para manejar JSON
 import 'package:http/http.dart' as http;
 import 'inicio.dart'; // Importar la pantalla del menú
 
-const baseUrl = 'http://192.168.1.10:8000';
+const baseUrl = 'http://192.168.1.124:8000';
 
 class ListadoRutasScreen extends StatefulWidget {
   const ListadoRutasScreen({super.key});
@@ -70,7 +70,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
               height: 30, // Tamaño pequeño del logo
             ),
             const SizedBox(width: 10), // Espacio entre el logo y el texto
-            const Text('Listado de Rutas'),
+            const Text('Listado de Rutas test 2'),
           ],
         ),
       ),
