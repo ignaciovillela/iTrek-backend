@@ -31,8 +31,9 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
     final response = await http.get(Uri.parse('$baseUrl/api/rutas/'));
 
     if (response.statusCode == 200) {
+      final decodedBody = utf8.decode(response.bodyBytes);
       setState(() {
-        rutasGuardadas = jsonDecode(response.body);
+        rutasGuardadas = jsonDecode(decodedBody);
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
