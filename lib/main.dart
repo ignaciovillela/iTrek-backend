@@ -5,7 +5,7 @@ import 'package:itrek_maps/pages/inicio.dart';
 import 'pages/listadoRutas.dart';
 
 void main() async {
-  await dotenv.load(fileName: ".env");
+  await dotenv.load(fileName: "env");
 
   runApp(const MyApp());
 }
@@ -15,8 +15,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: MenuScreen()
-    );
+    return const MaterialApp(home: MenuScreen());
   }
 }
