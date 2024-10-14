@@ -7,10 +7,10 @@ class ResumenRutaPage extends StatelessWidget {
 
   // Constructor que recibe el tiempo y la distancia
   const ResumenRutaPage({
-    Key? key,
+    super.key,
     required this.tiempoEnSegundos,
     required this.distanciaEnKm,
-  }) : super(key: key);
+  });
 
   // Función para formatear el tiempo en formato HH:MM:SS
   String _formatTime(int seconds) {

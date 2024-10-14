@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart'; // Asegúrate de importar esta dependencia
 import 'package:itrek_maps/config.dart';
 
 class RecorrerRutaScreen extends StatefulWidget {
@@ -18,8 +19,8 @@ class RecorrerRutaScreen extends StatefulWidget {
 
 class _RecorrerRutaScreenState extends State<RecorrerRutaScreen> {
   late GoogleMapController _mapController;
-  Set<Marker> _markers = {};
-  Set<Polyline> _polylines = {};
+  final Set<Marker> _markers = {};
+  final Set<Polyline> _polylines = {};
   List<LatLng> routePoints = [];
   List<LatLng> userRoutePoints = [];
   bool isLoading = true;
@@ -29,11 +30,13 @@ class _RecorrerRutaScreenState extends State<RecorrerRutaScreen> {
   int simulationIndex = 0;
   double totalDistance = 0.0; // Distancia total recorrida
   Stopwatch stopwatch = Stopwatch(); // Para medir el tiempo de recorrido
+  LatLng? _initialPosition; // Para guardar la ubicación inicial
 
   @override
   void initState() {
     super.initState();
     _fetchRoutePoints(); // Trae los puntos de la ruta
+    _getCurrentLocation(); // Obtener la ubicación actual al iniciar
   }
 
   @override
@@ -43,10 +46,42 @@ class _RecorrerRutaScreenState extends State<RecorrerRutaScreen> {
     super.dispose();
   }
 
+  // Función para obtener la ubicación actual del dispositivo
+  Future<void> _getCurrentLocation() async {
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy:
+          LocationAccuracy.high, // Usar alta precisión para obtener la posición
+    );
+    setState(() {
+      _initialPosition = LatLng(position.latitude,
+          position.longitude); // Establecer la ubicación inicial
+      _markers.add(
+        Marker(
+          markerId: const MarkerId('currentPosition'), // ID del marcador
+          position: _initialPosition!, // Posición del marcador
+          infoWindow: const InfoWindow(
+            title: 'Posición Actual',
+            snippet: 'Ubicación obtenida del dispositivo',
+          ),
+          icon:
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        ),
+      );
+    });
+
+    // Centramos el mapa en la ubicación actual
+    if (_mapController != null) {
+      _mapController.animateCamera(
+        CameraUpdate.newLatLng(_initialPosition!),
+      );
+    }
+  }
+
   // Función para obtener los puntos de la ruta desde el backend
   Future<void> _fetchRoutePoints() async {
     try {
-      final response = await http.get(Uri.parse('$BASE_URL/api/rutas/${widget.ruta['id']}'));
+      final response =
+          await http.get(Uri.parse('$BASE_URL/api/rutas/${widget.ruta['id']}'));
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
@@ -239,13 +274,20 @@ class _RecorrerRutaScreenState extends State<RecorrerRutaScreen> {
                   initialCameraPosition: CameraPosition(
                     target: routePoints.isNotEmpty
                         ? routePoints.first
-                        : const LatLng(45.4215, -75.6972),
-                    zoom: 14.0,
+                        : (_initialPosition ??
+                            const LatLng(0,
+                                0)), // Asegurarse de que hay coordenadas válidas
+                    zoom: 18.0,
                   ),
                   markers: _markers,
                   polylines: _polylines,
                   onMapCreated: (GoogleMapController controller) {
                     _mapController = controller;
+                    if (_initialPosition != null) {
+                      _mapController.animateCamera(
+                        CameraUpdate.newLatLng(_initialPosition!),
+                      );
+                    }
                   },
                 ),
                 // Mostrar tiempo y distancia en la pantalla
