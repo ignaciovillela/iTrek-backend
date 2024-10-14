@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:itrek_maps/config.dart';
 
 // Función para convertir una lista de coordenadas LatLng a un formato JSON
 List<Map<String, dynamic>> convertirAFormato(List<LatLng> listaCoords) {
@@ -19,7 +20,7 @@ List<Map<String, dynamic>> convertirAFormato(List<LatLng> listaCoords) {
 
 // Función para enviar una ruta al backend mediante una solicitud HTTP POST
 Future<void> postRuta(Map<String, dynamic> rutaData) async {
-  const String url = 'http://10.20.4.151:8000/api/rutas/';
+  String url = '$BASE_URL/api/rutas/';
   try {
     final response = await http.post(
       Uri.parse(url),
@@ -144,29 +145,20 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
         }
       });
 
-      // Temporizador para simular el movimiento
-      _locationTimer =
-          Timer.periodic(const Duration(milliseconds: 1500), (timer) {
-        if (_lastPosition == null) {
-          _lastPosition = _initialPosition;
-        }
+      // Temporizador para registrar el movimiento
+      _locationTimer = Timer.periodic(const Duration(milliseconds: 1500), (timer) async {
+        _lastPosition ??= _initialPosition;
 
-        // Generar una nueva posición simulada
-        LatLng newPosition = LatLng(
-          _lastPosition!.latitude +
-              0.0001, // Cambiar latitud para simular movimiento
-          _lastPosition!.longitude +
-              0.0001, // Cambiar longitud para simular movimiento
-        );
+        Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+        final newPosition = LatLng(position.latitude, position.longitude);
 
-        // Calcular la distancia entre la última posición y la nueva
         double distance = Geolocator.distanceBetween(
           _lastPosition!.latitude,
           _lastPosition!.longitude,
           newPosition.latitude,
           newPosition.longitude,
         );
-        _distanceTraveled += distance; // Acumular la distancia recorrida
+        _distanceTraveled += distance;
 
         setState(() {
           _routeCoords.add(newPosition); // Agregar la nueva posición a la ruta
@@ -196,8 +188,7 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
         _moverCamara(newPosition);
       });
     } else {
-      _timer
-          ?.cancel(); // Cancelar el temporizador cuando se detiene el registro
+      _timer?.cancel(); // Cancelar el temporizador cuando se detiene el registro
       _locationTimer?.cancel();
     }
   }
