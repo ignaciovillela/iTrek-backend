@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'dart:convert'; // Para manejar JSON
 import 'package:http/http.dart' as http;
 import 'inicio.dart'; // Importar la pantalla del menú
+import 'recorrerRuta.dart'; // Nueva pantalla para recorrer la ruta
 
-const baseUrl = 'http://192.168.1.124:8000';
+const baseUrl = 'http://10.20.4.151:8000';
 
 class ListadoRutasScreen extends StatefulWidget {
   const ListadoRutasScreen({super.key});
@@ -31,9 +32,9 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
     final response = await http.get(Uri.parse('$baseUrl/api/rutas/'));
 
     if (response.statusCode == 200) {
-      final decodedBody = utf8.decode(response.bodyBytes);
       setState(() {
-        rutasGuardadas = jsonDecode(decodedBody);
+        // Asegurarse de que los textos se manejen con la codificación correcta
+        rutasGuardadas = jsonDecode(utf8.decode(response.bodyBytes));
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -71,7 +72,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
               height: 30, // Tamaño pequeño del logo
             ),
             const SizedBox(width: 10), // Espacio entre el logo y el texto
-            const Text('Listado de Rutas test 2'),
+            const Text('Listado de Rutas'),
           ],
         ),
       ),
@@ -160,16 +161,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   }
 
   Future<void> _updateRuta(int id) async {
-    if (widget.ruta['distancia_km'] == null) {
-      print('Error: La distancia es obligatoria');
-      return;
-    }
-
-    if (widget.ruta['tiempo_estimado_horas'] == null) {
-      print('Error: El tiempo estimado es obligatorio');
-      return;
-    }
-
     // Crear el cuerpo de la solicitud
     final response = await http.patch(
       Uri.parse('$baseUrl/api/rutas/$id/'),
@@ -188,9 +179,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       }),
     );
 
-    print('Response status: ${response.statusCode}');
-    print('Response body: ${response.body}');
-
     if (response.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ruta actualizada con éxito')),
@@ -208,12 +196,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        //leading: IconButton(
-        //  icon: const Icon(Icons.arrow_back),
-        //onPressed: (_) {
-        //  Navigator.pop(context);
-        //},
-        //),
         title: Row(
           children: [
             Image.asset(
@@ -225,19 +207,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
           ],
         ),
         backgroundColor: const Color(0xFF50C9B5),
-        actions: [
-          IconButton(
-            icon: Icon(_isEditing ? Icons.save : Icons.edit),
-            onPressed: () {
-              setState(() {
-                if (_isEditing) {
-                  _updateRuta(widget.ruta['id']);
-                }
-                _isEditing = !_isEditing;
-              });
-            },
-          ),
-        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -262,18 +231,41 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
               'Dificultad: ${widget.ruta['dificultad']}',
               style: const TextStyle(fontSize: 16),
             ),
-            const SizedBox(height: 20),
+            const Spacer(),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    const Color(0xFFC95052), // Color rojo para el botón
+                backgroundColor: const Color(0xFF50C9B5), // Color verde
                 minimumSize: const Size(double.infinity, 50), // Botón ancho
               ),
               onPressed: () {
-                Navigator.pop(context);
+                setState(() {
+                  if (_isEditing) {
+                    _updateRuta(widget.ruta['id']); // Guardar cambios
+                  }
+                  _isEditing = !_isEditing; // Cambiar entre editar y guardar
+                });
+              },
+              child: Text(_isEditing ? 'Guardar' : 'Editar',
+                  style: const TextStyle(color: Colors.white, fontSize: 16.0)),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue, // Botón azul para "Recorrer Ruta"
+                minimumSize: const Size(double.infinity, 50), // Botón ancho
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RecorrerRutaScreen(
+                      ruta: widget.ruta,
+                    ),
+                  ),
+                );
               },
               child: const Text(
-                'Volver',
+                'Recorrer Ruta',
                 style: TextStyle(color: Colors.white, fontSize: 16.0),
               ),
             ),
