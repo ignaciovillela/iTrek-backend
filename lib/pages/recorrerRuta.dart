@@ -1,11 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
-
-const baseUrl = 'http://10.20.4.151:8000'; // URL del backend
+import 'package:itrek_maps/config.dart';
 
 class RecorrerRutaScreen extends StatefulWidget {
   final Map<String, dynamic> ruta;
@@ -46,8 +46,7 @@ class _RecorrerRutaScreenState extends State<RecorrerRutaScreen> {
   // Función para obtener los puntos de la ruta desde el backend
   Future<void> _fetchRoutePoints() async {
     try {
-      final response =
-          await http.get(Uri.parse('$baseUrl/api/rutas/${widget.ruta['id']}'));
+      final response = await http.get(Uri.parse('$BASE_URL/api/rutas/${widget.ruta['id']}'));
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);

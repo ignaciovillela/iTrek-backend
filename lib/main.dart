@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'pages/login.dart'; // Importar la página que contiene el mapa
-import 'pages/listadoRutas.dart';
-import 'pages/maps_google.dart';
-import 'pages/recorrerRuta.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // Importa dotenv
 
-void main() {
+import 'pages/listadoRutas.dart';
+
+void main() async {
+  await dotenv.load(fileName: ".env");
+
   runApp(const MyApp());
 }
 

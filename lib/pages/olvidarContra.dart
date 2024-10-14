@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'inicio.dart'; // Asegúrate de importar la pantalla de inicio de sesión
 
 class RecuperarContrasenaScreen extends StatefulWidget {
   const RecuperarContrasenaScreen({super.key});

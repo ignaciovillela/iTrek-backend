@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
-import 'dart:convert'; // Para manejar JSON
-import 'package:http/http.dart' as http;
-import 'inicio.dart'; // Importar la pantalla del menú
-import 'recorrerRuta.dart'; // Nueva pantalla para recorrer la ruta
+import 'dart:convert';
 
-const baseUrl = 'http://10.20.4.151:8000';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:itrek_maps/config.dart';
+
+import 'recorrerRuta.dart';
 
 class ListadoRutasScreen extends StatefulWidget {
   const ListadoRutasScreen({super.key});
@@ -29,7 +29,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   }
 
   Future<void> _fetchRutas() async {
-    final response = await http.get(Uri.parse('$baseUrl/api/rutas/'));
+    final response = await http.get(Uri.parse('$BASE_URL/api/rutas/'));
 
     if (response.statusCode == 200) {
       setState(() {
@@ -44,7 +44,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   }
 
   Future<void> _deleteRuta(int id) async {
-    final response = await http.delete(Uri.parse('$baseUrl/api/rutas/$id/'));
+    final response = await http.delete(Uri.parse('$BASE_URL/api/rutas/$id/'));
 
     if (response.statusCode == 204) {
       setState(() {
@@ -163,7 +163,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   Future<void> _updateRuta(int id) async {
     // Crear el cuerpo de la solicitud
     final response = await http.patch(
-      Uri.parse('$baseUrl/api/rutas/$id/'),
+      Uri.parse('$BASE_URL/api/rutas/$id/'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
       },

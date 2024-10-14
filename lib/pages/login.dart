@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+
 import 'inicio.dart'; // Asegúrate de que el archivo inicio.dart esté en el mismo directorio o indica la ruta correcta.
-import 'registro.dart'; // Importa la pantalla de registro.
 import 'olvidarContra.dart'; // Importa la pantalla de recuperación de contraseña.
+import 'registro.dart'; // Importa la pantalla de registro.
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
