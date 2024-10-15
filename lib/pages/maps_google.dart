@@ -146,10 +146,12 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
       });
 
       // Temporizador para registrar el movimiento
-      _locationTimer = Timer.periodic(const Duration(milliseconds: 1500), (timer) async {
+      _locationTimer =
+          Timer.periodic(const Duration(milliseconds: 1500), (timer) async {
         _lastPosition ??= _initialPosition;
 
-        Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+        Position position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high);
         final newPosition = LatLng(position.latitude, position.longitude);
 
         double distance = Geolocator.distanceBetween(
@@ -188,7 +190,8 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
         _moverCamara(newPosition);
       });
     } else {
-      _timer?.cancel(); // Cancelar el temporizador cuando se detiene el registro
+      _timer
+          ?.cancel(); // Cancelar el temporizador cuando se detiene el registro
       _locationTimer?.cancel();
     }
   }
@@ -280,7 +283,7 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Registro de Ruta test'),
+        title: const Text('Registro de Ruta'),
         backgroundColor: Colors.green[700],
       ),
       body: Stack(
