@@ -11,9 +11,9 @@ import 'package:itrek_maps/config.dart';
 List<Map<String, dynamic>> convertirAFormato(List<LatLng> listaCoords) {
   return List<Map<String, dynamic>>.generate(listaCoords.length, (index) {
     return {
-      "latitud": listaCoords[index].latitude, // Latitud de la coordenada
-      "longitud": listaCoords[index].longitude, // Longitud de la coordenada
-      "orden": index + 1, // Orden en la lista (empezando desde 1)
+      "latitud": listaCoords[index].latitude,
+      "longitud": listaCoords[index].longitude,
+      "orden": index + 1,
     };
   });
 }
@@ -26,20 +26,14 @@ Future<void> postRuta(Map<String, dynamic> rutaData) async {
       Uri.parse(url),
       headers: {
         "Content-Type": "application/json"
-      }, // Headers indicando que el contenido es JSON
-      body: jsonEncode(rutaData), // Cuerpo de la solicitud en formato JSON
+      },
+      body: jsonEncode(rutaData),
     );
 
     // Si la solicitud fue exitosa
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      print(
-          'Ruta creada con éxito: ${response.body}'); // Imprimir respuesta exitosa
-    } else {
-      print(
-          'Error al crear la ruta: ${response.statusCode}'); // Imprimir código de error
-      print(
-          'Respuesta: ${response.body}'); // Imprimir la respuesta del servidor
-    }
+
+    print('Error al crear la ruta: ${response.statusCode}'); // Imprimir código de error
+    print('Respuesta: ${response.body}'); // Imprimir la respuesta del servidor
   } catch (e) {
     print(
         'Error en la solicitud: $e'); // Capturar e imprimir cualquier error en la solicitud
