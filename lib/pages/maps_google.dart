@@ -19,7 +19,7 @@ List<Map<String, dynamic>> convertirAFormato(List<LatLng> listaCoords) {
 }
 
 // Función para enviar una ruta al backend mediante una solicitud HTTP POST
-Future<void> postRuta(Map<String, dynamic> rutaData) async {
+Future<int?> postRuta(Map<String, dynamic> rutaData) async {
   String url = '$BASE_URL/api/rutas/';
   try {
     final response = await http.post(
@@ -30,13 +30,42 @@ Future<void> postRuta(Map<String, dynamic> rutaData) async {
       body: jsonEncode(rutaData),
     );
 
-    // Si la solicitud fue exitosa
-
-    print('Error al crear la ruta: ${response.statusCode}'); // Imprimir código de error
-    print('Respuesta: ${response.body}'); // Imprimir la respuesta del servidor
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      print('Ruta creada con éxito: ${response.body}');
+      final responseData = jsonDecode(response.body);
+      return responseData['id'];  // Suponemos que el backend devuelve un 'id'
+    } else {
+      print('Error al crear la ruta: ${response.statusCode}');
+      print('Respuesta: ${response.body}');
+    }
   } catch (e) {
-    print(
-        'Error en la solicitud: $e'); // Capturar e imprimir cualquier error en la solicitud
+    print('Error en la solicitud: $e');
+  }
+  return null;
+}
+
+// Función para actualizar la ruta con datos adicionales usando PATCH
+Future<void> _updateRuta(int id, String nombre, String descripcion, String dificultad, double distanciaKm, double tiempoEstimadoHoras) async {
+  // Crear el cuerpo de la solicitud
+  final response = await http.patch(
+    Uri.parse('$BASE_URL/api/rutas/$id/'),
+    headers: <String, String>{
+      'Content-Type': 'application/json; charset=UTF-8',
+    },
+    body: jsonEncode(<String, dynamic>{
+      'nombre': nombre, // Actualizamos el nombre
+      'descripcion': descripcion, // Actualizamos la descripción
+      'dificultad': dificultad, // Actualizamos la dificultad
+      'distancia_km': distanciaKm, // Distancia en km
+      'tiempo_estimado_horas': tiempoEstimadoHoras, // Tiempo estimado en horas
+    }),
+  );
+
+  if (response.statusCode == 200) {
+    print('Ruta actualizada con éxito');
+  } else {
+    print('Error al actualizar la ruta: ${response.statusCode}');
+    print('Respuesta del servidor: ${response.body}');
   }
 }
 
@@ -128,12 +157,10 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
         }
       });
 
-      _locationTimer =
-          Timer.periodic(const Duration(milliseconds: 1500), (timer) async {
+      _locationTimer = Timer.periodic(const Duration(milliseconds: 1500), (timer) async {
         _lastPosition ??= _initialPosition;
 
-        Position position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.high);
+        Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
         final newPosition = LatLng(position.latitude, position.longitude);
 
         double distance = Geolocator.distanceBetween(
@@ -173,28 +200,48 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
     }
   }
 
-  void _finalizarRegistro() {
+  void _finalizarRegistro() async {
     if (_isRecording) {
       _timer?.cancel();
       _locationTimer?.cancel();
       setState(() {
         _isRecording = false;
       });
+
+      // Enviar puntos, tiempo y distancia al backend primero
+      Map<String, dynamic> rutaData = {
+        "puntos": convertirAFormato(_routeCoords),
+        "tiempo_segundos": _seconds,
+        "distancia_km": _distanceTraveled / 1000,
+      };
+
+      int? rutaId = await postRuta(rutaData);  // Guardar la ruta y obtener el ID
+
+      if (rutaId != null) {
+        _mostrarPantallaFormulario(rutaId);  // Mostrar el formulario para los detalles adicionales
+      } else {
+        print('Error al enviar la ruta inicial');
+      }
     }
   }
 
-  void _mostrarPantallaFormulario() {
+  void _mostrarPantallaFormulario(int rutaId) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => RutaFormPage(
-          routeCoords: _routeCoords,
+          rutaId: rutaId,  // Pasamos el ID de la ruta creada
           distanceTraveled: _distanceTraveled,
           secondsElapsed: _seconds,
           onSave: (rutaData) {
-            _finalizarRegistro();
-            rutaData['puntos'] = convertirAFormato(_routeCoords);
-            postRuta(rutaData);
+            _updateRuta(
+              rutaId,
+              rutaData['nombre'],
+              rutaData['descripcion'],
+              rutaData['dificultad'],
+              _distanceTraveled / 1000, // Pasamos la distancia en km
+              _seconds / 3600, // Convertimos los segundos a horas
+            );  // Enviar los datos adicionales al backend
             Navigator.of(context).pop();
           },
           onCancel: () {
@@ -223,7 +270,6 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
               onPressed: () {
                 _finalizarRegistro();
                 Navigator.of(context).pop();
-                _mostrarPantallaFormulario();
               },
               child: const Text('Aceptar'),
             ),
@@ -317,14 +363,14 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
 
 // Página para agregar los detalles de la ruta después de finalizarla
 class RutaFormPage extends StatefulWidget {
-  final List<LatLng> routeCoords;
+  final int rutaId;  // Recibir el ID de la ruta
   final double distanceTraveled;
   final int secondsElapsed;
   final Function(Map<String, dynamic>) onSave;
   final VoidCallback onCancel;
 
   const RutaFormPage({
-    required this.routeCoords,
+    required this.rutaId,
     required this.distanceTraveled,
     required this.secondsElapsed,
     required this.onSave,
@@ -344,9 +390,6 @@ class _RutaFormPageState extends State<RutaFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    double _tiempoEstimado = widget.secondsElapsed / 3600;
-    double _distancia = widget.distanceTraveled / 1000;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Agregar Detalles de la Ruta'),
@@ -386,7 +429,7 @@ class _RutaFormPageState extends State<RutaFormPage> {
                 value: _dificultad,
                 items: const [
                   DropdownMenuItem(value: 'facil', child: Text('Fácil')),
-                  DropdownMenuItem(value: 'mediano', child: Text('Mediano')),
+                  DropdownMenuItem(value: 'moderada', child: Text('Moderado')),
                   DropdownMenuItem(value: 'dificil', child: Text('Difícil')),
                 ],
                 onChanged: (value) {
@@ -394,15 +437,6 @@ class _RutaFormPageState extends State<RutaFormPage> {
                     _dificultad = value!;
                   });
                 },
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Text('Distancia: ${_distancia.toStringAsFixed(2)} km'),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Text(
-                    'Tiempo estimado: ${_tiempoEstimado.toStringAsFixed(2)} horas'),
               ),
               const SizedBox(height: 20),
               Row(
@@ -416,12 +450,9 @@ class _RutaFormPageState extends State<RutaFormPage> {
                           "nombre": _nombre,
                           "descripcion": _descripcion,
                           "dificultad": _dificultad,
-                          "distancia_km": _distancia,
-                          "tiempo_estimado_horas": _tiempoEstimado,
-                          "puntos": convertirAFormato(widget.routeCoords),
                         };
 
-                        widget.onSave(rutaData);
+                        widget.onSave(rutaData);  // Enviar los datos al backend
                       }
                     },
                     child: const Text('Guardar Ruta'),
