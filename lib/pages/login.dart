@@ -89,6 +89,14 @@ class _LoginScreenState extends State<LoginScreen>
         // Guardar el token en la base de datos local (SQLite)
         await dbHelper.updateUserToken(username, token);
 
+        // **Verificación del almacenamiento del token**
+        final userData = await dbHelper.getUserByUsername(username);
+        if (userData.isNotEmpty && userData[0]['token'] == token) {
+          print("Token guardado correctamente: ${userData[0]['token']}");
+        } else {
+          print("Error: El token no se guardó correctamente.");
+        }
+
         // Navega a la pantalla de inicio `MenuScreen` reemplazando la pantalla actual
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const MenuScreen()), // Verifica que `MenuScreen` esté importado y sea accesible

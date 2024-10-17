@@ -31,39 +31,62 @@ CREATE TABLE IF NOT EXISTS users (
 ''');
   }
 
+  // Insertar un usuario en la tabla de usuarios
   Future<int> insertUser(Map<String, dynamic> userData) async {
     final db = await instance.database;
-    return await db.insert('users', userData, conflictAlgorithm: ConflictAlgorithm.replace);
+    return await db.insert(
+      'users',
+      userData,
+      conflictAlgorithm: ConflictAlgorithm.replace, // Reemplaza si ya existe
+    );
   }
 
+  // Actualizar el token de un usuario existente
   Future<int> updateUserToken(String username, String token) async {
     final db = await instance.database;
-    return await db.update(
+
+    // Verificar si el usuario ya existe
+    final userExists = await getUserByUsername(username);
+    if (userExists.isEmpty) {
+      print("El usuario no existe. Inserción necesaria.");
+      // Si el usuario no existe, inserta uno nuevo con el token
+      return await insertUser({
+        'username': username,
+        'password': 'dummy_password', // Si no tienes el password, puedes usar un valor por defecto
+        'token': token,
+      });
+    } else {
+      // Si el usuario existe, actualiza solo el token
+      print("Actualizando el token para el usuario: $username");
+      return await db.update(
         'users',
         {'token': token},
         where: 'username = ?',
-        whereArgs: [username]
-    );
+        whereArgs: [username],
+      );
+    }
   }
 
+  // Consultar un usuario por su nombre de usuario
   Future<List<Map<String, dynamic>>> getUserByUsername(String username) async {
     final db = await instance.database;
     return await db.query(
-        'users',
-        where: 'username = ?',
-        whereArgs: [username]
+      'users',
+      where: 'username = ?',
+      whereArgs: [username],
     );
   }
 
-  // Nuevo método que devuelve si hay un token almacenado
+  // Obtener los usuarios que tienen un token almacenado
   Future<List<Map<String, dynamic>>> getUserWithToken() async {
     final db = await instance.database;
     return await db.query(
       'users',
-      where: 'token IS NOT NULL AND token != ""', // Verifica si existe un token no vacío
+      where: 'token IS NOT NULL AND token != ""',
     );
   }
 
+  // Cerrar la base de datos
   Future close() async {
     final db = await instance.database;
     db.close();
