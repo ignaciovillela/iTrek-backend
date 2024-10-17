@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'inicio.dart'; // Importa la pantalla de inicio (HomeScreen)
+import '../dashboard.dart'; // Importa la pantalla de inicio (HomeScreen)
 import 'login.dart'; // Importa la pantalla de login
 
 class RegistroScreen extends StatefulWidget {

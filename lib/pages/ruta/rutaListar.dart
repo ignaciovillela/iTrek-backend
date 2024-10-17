@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:itrek_maps/config.dart';
 
-import 'recorrerRuta.dart';
+import 'rutaRecorrer.dart';
 
 class ListadoRutasScreen extends StatefulWidget {
   const ListadoRutasScreen({super.key});
@@ -14,7 +14,7 @@ class ListadoRutasScreen extends StatefulWidget {
 }
 
 class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
-  List<dynamic> rutasGuardadas = [];
+  List<dynamic>? rutasGuardadas;
 
   @override
   void initState() {
@@ -48,7 +48,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
 
     if (response.statusCode == 204) {
       setState(() {
-        rutasGuardadas.removeWhere((ruta) => ruta['id'] == id);
+        rutasGuardadas!.removeWhere((ruta) => ruta['id'] == id);
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ruta eliminada con éxito')),
@@ -62,6 +62,86 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Widget bodyContent;
+
+    // Verificar si las rutas aún no han sido cargadas (null)
+    if (rutasGuardadas == null) {
+      bodyContent = const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 10),
+            Text(
+              'Cargando rutas...',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          ],
+        ),
+      );
+    }
+    // Verificar si la lista ya fue cargada pero está vacía
+    else if (rutasGuardadas!.isEmpty) {
+      bodyContent = const Center(
+        child: Text(
+          "No hay rutas para mostrar",
+          style: TextStyle(fontSize: 18, color: Colors.grey),
+        ),
+      );
+    }
+    // Mostrar la lista de rutas si hay datos
+    else {
+      bodyContent = ListView.builder(
+        itemCount: rutasGuardadas!.length,
+        itemBuilder: (context, index) {
+          final ruta = rutasGuardadas![index];
+
+          return Card(
+            margin: const EdgeInsets.all(8.0),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0),
+            ),
+            elevation: 5,
+            child: ListTile(
+              title: Text(
+                ruta['nombre'],
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(ruta['descripcion']),
+                  const SizedBox(height: 5),
+                  Text('Dificultad: ${ruta['dificultad']}'),
+                ],
+              ),
+              leading: const Icon(Icons.map, color: Color(0xFF50C9B5)),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () {
+                  _deleteRuta(ruta['id']);
+                },
+              ),
+              onTap: () async {
+                // Esperamos el resultado de la pantalla de detalles
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DetalleRutaScreen(ruta: ruta),
+                  ),
+                );
+
+                // Si result es true, recargamos las rutas
+                if (result == true) {
+                  _fetchRutas();
+                }
+              },
+            ),
+          );
+        },
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF50C9B5), // Color de la appBar
@@ -76,57 +156,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
           ],
         ),
       ),
-      body: rutasGuardadas.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: rutasGuardadas.length,
-              itemBuilder: (context, index) {
-                final ruta = rutasGuardadas[index];
-
-                return Card(
-                  margin: const EdgeInsets.all(8.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  elevation: 5,
-                  child: ListTile(
-                    title: Text(
-                      ruta['nombre'],
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(ruta['descripcion']),
-                        const SizedBox(height: 5),
-                        Text('Dificultad: ${ruta['dificultad']}'),
-                      ],
-                    ),
-                    leading: const Icon(Icons.map, color: Color(0xFF50C9B5)),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () {
-                        _deleteRuta(ruta['id']);
-                      },
-                    ),
-                    onTap: () async {
-                      // Esperamos el resultado de la pantalla de detalles
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DetalleRutaScreen(ruta: ruta),
-                        ),
-                      );
-
-                      // Si result es true, recargamos las rutas
-                      if (result == true) {
-                        _fetchRutas();
-                      }
-                    },
-                  ),
-                );
-              },
-            ),
+      body: bodyContent,
     );
   }
 }
@@ -170,12 +200,12 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       body: jsonEncode(<String, dynamic>{
         'nombre': _nombreController.text, // Actualizamos el nombre
         'descripcion':
-            _descripcionController.text, // Actualizamos la descripción
+        _descripcionController.text, // Actualizamos la descripción
         'dificultad':
-            widget.ruta['dificultad'], // Asegúrate de que el valor sea correcto
+        widget.ruta['dificultad'], // Asegúrate de que el valor sea correcto
         'distancia_km': widget.ruta['distancia_km'], // Distancia en km
         'tiempo_estimado_horas':
-            widget.ruta['tiempo_estimado_horas'], // Tiempo estimado en horas
+        widget.ruta['tiempo_estimado_horas'], // Tiempo estimado en horas
       }),
     );
 

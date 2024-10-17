@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'comunidad.dart'; // Importa la pantalla de comunidad
-import 'listadoRutas.dart'; // Importamos la pantalla de listado de rutas
-import 'maps_google.dart'; // Importamos la pantalla del mapa
-import 'perfil.dart'; // Importa la pantalla de perfil
+import 'ruta/rutaListar.dart'; // Importamos la pantalla de listado de rutas
+import 'ruta/rutaRegistrar.dart'; // Importamos la pantalla del mapa
+import 'usuarioPerfil.dart'; // Importa la pantalla de perfil
 
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});

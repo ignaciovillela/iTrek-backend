@@ -49,8 +49,7 @@ class _RecorrerRutaScreenState extends State<RecorrerRutaScreen> {
   // Función para obtener la ubicación actual del dispositivo
   Future<void> _getCurrentLocation() async {
     Position position = await Geolocator.getCurrentPosition(
-      desiredAccuracy:
-          LocationAccuracy.high, // Usar alta precisión para obtener la posición
+        locationSettings: AndroidSettings()
     );
     setState(() {
       _initialPosition = LatLng(position.latitude,
@@ -70,12 +69,10 @@ class _RecorrerRutaScreenState extends State<RecorrerRutaScreen> {
     });
 
     // Centramos el mapa en la ubicación actual
-    if (_mapController != null) {
-      _mapController.animateCamera(
-        CameraUpdate.newLatLng(_initialPosition!),
-      );
+    _mapController.animateCamera(
+      CameraUpdate.newLatLng(_initialPosition!),
+    );
     }
-  }
 
   // Función para obtener los puntos de la ruta desde el backend
   Future<void> _fetchRoutePoints() async {
@@ -313,9 +310,9 @@ class _RecorrerRutaScreenState extends State<RecorrerRutaScreen> {
                   ),
                 // Botón para iniciar, terminar o volver al listado
                 Positioned(
-                  bottom: 20,
                   left: 20,
-                  right: 20,
+                  right: 60,
+                  bottom: 30,
                   child: ElevatedButton(
                     onPressed: isFinished
                         ? _volverListadoRutas
