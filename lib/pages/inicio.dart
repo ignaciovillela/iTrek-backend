@@ -51,7 +51,7 @@ class MenuScreen extends StatelessWidget {
           Center(
             child: Image.asset(
               'assets/images/trek.png', // Asegúrate de que la imagen esté en assets
-              height: 120, // Tamaño de la imagen
+              height: 118, // Tamaño de la imagen
             ),
           ),
 
@@ -93,7 +93,7 @@ class MenuScreen extends StatelessWidget {
                         children: [
                           Image.asset(
                             'assets/images/maps-green.png', // Imagen asociada al botón
-                            height: 120, // Tamaño ajustado de la imagen
+                            height: 118, // Tamaño ajustado de la imagen
                           ),
                           const SizedBox(
                               height: 10), // Espacio entre imagen y texto
@@ -126,7 +126,7 @@ class MenuScreen extends StatelessWidget {
                         children: [
                           Image.asset(
                             'assets/images/perfil.png', // Imagen asociada al botón
-                            height: 120, // Tamaño ajustado de la imagen
+                            height: 118, // Tamaño ajustado de la imagen
                           ),
                           const SizedBox(
                               height: 10), // Espacio entre imagen y texto
@@ -158,7 +158,7 @@ class MenuScreen extends StatelessWidget {
                         children: [
                           Image.asset(
                             'assets/images/listado.png', // Imagen asociada al botón
-                            height: 120, // Tamaño ajustado de la imagen
+                            height: 118, // Tamaño ajustado de la imagen
                           ),
                           const SizedBox(
                               height: 10), // Espacio entre imagen y texto
@@ -191,7 +191,7 @@ class MenuScreen extends StatelessWidget {
                         children: [
                           Image.asset(
                             'assets/images/com.png', // Imagen asociada al botón
-                            height: 120, // Tamaño ajustado de la imagen
+                            height: 118, // Tamaño ajustado de la imagen
                           ),
                           const SizedBox(
                               height: 10), // Espacio entre imagen y texto
