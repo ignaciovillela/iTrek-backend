@@ -1,6 +1,12 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:itrek_maps/db/db.dart'; // Manejo de la base de datos SQLite
+
+import '../config.dart'; // Asegúrate de que esta ruta esté correcta para cargar la configuración adecuada
 import '../dashboard.dart'; // Asegúrate de que el archivo dashboard.dart esté en el mismo directorio o indica la ruta correcta.
+import 'inicio.dart'; // Pantalla a la que navegas si el login es exitoso
 import 'loginCuentaRecuperar.dart'; // Importa la pantalla de recuperación de contraseña.
 import 'loginRegistrar.dart'; // Importa la pantalla de registro.
 
@@ -11,10 +17,15 @@ class LoginScreen extends StatefulWidget {
   _LoginScreenState createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
-    with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
+
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+  bool _hasUsername = false; // Para controlar si ya existe un username guardado
+  String? _savedUsername; // Variable para almacenar el username guardado
 
   @override
   void initState() {
@@ -27,166 +38,192 @@ class _LoginScreenState extends State<LoginScreen>
       parent: _controller,
       curve: Curves.easeIn,
     );
-    _controller.forward(); // Inicia la animación automáticamente
+    _controller.forward();
+
+    _checkForSavedUsername(); // Verificar si ya existe un username guardado
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
     super.dispose();
+  }
+
+  // Método para verificar si ya existe un username guardado en la DB
+  Future<void> _checkForSavedUsername() async {
+    final username = await db.get(db.username); // Obtener el username de la DB
+    if (username != null) {
+      setState(() {
+        _hasUsername = true;
+        _savedUsername = username.toString(); // Guardar el username si existe
+      });
+    }
+  }
+
+  // Método para borrar el username guardado
+  Future<void> _deleteSavedUsername() async {
+    await db.delete(db.username); // Borrar el username de la DB
+    setState(() {
+      _hasUsername = false; // Volver a mostrar el campo de username
+      _savedUsername = null; // Limpiar el username guardado
+    });
+  }
+
+  // Función que maneja el proceso de login
+  Future<void> _login() async {
+    final String username = _hasUsername ? _savedUsername! : _usernameController.text;
+    final String password = _passwordController.text;
+
+    if (password.isEmpty || username.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El nombre de usuario y la contraseña no pueden estar vacíos')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final url = Uri.parse('$BASE_URL/api/login/');
+    http.Response response;
+    try {
+      response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'username': username, 'password': password}),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+
+    if (response.statusCode == 200) {
+      final jsonData = jsonDecode(response.body);
+      final token = jsonData['token'];
+      if (token != null) {
+        await db.create(db.token, token);
+        await db.create(db.username, username);
+
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MenuScreen()),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error en la autenticación')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF50C2C9), // Color del AppBar
+        backgroundColor: const Color(0xFF50C2C9),
         title: Row(
           children: [
-            Image.asset(
-              'assets/images/logo.png', // Asegúrate de que el logo esté en la carpeta assets
-              height: 30, // Tamaño pequeño del logo
-            ),
-            const SizedBox(width: 10), // Espacio entre el logo y el texto
+            Image.asset('assets/images/logo.png', height: 30),
+            const SizedBox(width: 10),
             const Text(
               'iTrek',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
             ),
           ],
         ),
       ),
       body: Column(
-        mainAxisAlignment:
-            MainAxisAlignment.center, // Centra el contenido verticalmente
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Animación de texto "Bienvenido a iTrek"
           FadeTransition(
             opacity: _animation,
             child: const Text(
               'Bienvenido a iTrek',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black),
             ),
           ),
-          const SizedBox(height: 20), // Espacio entre el texto y la imagen
-
-          // Imagen centrada horizontal y verticalmente
+          const SizedBox(height: 20),
           Center(
-            child: Image.asset(
-              'assets/images/maps-green.png', // Asegúrate de que la imagen esté en la carpeta assets
-              height: 200, // Tamaño de la imagen
-            ),
+            child: Image.asset('assets/images/maps-green.png', height: 200),
           ),
+          const SizedBox(height: 60),
 
-          const SizedBox(height: 60), // Espacio grande para bajar los campos
-
-          // Formulario centrado
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Column(
               children: [
-                // Campo de nombre de usuario
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'Nombre de Usuario',
-                    border: OutlineInputBorder(),
+                if (!_hasUsername) // Si no hay username guardado, muestra el campo de texto
+                  TextFormField(
+                    controller: _usernameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre de Usuario',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 40), // Espacio entre los campos
 
-                // Campo de contraseña
+                if (_hasUsername) // Si hay username guardado, muestra el mensaje de bienvenida
+                  Text(
+                    'Hola, $_savedUsername! Nos alegra verte de nuevo.\n'
+                        'Por favor, ingresa tu clave para continuar.',
+                    style: const TextStyle(fontSize: 15, color: Color(0xFF999999), fontWeight: FontWeight.bold),
+                  ),
+                const SizedBox(height: 20),
+
+                // Campo para la contraseña
                 TextFormField(
+                  controller: _passwordController,
                   obscureText: true,
                   decoration: const InputDecoration(
                     labelText: 'Contraseña',
                     border: OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(height: 40), // Espacio entre el campo y el botón
+                const SizedBox(height: 20),
+
+                // Botón para login
+                SizedBox(
+                  width: double.infinity, // Ocupa el 100% del ancho disponible
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF50C2C9),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      textStyle: const TextStyle(fontSize: 18),
+                    ),
+                    onPressed: _login,
+                    child: const Text('Ingresar'),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                // Si hay username guardado, muestra el botón para "No eres $username?"
+                if (_hasUsername)
+                  TextButton(
+                      onPressed: _deleteSavedUsername,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '¿No eres $_savedUsername? Haz clic aquí para cambiar de cuenta.',
+                            style: TextStyle(
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 2), // Espacio entre el texto y la línea
+                          Container(
+                            height: 1, // Espesor de la línea
+                            color: Color(0xFFCCCCCC), // Color de la línea
+                          ),
+                        ],
+                      )
+
+                  ),
               ],
             ),
           ),
-
-          // Sección de botones en la parte inferior
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Botón de ingresar
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        const Color(0xFF50C2C9), // Color del botón de ingresar
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 15), // Tamaño del botón
-                    textStyle: const TextStyle(fontSize: 18),
-                  ),
-                  onPressed: () {
-                    // Navega a la pantalla de inicio cuando se presiona el botón
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const MenuScreen()),
-                    );
-                  },
-                  child: const Text('Ingresar'),
-                ),
-                const SizedBox(height: 10), // Espacio entre los botones
-
-                // Botón de registrarse
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(
-                        0xFF50C2C9), // Color del botón de registrarse
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 15), // Tamaño del botón
-                    textStyle: const TextStyle(fontSize: 18),
-                  ),
-                  onPressed: () {
-                    // Navega a la pantalla de registro cuando se presiona el botón
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const RegistroScreen()),
-                    );
-                  },
-                  child: const Text('Registrarse'),
-                ),
-                const SizedBox(height: 10), // Espacio entre los botones
-
-                // Botón de olvido contraseña
-                TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.blue, // Color azul para destacar
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 15), // Tamaño del botón
-                    textStyle: const TextStyle(fontSize: 16),
-                  ),
-                  onPressed: () {
-                    // Navega al formulario de recuperación de contraseña
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) =>
-                              const RecuperarContrasenaScreen()),
-                    );
-                  },
-                  child: const Text('¿Olvidaste tu contraseña?'),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(
-              height: 20), // Pequeño espacio antes del borde inferior
         ],
       ),
     );
