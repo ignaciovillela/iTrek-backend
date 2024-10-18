@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
-import 'package:geolocator/geolocator.dart'; // Asegúrate de importar esta dependencia
-import 'package:itrek_maps/config.dart';
+import 'package:itrek/config.dart';
 
 class RecorrerRutaScreen extends StatefulWidget {
   final Map<String, dynamic> ruta;

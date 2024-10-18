@@ -2,13 +2,10 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:itrek_maps/db/db.dart'; // Manejo de la base de datos SQLite
+import 'package:itrek/config.dart';
+import 'package:itrek/db/db.dart';
+import 'package:itrek/pages/dashboard.dart';
 
-import '../config.dart'; // Asegúrate de que esta ruta esté correcta para cargar la configuración adecuada
-import '../dashboard.dart'; // Asegúrate de que el archivo dashboard.dart esté en el mismo directorio o indica la ruta correcta.
-import 'inicio.dart'; // Pantalla a la que navegas si el login es exitoso
-import 'loginCuentaRecuperar.dart'; // Importa la pantalla de recuperación de contraseña.
-import 'loginRegistrar.dart'; // Importa la pantalla de registro.
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

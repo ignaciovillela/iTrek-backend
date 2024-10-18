@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:itrek_maps/config.dart';
+import 'package:itrek/config.dart';
+import 'package:itrek/pages/ruta/rutaRecorrer.dart';
 
-import 'rutaRecorrer.dart';
 
 class ListadoRutasScreen extends StatefulWidget {
   const ListadoRutasScreen({super.key});

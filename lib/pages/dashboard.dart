@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:itrek_maps/db/db.dart'; // Asegúrate de tener la ruta correcta de la clase DatabaseHelper
+import 'package:itrek/db/db.dart';
+import 'package:itrek/pages/comunidad.dart';
+import 'package:itrek/pages/login/login.dart';
+import 'package:itrek/pages/ruta/rutaListar.dart';
+import 'package:itrek/pages/ruta/rutaRegistrar.dart';
+import 'package:itrek/pages/usuarioPerfil.dart';
 
-import 'comunidad.dart'; // Importa la pantalla de comunidad
-import 'listadoRutas.dart'; // Importamos la pantalla de listado de rutas
-import 'login.dart'; // Pantalla de login para redireccionar si no hay token
-import 'maps_google.dart'; // Importamos la pantalla del mapa
-import 'perfil.dart'; // Importa la pantalla de perfil
-import 'ruta/rutaListar.dart'; // Importamos la pantalla de listado de rutas
-import 'ruta/rutaRegistrar.dart'; // Importamos la pantalla del mapa
-import 'usuarioPerfil.dart'; // Importa la pantalla de perfil
 
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
@@ -117,7 +114,7 @@ class MenuScreen extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => const GoogleMapsPage()),
+                                    builder: (context) => const RegistrarRuta()),
                               );
                             },
                             child: Column(

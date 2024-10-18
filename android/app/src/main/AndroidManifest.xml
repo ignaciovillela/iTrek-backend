@@ -1,20 +1,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission
-        android:name="android.permission.ACCESS_BACKGROUND_LOCATION"
-        android:required="false"/>
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" android:required="false"/>
 
 
     <application
-        android:label="itrek_maps"
+        android:label="itrek"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:hardwareAccelerated="false"
+        android:enableOnBackInvokedCallback="true">
 
         <!-- Agregando la API Key de Google Maps -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="@string/MAPS_API_KEY"/>
+            android:value="AIzaSyBJS25cKQxAVKDUcHD4FqGmBsrgnlCMkC0"/>
 
         <activity
             android:name=".MainActivity"

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
-import 'package:itrek_maps/config.dart';
+import 'package:itrek/config.dart';
 
 /// Solicitar permisos de ubicación en primer plano y, si es necesario, en segundo plano
 Future<void> requestBackgroundPermission() async {
@@ -93,14 +93,14 @@ Future<void> _updateRuta(int id, String nombre, String descripcion, String dific
 }
 
 // Página principal del mapa de Google donde se graba la ruta
-class GoogleMapsPage extends StatefulWidget {
-  const GoogleMapsPage({super.key});
+class RegistrarRuta extends StatefulWidget {
+  const RegistrarRuta({super.key});
 
   @override
-  GoogleMapsPageState createState() => GoogleMapsPageState();
+  RegistrarRutaState createState() => RegistrarRutaState();
 }
 
-class GoogleMapsPageState extends State<GoogleMapsPage> {
+class RegistrarRutaState extends State<RegistrarRuta> {
   final Map<String, Marker> _markers = {};
   GoogleMapController? _mapController;
   final List<LatLng> _routeCoords = [];

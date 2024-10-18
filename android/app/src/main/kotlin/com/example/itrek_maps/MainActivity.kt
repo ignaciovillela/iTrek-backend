@@ -1,4 +1,4 @@
-package com.example.itrek_maps
+package com.example.itrek
 
 import io.flutter.embedding.android.FlutterActivity
 

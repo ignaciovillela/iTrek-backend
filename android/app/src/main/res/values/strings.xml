@@ -1,0 +1,4 @@
+<resources>
+    <!-- Aquí defines la clave API de Google Maps -->
+    <string name="MAPS_API_KEY">AIzaSyBJS25cKQxAVKDUcHD4FqGmBsrgnlCMkC0</string>
+</resources>

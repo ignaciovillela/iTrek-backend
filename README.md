@@ -1,4 +1,4 @@
-# itrek_maps
+# itrek
 
 A new Flutter project.
 

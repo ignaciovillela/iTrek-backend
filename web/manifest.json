@@ -1,6 +1,6 @@
 {
-    "name": "itrek_maps",
-    "short_name": "itrek_maps",
+    "name": "itrek",
+    "short_name": "itrek",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:itrek/pages/dashboard.dart';
 
-import '../dashboard.dart'; // Importa la pantalla de inicio (HomeScreen)
-import 'login.dart'; // Importa la pantalla de login
+import 'login.dart';
 
 class RegistroScreen extends StatefulWidget {
   const RegistroScreen({super.key});

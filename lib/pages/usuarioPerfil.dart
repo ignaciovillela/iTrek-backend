@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:itrek_maps/db/db.dart';
-import 'package:itrek_maps/pages/login.dart';
+import 'package:itrek/db/db.dart';
+import 'package:itrek/pages/login/login.dart';
 
 class PerfilUsuarioScreen extends StatefulWidget {
   const PerfilUsuarioScreen({super.key});

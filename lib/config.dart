@@ -9,4 +9,4 @@ String getEnvVariable(String key) {
 }
 
 final String BASE_URL = getEnvVariable('BASE_URL');
-final String API_KEY = getEnvVariable('API_KEY');
+final String GOOGLE_MAPS_API_KEY = getEnvVariable('GOOGLE_MAPS_API_KEY');
