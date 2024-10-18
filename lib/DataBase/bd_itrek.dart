@@ -12,7 +12,6 @@ class DatabaseHelper {
   Future<Database> get database async {
     if (_database != null) return _database!;
     // Llama a la función para eliminar la base de datos existente antes de crearla de nuevo
-    await _deleteDB(); // Esto eliminará la base de datos anterior
     _database = await _initDB('itrek_database.db');
     return _database!;
   }
@@ -24,13 +23,7 @@ class DatabaseHelper {
     return await openDatabase(path, version: 1, onCreate: _createDB);
   }
 
-  // Elimina la base de datos existente
-  Future<void> _deleteDB() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'itrek_database.db');
-    await deleteDatabase(path); // Elimina la base de datos existente
-    print("Base de datos eliminada");
-  }
+
 
   // Crea la estructura de la base de datos (solo tabla valores)
   Future _createDB(Database db, int version) async {
