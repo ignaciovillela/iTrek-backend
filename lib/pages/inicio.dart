@@ -1,28 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:itrek_maps/DataBase/bd_itrek.dart'; // Asegúrate de tener la ruta correcta de la clase DatabaseHelper
+import 'package:itrek_maps/db/db.dart'; // Asegúrate de tener la ruta correcta de la clase DatabaseHelper
 
 import 'comunidad.dart'; // Importa la pantalla de comunidad
 import 'listadoRutas.dart'; // Importamos la pantalla de listado de rutas
+import 'login.dart'; // Pantalla de login para redireccionar si no hay token
 import 'maps_google.dart'; // Importamos la pantalla del mapa
 import 'perfil.dart'; // Importa la pantalla de perfil
-import 'login.dart'; // Pantalla de login para redireccionar si no hay token
 
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
 
   // Método para verificar si el token existe en la tabla `valores`
   Future<bool> _checkToken() async {
-    final dbHelper = DatabaseHelper.instance;
     // Busca en la base de datos si existe un token almacenado bajo la clave 'token'
-    List<Map<String, dynamic>> tokenData = await dbHelper.getValueByKey('token');
+    Object? tokenData = await db.get(db.token);
 
     // Si encuentra un token, el usuario está autenticado
-    if (tokenData.isNotEmpty) {
-      return true; // Usuario autenticado
-    } else {
-      return false; // Usuario no autenticado
-    }
+    return tokenData != null;
   }
 
   @override
@@ -60,13 +54,34 @@ class MenuScreen extends StatelessWidget {
             body: Column(
               children: [
                 const SizedBox(height: 40),
-                const Text(
-                  'Menú',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
+                FutureBuilder<Object?>(
+                  future: db.get(db.username), // Llama a la función asíncrona
+                  builder: (BuildContext context, AsyncSnapshot<Object?> snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const CircularProgressIndicator(); // Muestra un indicador de carga mientras espera
+                    } else if (snapshot.hasError) {
+                      return Text('Error: ${snapshot.error}');
+                    } else if (!snapshot.hasData || snapshot.data == null) {
+                      return const Text(
+                        'No data available',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      );
+                    } else {
+                      final username = snapshot.data.toString();
+                      return Text(
+                        'Hola, $username', // Muestra el valor obtenido de la DB
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      );
+                    }
+                  },
                 ),
                 const SizedBox(height: 20),
                 Center(

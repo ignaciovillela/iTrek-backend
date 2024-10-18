@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:itrek_maps/db/db.dart';
+import 'package:itrek_maps/pages/login.dart';
 
 class PerfilUsuarioScreen extends StatefulWidget {
   const PerfilUsuarioScreen({super.key});
@@ -12,16 +14,37 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
 
   // Controladores para los campos del formulario
   final TextEditingController _nombreController =
-      TextEditingController(text: 'Juan Pérez');
+  TextEditingController(text: 'Juan Pérez');
   final TextEditingController _correoController =
-      TextEditingController(text: 'juanperez@gmail.com');
+  TextEditingController(text: 'juanperez@gmail.com');
   final TextEditingController _numeroController =
-      TextEditingController(text: '555-1234');
+  TextEditingController(text: '555-1234');
   final TextEditingController _edadController =
-      TextEditingController(text: '25');
+  TextEditingController(text: '25');
 
   String _sexo = 'Masculino'; // Valor inicial para el selector de sexo
   bool _editMode = false; // Controla si los campos están en modo edición
+
+  // Método para eliminar el token de la base de datos (cerrar sesión)
+// Método para eliminar el token de la base de datos (cerrar sesión)
+  Future<void> _cerrarSesion() async {
+    try {
+      await db.delete(db.token);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sesión cerrada exitosamente')),
+      );
+
+      // Redirigir al login después de cerrar sesión
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()), // Asegúrate de tener LoginScreen creada
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al cerrar sesión: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -135,10 +158,10 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                 ],
                 onChanged: _editMode
                     ? (value) {
-                        setState(() {
-                          _sexo = value ?? 'Masculino';
-                        });
-                      }
+                  setState(() {
+                    _sexo = value ?? 'Masculino';
+                  });
+                }
                     : null, // Deshabilitado si no está en modo edición
               ),
               const SizedBox(height: 20),
@@ -166,7 +189,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
-                      const Color(0xFF50C9B5), // Color verde pastel del botón
+                  const Color(0xFF50C9B5), // Color verde pastel del botón
                   minimumSize: const Size(double.infinity, 50), // Botón grande
                 ),
                 onPressed: () {
@@ -186,7 +209,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF50C9B5),
                     minimumSize:
-                        const Size(double.infinity, 50), // Botón grande
+                    const Size(double.infinity, 50), // Botón grande
                   ),
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
@@ -198,12 +221,24 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                       );
                       setState(() {
                         _editMode =
-                            false; // Desactivar modo edición después de guardar
+                        false; // Desactivar modo edición después de guardar
                       });
                     }
                   },
                   child: const Text('Guardar Cambios'),
                 ),
+
+              const SizedBox(height: 20),
+
+              // Botón para cerrar sesión
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  minimumSize: const Size(double.infinity, 50), // Botón grande
+                ),
+                onPressed: _cerrarSesion, // Llama al método para cerrar sesión
+                child: const Text('Cerrar Sesión'),
+              ),
             ],
           ),
         ),

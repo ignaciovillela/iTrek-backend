@@ -1,11 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:itrek_maps/db/db.dart'; // Manejo de la base de datos SQLite
+
 import '../config.dart'; // Asegúrate de que esta ruta esté correcta para cargar la configuración adecuada
 import 'inicio.dart'; // Pantalla a la que navegas si el login es exitoso
-import 'olvidarContra.dart'; // Pantalla de recuperación de contraseña
-import 'registro.dart'; // Pantalla de registro
-import 'package:itrek_maps/DataBase/bd_itrek.dart'; // Manejo de la base de datos SQLite
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,154 +14,120 @@ class LoginScreen extends StatefulWidget {
   _LoginScreenState createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller; // Controlador para manejar la animación
-  late Animation<double> _animation; // Animación que se aplicará al texto
+class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
 
-  // Controladores de texto para capturar el nombre de usuario y la contraseña
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
-  // Variable que indica si la app está en estado de carga (muestra un spinner)
   bool _isLoading = false;
+  bool _hasUsername = false; // Para controlar si ya existe un username guardado
+  String? _savedUsername; // Variable para almacenar el username guardado
 
   @override
   void initState() {
     super.initState();
-    // Inicialización de la animación
     _controller = AnimationController(
-      duration: const Duration(seconds: 2), // Duración de 2 segundos para la animación
+      duration: const Duration(seconds: 2),
       vsync: this,
     );
     _animation = CurvedAnimation(
       parent: _controller,
       curve: Curves.easeIn,
     );
-    _controller.forward(); // Inicia la animación cuando la pantalla aparece
+    _controller.forward();
+
+    _checkForSavedUsername(); // Verificar si ya existe un username guardado
   }
 
   @override
   void dispose() {
-    // Libera los recursos cuando la pantalla se cierra
     _controller.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
+  // Método para verificar si ya existe un username guardado en la DB
+  Future<void> _checkForSavedUsername() async {
+    final username = await db.get(db.username); // Obtener el username de la DB
+    if (username != null) {
+      setState(() {
+        _hasUsername = true;
+        _savedUsername = username.toString(); // Guardar el username si existe
+      });
+    }
+  }
+
+  // Método para borrar el username guardado
+  Future<void> _deleteSavedUsername() async {
+    await db.delete(db.username); // Borrar el username de la DB
+    setState(() {
+      _hasUsername = false; // Volver a mostrar el campo de username
+      _savedUsername = null; // Limpiar el username guardado
+    });
+  }
+
   // Función que maneja el proceso de login
   Future<void> _login() async {
-    final String username = _usernameController.text; // Obtiene el texto del nombre de usuario
-    final String password = _passwordController.text; // Obtiene el texto de la contraseña
+    final String username = _hasUsername ? _savedUsername! : _usernameController.text;
+    final String password = _passwordController.text;
 
-    // Verifica si los campos no están vacíos
-    if (username.isEmpty || password.isEmpty) {
+    if (password.isEmpty || username.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('El nombre de usuario y la contraseña no pueden estar vacíos')),
       );
       return;
     }
 
-    // Muestra el spinner mientras se realiza la solicitud de autenticación
     setState(() {
       _isLoading = true;
     });
 
-    // URL de la API de login
-    final url = Uri.parse('$BASE_URL/api/login/'); // Cambia BASE_URL a tu backend
+    final url = Uri.parse('$BASE_URL/api/login/');
+    http.Response response;
     try {
-      final response = await http.post(
+      response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'username': username, // Envía el nombre de usuario al backend
-          'password': password, // Envía la contraseña al backend
-        }),
+        body: jsonEncode({'username': username, 'password': password}),
       );
-
-      // Oculta el spinner después de recibir la respuesta del servidor
+    } finally {
       setState(() {
         _isLoading = false;
       });
+    }
 
-      // Si el código de respuesta es 200 (autenticación exitosa)
-      if (response.statusCode == 200) {
-        final jsonData = jsonDecode(response.body); // Decodifica la respuesta JSON
-        final token = jsonData['token']; // El token es el valor clave a verificar
-        final dbHelper = DatabaseHelper.instance;
+    if (response.statusCode == 200) {
+      final jsonData = jsonDecode(response.body);
+      final token = jsonData['token'];
+      if (token != null) {
+        await db.create(db.token, token);
+        await db.create(db.username, username);
 
-        // Verifica si el token no es nulo
-        if (token != null) {
-          print("Token recibido: $token"); // Depuración: Imprime el token recibido
-
-          // Guardar el token en la base de datos local (SQLite) usando la tabla `valores`
-          await dbHelper.insertOrUpdateValue('token', token);
-
-          // **Verificación del almacenamiento del token**
-          final storedToken = await dbHelper.getValueByKey('token');
-          if (storedToken.isNotEmpty && storedToken[0]['value'] == token) {
-            print("Token guardado correctamente: ${storedToken[0]['value']}");
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Token guardado correctamente')),
-            );
-
-            // Navega a la pantalla de inicio `MenuScreen` reemplazando la pantalla actual
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const MenuScreen()), // Verifica que `MenuScreen` esté importado y sea accesible
-            );
-          } else {
-            print("Error: El token no se guardó correctamente.");
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Error al guardar el token.')),
-            );
-          }
-        } else {
-          // Si no se recibió el token, muestra un error
-          print("No se recibió token");
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error en la autenticación. Token no recibido.')),
-          );
-        }
-      } else {
-        // Si la autenticación falla (código diferente a 200), muestra un mensaje de error
-        print("Error en la autenticación: ${response.body}");
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error en la autenticación')),
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MenuScreen()),
         );
       }
-    } catch (error) {
-      // Maneja errores de conexión u otros problemas
-      setState(() {
-        _isLoading = false;
-      });
-      print("Error de conexión: $error");
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error en la conexión. Inténtalo de nuevo.')),
+        const SnackBar(content: Text('Error en la autenticación')),
       );
     }
   }
 
-  // Construcción del widget principal (pantalla de login)
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF50C2C9), // Color del AppBar
+        backgroundColor: const Color(0xFF50C2C9),
         title: Row(
           children: [
-            Image.asset(
-              'assets/images/logo.png', // Verifica que el logo esté en assets
-              height: 30, // Tamaño del logo
-            ),
+            Image.asset('assets/images/logo.png', height: 30),
             const SizedBox(width: 10),
             const Text(
               'iTrek',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
             ),
           ],
         ),
@@ -169,110 +135,92 @@ class _LoginScreenState extends State<LoginScreen>
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Animación del texto "Bienvenido a iTrek"
           FadeTransition(
-            opacity: _animation, // Aplica la animación al texto
+            opacity: _animation,
             child: const Text(
               'Bienvenido a iTrek',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black),
             ),
           ),
           const SizedBox(height: 20),
-          // Imagen centrada
           Center(
-            child: Image.asset(
-              'assets/images/maps-green.png', // Verifica que la imagen exista en assets
-              height: 200, // Tamaño de la imagen
-            ),
+            child: Image.asset('assets/images/maps-green.png', height: 200),
           ),
           const SizedBox(height: 60),
 
-          // Campos del formulario de login (usuario y contraseña)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Column(
               children: [
-                // Campo para el nombre de usuario
-                TextFormField(
-                  controller: _usernameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nombre de Usuario',
-                    border: OutlineInputBorder(),
+                if (!_hasUsername) // Si no hay username guardado, muestra el campo de texto
+                  TextFormField(
+                    controller: _usernameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre de Usuario',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 40),
+
+                if (_hasUsername) // Si hay username guardado, muestra el mensaje de bienvenida
+                  Text(
+                    'Hola, $_savedUsername! Nos alegra verte de nuevo.\n'
+                        'Por favor, ingresa tu clave para continuar.',
+                    style: const TextStyle(fontSize: 15, color: Color(0xFF999999), fontWeight: FontWeight.bold),
+                  ),
+                const SizedBox(height: 20),
+
                 // Campo para la contraseña
                 TextFormField(
                   controller: _passwordController,
-                  obscureText: true, // Oculta el texto para las contraseñas
+                  obscureText: true,
                   decoration: const InputDecoration(
                     labelText: 'Contraseña',
                     border: OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(height: 40),
-              ],
-            ),
-          ),
+                const SizedBox(height: 20),
 
-          // Botones de acción (Ingresar, Registrarse y Olvidar Contraseña)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Muestra un spinner si está en estado de carga
-                _isLoading
-                    ? const CircularProgressIndicator() // Spinner de carga
-                    : ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF50C2C9),
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    textStyle: const TextStyle(fontSize: 18),
+                // Botón para login
+                SizedBox(
+                  width: double.infinity, // Ocupa el 100% del ancho disponible
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF50C2C9),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      textStyle: const TextStyle(fontSize: 18),
+                    ),
+                    onPressed: _login,
+                    child: const Text('Ingresar'),
                   ),
-                  onPressed: _login, // Llama a la función _login cuando se presiona el botón
-                  child: const Text('Ingresar'),
                 ),
+
                 const SizedBox(height: 10),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF50C2C9),
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    textStyle: const TextStyle(fontSize: 18),
+
+                // Si hay username guardado, muestra el botón para "No eres $username?"
+                if (_hasUsername)
+                  TextButton(
+                      onPressed: _deleteSavedUsername,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '¿No eres $_savedUsername? Haz clic aquí para cambiar de cuenta.',
+                            style: TextStyle(
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 2), // Espacio entre el texto y la línea
+                          Container(
+                            height: 1, // Espesor de la línea
+                            color: Color(0xFFCCCCCC), // Color de la línea
+                          ),
+                        ],
+                      )
+
                   ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const RegistroScreen()), // Navega a la pantalla de registro
-                    );
-                  },
-                  child: const Text('Registrarse'),
-                ),
-                const SizedBox(height: 10),
-                TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.blue,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    textStyle: const TextStyle(fontSize: 16),
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const RecuperarContrasenaScreen()), // Navega a la pantalla de recuperación de contraseña
-                    );
-                  },
-                  child: const Text('¿Olvidaste tu contraseña?'),
-                ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
         ],
       ),
     );
