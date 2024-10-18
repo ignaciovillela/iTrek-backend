@@ -11,7 +11,7 @@ class DatabaseHelper {
   // Getter para obtener la instancia de la base de datos
   Future<Database> get database async {
     if (_database != null) return _database!;
-    // Llama a la función para eliminar la base de datos existente antes de crearla de nuevo
+
     _database = await _initDB('itrek_database.db');
     return _database!;
   }
