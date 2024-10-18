@@ -72,7 +72,7 @@ class MenuScreen extends StatelessWidget {
                 Center(
                   child: Image.asset(
                     'assets/images/trek.png',
-                    height: 120,
+                    height: 118,
                   ),
                 ),
                 const SizedBox(height: 50),
@@ -107,7 +107,7 @@ class MenuScreen extends StatelessWidget {
                               children: [
                                 Image.asset(
                                   'assets/images/maps-green.png',
-                                  height: 120,
+                                  height: 118,
                                 ),
                                 const SizedBox(height: 10),
                                 const Text('Iniciar Ruta'),
@@ -134,7 +134,7 @@ class MenuScreen extends StatelessWidget {
                               children: [
                                 Image.asset(
                                   'assets/images/perfil.png',
-                                  height: 120,
+                                  height: 118,
                                 ),
                                 const SizedBox(height: 10),
                                 const Text('Perfil'),
@@ -161,7 +161,7 @@ class MenuScreen extends StatelessWidget {
                               children: [
                                 Image.asset(
                                   'assets/images/listado.png',
-                                  height: 120,
+                                  height: 118,
                                 ),
                                 const SizedBox(height: 10),
                                 const Text('Listado de Rutas'),
@@ -189,7 +189,7 @@ class MenuScreen extends StatelessWidget {
                               children: [
                                 Image.asset(
                                   'assets/images/com.png',
-                                  height: 120,
+                                  height: 118,
                                 ),
                                 const SizedBox(height: 10),
                                 const Text('Comunidad'),

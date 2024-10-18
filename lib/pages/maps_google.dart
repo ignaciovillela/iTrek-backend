@@ -333,24 +333,24 @@ class _GoogleMapsPageState extends State<GoogleMapsPage> {
             ),
           ),
           Positioned(
-            bottom: 120,
-            right: 20,
+            bottom: 105,
+            right: 10,
             child: FloatingActionButton(
               onPressed: _centrarEnPosicionActual,
               child: const Icon(Icons.my_location),
             ),
           ),
           Positioned(
-            bottom: 20,
             left: 20,
-            right: 20,
+            right: 60,
+            bottom: 30,
             child: ElevatedButton(
               onPressed: _isRecording
                   ? _mostrarConfirmacionFinalizar
                   : _iniciarRegistro,
               child: Text(_isRecording ? 'Finalizar Ruta' : 'Iniciar Registro'),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                padding: EdgeInsets.symmetric(),
                 textStyle: const TextStyle(fontSize: 16),
               ),
             ),
