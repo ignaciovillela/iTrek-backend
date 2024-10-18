@@ -55,6 +55,14 @@ class _LoginScreenState extends State<LoginScreen>
     final String username = _usernameController.text; // Obtiene el texto del nombre de usuario
     final String password = _passwordController.text; // Obtiene el texto de la contraseña
 
+    // Verifica si los campos no están vacíos
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El nombre de usuario y la contraseña no pueden estar vacíos')),
+      );
+      return;
+    }
+
     // Muestra el spinner mientras se realiza la solicitud de autenticación
     setState(() {
       _isLoading = true;
@@ -62,57 +70,74 @@ class _LoginScreenState extends State<LoginScreen>
 
     // URL de la API de login
     final url = Uri.parse('$BASE_URL/api/login/'); // Cambia BASE_URL a tu backend
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'username': username, // Envía el nombre de usuario al backend
-        'password': password, // Envía la contraseña al backend
-      }),
-    );
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': username, // Envía el nombre de usuario al backend
+          'password': password, // Envía la contraseña al backend
+        }),
+      );
 
-    // Oculta el spinner después de recibir la respuesta del servidor
-    setState(() {
-      _isLoading = false;
-    });
+      // Oculta el spinner después de recibir la respuesta del servidor
+      setState(() {
+        _isLoading = false;
+      });
 
-    // Si el código de respuesta es 200 (autenticación exitosa)
-    if (response.statusCode == 200) {
-      final jsonData = jsonDecode(response.body); // Decodifica la respuesta JSON
-      final token = jsonData['token']; // El token es el valor clave a verificar
-      final dbHelper = DatabaseHelper.instance;
+      // Si el código de respuesta es 200 (autenticación exitosa)
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body); // Decodifica la respuesta JSON
+        final token = jsonData['token']; // El token es el valor clave a verificar
+        final dbHelper = DatabaseHelper.instance;
 
-      // Verifica si el token no es nulo
-      if (token != null) {
-        print("Token recibido: $token"); // Depuración: Imprime el token recibido
+        // Verifica si el token no es nulo
+        if (token != null) {
+          print("Token recibido: $token"); // Depuración: Imprime el token recibido
 
-        // Guardar el token en la base de datos local (SQLite)
-        await dbHelper.updateUserToken(username, token);
+          // Guardar el token en la base de datos local (SQLite) usando la tabla `valores`
+          await dbHelper.insertOrUpdateValue('token', token);
 
-        // **Verificación del almacenamiento del token**
-        final userData = await dbHelper.getUserByUsername(username);
-        if (userData.isNotEmpty && userData[0]['token'] == token) {
-          print("Token guardado correctamente: ${userData[0]['token']}");
+          // **Verificación del almacenamiento del token**
+          final storedToken = await dbHelper.getValueByKey('token');
+          if (storedToken.isNotEmpty && storedToken[0]['value'] == token) {
+            print("Token guardado correctamente: ${storedToken[0]['value']}");
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Token guardado correctamente')),
+            );
+
+            // Navega a la pantalla de inicio `MenuScreen` reemplazando la pantalla actual
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const MenuScreen()), // Verifica que `MenuScreen` esté importado y sea accesible
+            );
+          } else {
+            print("Error: El token no se guardó correctamente.");
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Error al guardar el token.')),
+            );
+          }
         } else {
-          print("Error: El token no se guardó correctamente.");
+          // Si no se recibió el token, muestra un error
+          print("No se recibió token");
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error en la autenticación. Token no recibido.')),
+          );
         }
-
-        // Navega a la pantalla de inicio `MenuScreen` reemplazando la pantalla actual
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MenuScreen()), // Verifica que `MenuScreen` esté importado y sea accesible
-        );
       } else {
-        // Si no se recibió el token, muestra un error
-        print("No se recibió token");
+        // Si la autenticación falla (código diferente a 200), muestra un mensaje de error
+        print("Error en la autenticación: ${response.body}");
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error en la autenticación. Token no recibido.')),
+          const SnackBar(content: Text('Error en la autenticación')),
         );
       }
-    } else {
-      // Si la autenticación falla (código diferente a 200), muestra un mensaje de error
-      print("Error en la autenticación");
+    } catch (error) {
+      // Maneja errores de conexión u otros problemas
+      setState(() {
+        _isLoading = false;
+      });
+      print("Error de conexión: $error");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error en la autenticación')),
+        const SnackBar(content: Text('Error en la conexión. Inténtalo de nuevo.')),
       );
     }
   }
@@ -239,8 +264,7 @@ class _LoginScreenState extends State<LoginScreen>
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) =>
-                          const RecuperarContrasenaScreen()), // Navega a la pantalla de recuperación de contraseña
+                          builder: (context) => const RecuperarContrasenaScreen()), // Navega a la pantalla de recuperación de contraseña
                     );
                   },
                   child: const Text('¿Olvidaste tu contraseña?'),

@@ -11,13 +11,14 @@ import 'login.dart'; // Pantalla de login para redireccionar si no hay token
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
 
+  // Método para verificar si el token existe en la tabla `valores`
   Future<bool> _checkToken() async {
     final dbHelper = DatabaseHelper.instance;
-    // Busca en la base de datos si existe un usuario con un token válido
-    List<Map<String, dynamic>> userWithToken = await dbHelper.getUserWithToken();
+    // Busca en la base de datos si existe un token almacenado bajo la clave 'token'
+    List<Map<String, dynamic>> tokenData = await dbHelper.getValueByKey('token');
 
-    // Si encuentra un usuario con token, el usuario está autenticado
-    if (userWithToken.isNotEmpty) {
+    // Si encuentra un token, el usuario está autenticado
+    if (tokenData.isNotEmpty) {
       return true; // Usuario autenticado
     } else {
       return false; // Usuario no autenticado
@@ -98,8 +99,7 @@ class MenuScreen extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) =>
-                                    const GoogleMapsPage()),
+                                    builder: (context) => const GoogleMapsPage()),
                               );
                             },
                             child: Column(
@@ -126,8 +126,7 @@ class MenuScreen extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) =>
-                                    const PerfilUsuarioScreen()),
+                                    builder: (context) => const PerfilUsuarioScreen()),
                               );
                             },
                             child: Column(
@@ -154,8 +153,7 @@ class MenuScreen extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) =>
-                                    const ListadoRutasScreen()),
+                                    builder: (context) => const ListadoRutasScreen()),
                               );
                             },
                             child: Column(
