@@ -30,23 +30,24 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_dotenv: ^5.0.2
+  flutter_dotenv: ^5.2.1
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
 
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
-  google_maps_flutter: ^2.9.0
-  google_maps_flutter_web: ^0.5.10
   http: ^1.2.2
   json_serializable: ^6.8.0
   geolocator: ^13.0.1
   sqflite: ^2.4.0
   path_provider: ^2.1.4
 
+  async: ^2.11.0
+  http_parser: ^4.0.2
+  meta: ^1.15.0
+
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
+  # flutter_test:
+  #   sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
