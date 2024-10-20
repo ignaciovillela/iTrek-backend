@@ -2,10 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
-import 'package:itrek/config.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:itrek/config.dart';
+import 'package:itrek/pages/ruta/RutaFormPage.dart';
+import 'package:itrek/request/request.dart';
 import 'package:latlong2/latlong.dart';
 
 /// Solicitar permisos de ubicación en primer plano y, si es necesario, en segundo plano
@@ -41,14 +42,12 @@ List<Map<String, dynamic>> convertirAFormato(List<LatLng> listaCoords) {
 
 // Función para enviar una ruta al backend mediante una solicitud HTTP POST
 Future<int?> postRuta(Map<String, dynamic> rutaData) async {
-  String url = '$BASE_URL/api/rutas/';
   try {
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: jsonEncode(rutaData),
+    final response = await makeRequest(
+      method: 'POST',
+      url: '$BASE_URL/api/rutas/',
+      body: rutaData,
+      useToken: true, // Usamos el token si es necesario
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -65,24 +64,27 @@ Future<int?> postRuta(Map<String, dynamic> rutaData) async {
 
 // Función para actualizar la ruta con datos adicionales usando PATCH
 Future<void> _updateRuta(int id, String nombre, String descripcion, String dificultad, double distanciaKm, double tiempoEstimadoHoras) async {
-  final response = await http.patch(
-    Uri.parse('$BASE_URL/api/rutas/$id/'),
-    headers: <String, String>{
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-    body: jsonEncode(<String, dynamic>{
-      'nombre': nombre,
-      'descripcion': descripcion,
-      'dificultad': dificultad,
-      'distancia_km': distanciaKm,
-      'tiempo_estimado_horas': tiempoEstimadoHoras,
-    }),
-  );
+  try {
+    final response = await makeRequest(
+      method: 'PATCH',
+      url: '$BASE_URL/api/rutas/$id/',
+      body: {
+        'nombre': nombre,
+        'descripcion': descripcion,
+        'dificultad': dificultad,
+        'distancia_km': distanciaKm,
+        'tiempo_estimado_horas': tiempoEstimadoHoras,
+      },
+      useToken: true, // Se requiere token para la autenticación
+    );
 
-  if (response.statusCode == 200) {
-    print('Ruta actualizada con éxito');
-  } else {
-    print('Error al actualizar la ruta: ${response.statusCode}');
+    if (response.statusCode == 200) {
+      print('Ruta actualizada con éxito');
+    } else {
+      print('Error al actualizar la ruta: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error al actualizar la ruta: $e');
   }
 }
 
@@ -104,22 +106,26 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   );
   bool _isRecording = false;
   Timer? _timer;
-  Timer? _locationTimer;
   int _seconds = 0;
-  double _distanceTraveled = 0.0;
+  final double _distanceTraveled = 0.0;
   LatLng? _lastPosition;
   LatLng? _initialPosition;
+  StreamSubscription<Position>? _positionStreamSubscription;
+  MapController mapController = MapController(); // Definir el controlador del mapa
 
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation();
+//    _getCurrentLocation();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _getCurrentLocation(); // Llamar después de que el widget esté completamente renderizado
+    });
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    _locationTimer?.cancel();
+    _positionStreamSubscription?.cancel();
     super.dispose();
   }
 
@@ -133,61 +139,118 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       _markers.add(
         Marker(
           point: _initialPosition!,
-          child: Icon(Icons.location_on, color: Colors.blue),
+          child: Container(
+            width: 12,
+            height: 12,
+            decoration: const BoxDecoration(
+              color: Colors.blue,
+              shape: BoxShape.circle,
+            ),
+          ),
         ),
       );
     });
+    // Mover la cámara a la posición inicial
+    //mapController.move(_initialPosition!, 18.0);
   }
 
-  Future<void> _iniciarRegistro() async {
+  void _iniciarRegistro() {
     setState(() {
-      _isRecording = !_isRecording;
+      _isRecording = true;
     });
 
-    if (_isRecording) {
-      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (mounted) {
-          setState(() {
-            _seconds++;
-          });
-        }
-      });
-
-      _locationTimer = Timer.periodic(const Duration(milliseconds: 1500), (timer) async {
-        _lastPosition ??= _initialPosition;
-
-        Position position = await Geolocator.getCurrentPosition(locationSettings: AndroidSettings());
-        final newPosition = LatLng(position.latitude, position.longitude);
-
-        double distance = Geolocator.distanceBetween(
-          _lastPosition!.latitude,
-          _lastPosition!.longitude,
-          newPosition.latitude,
-          newPosition.longitude,
-        );
-        _distanceTraveled += distance;
-
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
         setState(() {
-          _routeCoords.add(newPosition);
-          _lastPosition = newPosition;
-
-          _routePolyline = Polyline(
-            points: _routeCoords,
-            strokeWidth: 5,
-            color: Colors.blue,
-          );
-
-          _markers.add(
-            Marker(
-              point: newPosition,
-              child: Icon(Icons.location_on, color: Colors.red),
-            ),
-          );
+          _seconds++;
         });
+      }
+    });
+
+    _iniciarSeguimientoUbicacion();
+  }
+
+  void _iniciarSeguimientoUbicacion() {
+    _positionStreamSubscription = Geolocator.getPositionStream(locationSettings: LocationSettings(distanceFilter: 10))
+        .listen((Position position) {
+      final newPosition = LatLng(position.latitude, position.longitude);
+
+      setState(() {
+        _lastPosition = newPosition;
+        _routeCoords.add(newPosition);
+
+        _routePolyline = Polyline(
+          points: _routeCoords,
+          strokeWidth: 5,
+          color: Colors.blue,
+        );
+
+        _markers.clear();
+        _markers.add(
+          Marker(
+            point: newPosition,
+            child: Container(
+              width: 12,
+              height: 12,
+              decoration: const BoxDecoration(
+                color: Colors.blue,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        );
       });
+
+      // Mover la cámara a la nueva posición
+      mapController.move(newPosition, 18.0);
+    });
+  }
+
+  void _finalizarRegistro() async {
+    _timer?.cancel();
+    _positionStreamSubscription?.cancel();
+
+    setState(() {
+      _isRecording = false;
+    });
+
+    // Preparar los datos para enviar al backend
+    Map<String, dynamic> rutaData = {
+      "puntos": convertirAFormato(_routeCoords),
+      "tiempo_segundos": _seconds,
+      "distancia_km": _distanceTraveled / 1000,
+    };
+
+    // Enviar los datos de la ruta al backend
+    int? rutaId = await postRuta(rutaData);
+    if (rutaId != null) {
+      // Redirigir a la pantalla correspondiente
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RutaFormPage(
+            rutaId: rutaId,  // Pasamos el ID de la ruta creada
+            distanceTraveled: _distanceTraveled,
+            secondsElapsed: _seconds,
+            onSave: (rutaData) {
+              _updateRuta(
+                rutaId,
+                rutaData['nombre'],
+                rutaData['descripcion'],
+                rutaData['dificultad'],
+                _distanceTraveled / 1000, // Distancia en km
+                _seconds / 3600, // Tiempo en horas
+              );
+              Navigator.of(context).pop();
+            },
+            onCancel: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        ),
+      );
     } else {
-      _timer?.cancel();
-      _locationTimer?.cancel();
+      print('Error al enviar la ruta al backend');
     }
   }
 
@@ -203,14 +266,14 @@ class RegistrarRutaState extends State<RegistrarRuta> {
           : Stack(
         children: [
           FlutterMap(
+            mapController: mapController, // Asignar el controlador al mapa
             options: MapOptions(
-              initialCenter: _initialPosition ?? LatLng(0, 0), // Usa un valor predeterminado si _initialPosition es null
-              initialZoom: 18.0,
+              initialCenter: _initialPosition ?? LatLng(0, 0), // Usa initialCenter
+              initialZoom: 18.0, // Usa initialZoom
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                subdomains: ['a', 'b', 'c'],
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               ),
               PolylineLayer(
                 polylines: [_routePolyline],
@@ -219,8 +282,19 @@ class RegistrarRutaState extends State<RegistrarRuta> {
                 markers: _markers,
               ),
             ],
-          )
-,
+          ),
+          Positioned(
+            bottom: 105,
+            right: 10,
+            child: FloatingActionButton(
+              onPressed: () {
+                if (_initialPosition != null) {
+                  mapController.move(_initialPosition!, 18.0);
+                }
+              },
+              child: const Icon(Icons.my_location),
+            ),
+          ),
           Positioned(
             top: 20,
             left: 20,
@@ -244,7 +318,13 @@ class RegistrarRutaState extends State<RegistrarRuta> {
             right: 60,
             bottom: 30,
             child: ElevatedButton(
-              onPressed: _isRecording ? _iniciarRegistro : null,
+              onPressed: () {
+                if (!_isRecording) {
+                  _iniciarRegistro();
+                } else {
+                  _finalizarRegistro();
+                }
+              },
               child: Text(_isRecording ? 'Finalizar Ruta' : 'Iniciar Registro'),
             ),
           ),

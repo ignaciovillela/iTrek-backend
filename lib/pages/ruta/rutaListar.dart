@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:itrek/config.dart';
 import 'package:itrek/pages/ruta/rutaRecorrer.dart';
+import 'package:itrek/request/request.dart';
 
 
 class ListadoRutasScreen extends StatefulWidget {
@@ -29,33 +29,53 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   }
 
   Future<void> _fetchRutas() async {
-    final response = await http.get(Uri.parse('$BASE_URL/api/rutas/'));
+    try {
+      final response = await makeRequest(
+        method: 'GET',
+        url: '$BASE_URL/api/rutas/',
+        useToken: true, // Se asume que necesita autenticación
+      );
 
-    if (response.statusCode == 200) {
-      setState(() {
-        // Asegurarse de que los textos se manejen con la codificación correcta
-        rutasGuardadas = jsonDecode(utf8.decode(response.bodyBytes));
-      });
-    } else {
+      if (response.statusCode == 200) {
+        setState(() {
+          // Asegurarse de que los textos se manejen con la codificación correcta
+          rutasGuardadas = jsonDecode(utf8.decode(response.bodyBytes));
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al cargar las rutas')),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error al cargar las rutas')),
+        SnackBar(content: Text('Error de conexión: $e')),
       );
     }
   }
 
   Future<void> _deleteRuta(int id) async {
-    final response = await http.delete(Uri.parse('$BASE_URL/api/rutas/$id/'));
-
-    if (response.statusCode == 204) {
-      setState(() {
-        rutasGuardadas!.removeWhere((ruta) => ruta['id'] == id);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ruta eliminada con éxito')),
+    try {
+      final response = await makeRequest(
+        method: 'DELETE',
+        url: '$BASE_URL/api/rutas/$id/',
+        useToken: true, // Se asume que necesita autenticación
       );
-    } else {
+
+      if (response.statusCode == 204) {
+        setState(() {
+          rutasGuardadas!.removeWhere((ruta) => ruta['id'] == id);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ruta eliminada con éxito')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al eliminar la ruta')),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error al eliminar la ruta')),
+        SnackBar(content: Text('Error de conexión: $e')),
       );
     }
   }
@@ -191,33 +211,34 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   }
 
   Future<void> _updateRuta(int id) async {
-    // Crear el cuerpo de la solicitud
-    final response = await http.patch(
-      Uri.parse('$BASE_URL/api/rutas/$id/'),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-      body: jsonEncode(<String, dynamic>{
-        'nombre': _nombreController.text, // Actualizamos el nombre
-        'descripcion':
-        _descripcionController.text, // Actualizamos la descripción
-        'dificultad':
-        widget.ruta['dificultad'], // Asegúrate de que el valor sea correcto
-        'distancia_km': widget.ruta['distancia_km'], // Distancia en km
-        'tiempo_estimado_horas':
-        widget.ruta['tiempo_estimado_horas'], // Tiempo estimado en horas
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ruta actualizada con éxito')),
+    try {
+      final response = await makeRequest(
+        method: 'PATCH',
+        url: '$BASE_URL/api/rutas/$id/',
+        body: {
+          'nombre': _nombreController.text, // Actualizamos el nombre
+          'descripcion': _descripcionController.text, // Actualizamos la descripción
+          'dificultad': widget.ruta['dificultad'], // Asegúrate de que el valor sea correcto
+          'distancia_km': widget.ruta['distancia_km'], // Distancia en km
+          'tiempo_estimado_horas': widget.ruta['tiempo_estimado_horas'], // Tiempo estimado en horas
+        },
+        useToken: true, // Se requiere autenticación
       );
-      Navigator.pop(context, true); // Aquí retornamos true
-    } else {
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ruta actualizada con éxito')),
+        );
+        Navigator.pop(context, true); // Aquí retornamos true
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Error al actualizar la ruta: ${response.body}')),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Error al actualizar la ruta: ${response.body}')),
+        SnackBar(content: Text('Error en la solicitud: $e')),
       );
     }
   }

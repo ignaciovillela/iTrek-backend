@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:itrek/config.dart';
 import 'package:itrek/db/db.dart';
 import 'package:itrek/pages/dashboard.dart';
+import 'package:itrek/request/request.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -84,35 +84,38 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       _isLoading = true;
     });
 
-    final url = Uri.parse('$BASE_URL/api/login/');
-    http.Response response;
     try {
-      response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'username': username, 'password': password}),
+      final response = await makeRequest(
+        method: 'POST',
+        url: '$BASE_URL/api/login/',
+        body: {'username': username, 'password': password},
+        useToken: false,
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        final token = jsonData['token'];
+        if (token != null) {
+          await db.create(db.token, token);
+          await db.create(db.username, username);
+
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const MenuScreen()),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error en la autenticación')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error en la autenticación: $e')),
       );
     } finally {
       setState(() {
         _isLoading = false;
       });
-    }
-
-    if (response.statusCode == 200) {
-      final jsonData = jsonDecode(response.body);
-      final token = jsonData['token'];
-      if (token != null) {
-        await db.create(db.token, token);
-        await db.create(db.username, username);
-
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MenuScreen()),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error en la autenticación')),
-      );
     }
   }
 
