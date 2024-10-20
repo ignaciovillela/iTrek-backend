@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:itrek/config.dart';
+import 'package:itrek/map/map.dart';
 import 'package:itrek/request/request.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -224,23 +225,11 @@ class _RecorrerRutaScreenState extends State<RecorrerRutaScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Stack(
         children: [
-          FlutterMap(
+          buildMap(
             mapController: _mapController,
-            options: MapOptions(
-              initialCenter: routePoints.isNotEmpty ? routePoints.first : _initialPosition ?? LatLng(0, 0),
-              initialZoom: 18.0,
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              ),
-              PolylineLayer(
-                polylines: _polylines,
-              ),
-              MarkerLayer(
-                markers: _markers,
-              ),
-            ],
+            initialPosition: routePoints.isNotEmpty ? routePoints.first : _initialPosition ?? LatLng(0, 0),
+            routePolylines: _polylines,
+            markers: _markers,
           ),
           if (isWalking || isFinished)
             Positioned(

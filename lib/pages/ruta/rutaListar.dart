@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:itrek/config.dart';
 import 'package:itrek/pages/ruta/rutaRecorrer.dart';
 import 'package:itrek/request/request.dart';
@@ -167,8 +168,8 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
         backgroundColor: const Color(0xFF50C9B5), // Color de la appBar
         title: Row(
           children: [
-            Image.asset(
-              'assets/images/logo.png', // Asegúrate de que el logo esté en la carpeta assets
+            SvgPicture.asset(
+              'assets/images/itrek-logo-black.svg',
               height: 30, // Tamaño pequeño del logo
             ),
             const SizedBox(width: 10), // Espacio entre el logo y el texto
@@ -249,8 +250,8 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            Image.asset(
-              'assets/images/logo.png', // Asegúrate de que el logo esté en la carpeta assets
+            SvgPicture.asset(
+              'assets/images/itrek-logo-black.svg',
               height: 30, // Tamaño pequeño del logo
             ),
             const SizedBox(width: 10), // Espacio entre el logo y el texto

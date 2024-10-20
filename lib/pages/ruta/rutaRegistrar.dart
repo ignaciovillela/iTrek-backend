@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:itrek/config.dart';
+import 'package:itrek/map/map.dart';
 import 'package:itrek/pages/ruta/RutaFormPage.dart';
 import 'package:itrek/request/request.dart';
 import 'package:latlong2/latlong.dart';
@@ -108,7 +109,6 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   Timer? _timer;
   int _seconds = 0;
   final double _distanceTraveled = 0.0;
-  LatLng? _lastPosition;
   LatLng? _initialPosition;
   StreamSubscription<Position>? _positionStreamSubscription;
   MapController mapController = MapController(); // Definir el controlador del mapa
@@ -136,19 +136,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
     );
     setState(() {
       _initialPosition = LatLng(position.latitude, position.longitude);
-      _markers.add(
-        Marker(
-          point: _initialPosition!,
-          child: Container(
-            width: 12,
-            height: 12,
-            decoration: const BoxDecoration(
-              color: Colors.blue,
-              shape: BoxShape.circle,
-            ),
-          ),
-        ),
-      );
+      _markers.add(buildLocationMarker(_initialPosition!));
     });
     // Mover la cámara a la posición inicial
     //mapController.move(_initialPosition!, 18.0);
@@ -176,7 +164,6 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       final newPosition = LatLng(position.latitude, position.longitude);
 
       setState(() {
-        _lastPosition = newPosition;
         _routeCoords.add(newPosition);
 
         _routePolyline = Polyline(
@@ -186,19 +173,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
         );
 
         _markers.clear();
-        _markers.add(
-          Marker(
-            point: newPosition,
-            child: Container(
-              width: 12,
-              height: 12,
-              decoration: const BoxDecoration(
-                color: Colors.blue,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-        );
+        _markers.add(buildLocationMarker(newPosition));
       });
 
       // Mover la cámara a la nueva posición
@@ -265,23 +240,11 @@ class RegistrarRutaState extends State<RegistrarRuta> {
           ? const Center(child: CircularProgressIndicator())
           : Stack(
         children: [
-          FlutterMap(
-            mapController: mapController, // Asignar el controlador al mapa
-            options: MapOptions(
-              initialCenter: _initialPosition ?? LatLng(0, 0), // Usa initialCenter
-              initialZoom: 18.0, // Usa initialZoom
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              ),
-              PolylineLayer(
-                polylines: [_routePolyline],
-              ),
-              MarkerLayer(
-                markers: _markers,
-              ),
-            ],
+          buildMap(
+            mapController: mapController,
+            initialPosition: _initialPosition,
+            routePolylines: [_routePolyline],
+            markers: _markers,
           ),
           Positioned(
             bottom: 105,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:itrek/pages/dashboard.dart';
 
 import 'login.dart';
@@ -28,8 +29,8 @@ class _RegistroScreenState extends State<RegistroScreen> {
         backgroundColor: const Color(0xFF50C9B5), // Color del AppBar
         title: Row(
           children: [
-            Image.asset(
-              'assets/images/logo.png', // Asegúrate de que el logo esté en la carpeta assets
+            SvgPicture.asset(
+              'assets/images/itrek-logo-black.svg',
               height: 30, // Tamaño pequeño del logo
             ),
             const SizedBox(width: 10), // Espacio entre el logo y el texto
@@ -49,7 +50,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
               // Logo encima del campo de nombre
               Center(
                 child: Image.asset(
-                  'assets/images/perfil.png', // Asegúrate de que el logo esté en la carpeta assets
+                  'assets/images/perfil.png',
                   height: 200, // Tamaño más grande del logo
                 ),
               ),

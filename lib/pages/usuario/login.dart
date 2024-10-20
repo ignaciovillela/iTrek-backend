@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:itrek/config.dart';
 import 'package:itrek/db/db.dart';
 import 'package:itrek/pages/dashboard.dart';
@@ -126,7 +127,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         backgroundColor: const Color(0xFF50C2C9),
         title: Row(
           children: [
-            Image.asset('assets/images/logo.png', height: 30),
+            SvgPicture.asset('assets/images/itrek-logo-black.svg', height: 30),
             const SizedBox(width: 10),
             const Text(
               'iTrek',

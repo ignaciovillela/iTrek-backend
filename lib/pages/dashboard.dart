@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:itrek/db/db.dart';
 import 'package:itrek/pages/comunidad.dart';
-import 'package:itrek/pages/login/login.dart';
 import 'package:itrek/pages/ruta/rutaListar.dart';
 import 'package:itrek/pages/ruta/rutaRegistrar.dart';
-import 'package:itrek/pages/usuarioPerfil.dart';
+import 'package:itrek/pages/usuario/login.dart';
+import 'package:itrek/pages/usuario/usuarioPerfil.dart';
 
 
 class MenuScreen extends StatelessWidget {
@@ -36,8 +37,13 @@ class MenuScreen extends StatelessWidget {
               title: Row(
                 children: [
                   Image.asset(
-                    'assets/images/logo.png', // Asegúrate de que el logo esté en la carpeta assets
+                    'assets/images/logo.png',
                     height: 30,
+                  ),
+                  SvgPicture.asset(
+                    'assets/images/itrek-logo-black.svg',
+                    height: 30,
+                    color: Color(0xDDFFFFFF),
                   ),
                   const SizedBox(width: 10),
                   const Text(
