@@ -5,9 +5,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:itrek/config.dart';
-import 'package:itrek/map/map.dart';
-import 'package:itrek/request/request.dart';
+import 'package:itrek/map.dart';
+import 'package:itrek/request.dart';
 import 'package:latlong2/latlong.dart';
 
 class RecorrerRutaScreen extends StatefulWidget {
@@ -68,9 +67,8 @@ class _RecorrerRutaScreenState extends State<RecorrerRutaScreen> {
 
     try {
       final response = await makeRequest(
-        method: 'GET',
-        url: '$BASE_URL/api/rutas/${widget.ruta['id']}',
-        useToken: true, // Se asume que se necesita token
+        method: GET,
+        url: 'api/rutas/${widget.ruta['id']}',
       );
 
       if (response.statusCode == 200) {

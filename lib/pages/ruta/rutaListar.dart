@@ -1,10 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:itrek/config.dart';
+import 'package:itrek/img.dart';
 import 'package:itrek/pages/ruta/rutaRecorrer.dart';
-import 'package:itrek/request/request.dart';
+import 'package:itrek/request.dart';
 
 
 class ListadoRutasScreen extends StatefulWidget {
@@ -32,9 +31,8 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   Future<void> _fetchRutas() async {
     try {
       final response = await makeRequest(
-        method: 'GET',
-        url: '$BASE_URL/api/rutas/',
-        useToken: true, // Se asume que necesita autenticación
+        method: GET,
+        url: 'api/rutas/',
       );
 
       if (response.statusCode == 200) {
@@ -57,9 +55,8 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   Future<void> _deleteRuta(int id) async {
     try {
       final response = await makeRequest(
-        method: 'DELETE',
-        url: '$BASE_URL/api/rutas/$id/',
-        useToken: true, // Se asume que necesita autenticación
+        method: DELETE,
+        url: 'api/rutas/$id/',
       );
 
       if (response.statusCode == 204) {
@@ -168,10 +165,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
         backgroundColor: const Color(0xFF50C9B5), // Color de la appBar
         title: Row(
           children: [
-            SvgPicture.asset(
-              'assets/images/itrek-logo-black.svg',
-              height: 30, // Tamaño pequeño del logo
-            ),
+            logoWhite,
             const SizedBox(width: 10), // Espacio entre el logo y el texto
             const Text('Listado de Rutas'),
           ],
@@ -214,8 +208,8 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   Future<void> _updateRuta(int id) async {
     try {
       final response = await makeRequest(
-        method: 'PATCH',
-        url: '$BASE_URL/api/rutas/$id/',
+        method: PATCH,
+        url: 'api/rutas/$id/',
         body: {
           'nombre': _nombreController.text, // Actualizamos el nombre
           'descripcion': _descripcionController.text, // Actualizamos la descripción
@@ -223,7 +217,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
           'distancia_km': widget.ruta['distancia_km'], // Distancia en km
           'tiempo_estimado_horas': widget.ruta['tiempo_estimado_horas'], // Tiempo estimado en horas
         },
-        useToken: true, // Se requiere autenticación
       );
 
       if (response.statusCode == 200) {
@@ -250,10 +243,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            SvgPicture.asset(
-              'assets/images/itrek-logo-black.svg',
-              height: 30, // Tamaño pequeño del logo
-            ),
+            logoWhite,
             const SizedBox(width: 10), // Espacio entre el logo y el texto
             Text("iTrek Editar Ruta"),
           ],

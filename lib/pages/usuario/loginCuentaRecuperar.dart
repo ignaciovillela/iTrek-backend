@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:itrek/img.dart';
 
 class RecuperarContrasenaScreen extends StatefulWidget {
   const RecuperarContrasenaScreen({super.key});
@@ -21,10 +21,7 @@ class _RecuperarContrasenaScreenState extends State<RecuperarContrasenaScreen>
         backgroundColor: const Color(0xFF50C9B5), // Color de fondo del AppBar
         title: Row(
           children: [
-            SvgPicture.asset(
-              'assets/images/itrek-logo-black.svg',
-              height: 30, // Tamaño pequeño del logo
-            ),
+            logoWhite,
             const SizedBox(width: 10), // Espacio entre el logo y el texto
             const Text(
               'Recuperar Cuenta',
@@ -48,10 +45,7 @@ class _RecuperarContrasenaScreenState extends State<RecuperarContrasenaScreen>
               const SizedBox(height: 40), // Espacio debajo del título
 
               // Imagen logo debajo del título
-              SvgPicture.asset(
-                'assets/images/itrek-logo-black.svg',
-                height: 180, // Tamaño de la imagen
-              ),
+              logoWhite,
               const SizedBox(
                   height: 160), // Espacio entre la imagen y el campo de texto
 

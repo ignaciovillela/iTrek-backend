@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:itrek/db/db.dart';
+import 'package:itrek/db.dart';
 import 'package:itrek/pages/usuario/login.dart';
+import 'package:itrek/request.dart';
+import 'dart:convert';
 
 class PerfilUsuarioScreen extends StatefulWidget {
   const PerfilUsuarioScreen({super.key});
@@ -26,19 +28,34 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
   bool _editMode = false; // Controla si los campos están en modo edición
 
   // Método para eliminar el token de la base de datos (cerrar sesión)
-// Método para eliminar el token de la base de datos (cerrar sesión)
   Future<void> _cerrarSesion() async {
     try {
-      await db.delete(db.token);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sesión cerrada exitosamente')),
+      final response = await makeRequest(
+        method: POST,
+        url: '/api/auth/logout/',
+        useToken: true,
       );
 
-      // Redirigir al login después de cerrar sesión
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()), // Asegúrate de tener LoginScreen creada
-      );
+      if (response.statusCode == 200) {
+        // Elimina el token localmente
+        await db.delete(db.token);
+
+        // Muestra el mensaje de éxito desde el backend
+        final message = jsonDecode(response.body)['message'];
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+
+        // Redirigir al login después de cerrar sesión
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()), // Asegúrate de tener LoginScreen creada
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al cerrar sesión')),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al cerrar sesión: $e')),
