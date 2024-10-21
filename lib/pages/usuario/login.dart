@@ -1,11 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:itrek/config.dart';
-import 'package:itrek/db/db.dart';
+import 'package:itrek/db.dart';
+import 'package:itrek/img.dart';
 import 'package:itrek/pages/dashboard.dart';
-import 'package:itrek/request/request.dart';
+import 'package:itrek/request.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -87,8 +86,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
     try {
       final response = await makeRequest(
-        method: 'POST',
-        url: '$BASE_URL/api/login/',
+        method: POST,
+        url: 'api/login/',
         body: {'username': username, 'password': password},
         useToken: false,
       );
@@ -127,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         backgroundColor: const Color(0xFF50C2C9),
         title: Row(
           children: [
-            SvgPicture.asset('assets/images/itrek-logo-black.svg', height: 30),
+            logoWhite,
             const SizedBox(width: 10),
             const Text(
               'iTrek',

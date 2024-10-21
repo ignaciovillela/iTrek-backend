@@ -4,10 +4,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:itrek/config.dart';
-import 'package:itrek/map/map.dart';
+import 'package:itrek/map.dart';
 import 'package:itrek/pages/ruta/RutaFormPage.dart';
-import 'package:itrek/request/request.dart';
+import 'package:itrek/request.dart';
 import 'package:latlong2/latlong.dart';
 
 /// Solicitar permisos de ubicación en primer plano y, si es necesario, en segundo plano
@@ -45,10 +44,9 @@ List<Map<String, dynamic>> convertirAFormato(List<LatLng> listaCoords) {
 Future<int?> postRuta(Map<String, dynamic> rutaData) async {
   try {
     final response = await makeRequest(
-      method: 'POST',
-      url: '$BASE_URL/api/rutas/',
+      method: POST,
+      url: 'api/rutas/',
       body: rutaData,
-      useToken: true, // Usamos el token si es necesario
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -67,8 +65,8 @@ Future<int?> postRuta(Map<String, dynamic> rutaData) async {
 Future<void> _updateRuta(int id, String nombre, String descripcion, String dificultad, double distanciaKm, double tiempoEstimadoHoras) async {
   try {
     final response = await makeRequest(
-      method: 'PATCH',
-      url: '$BASE_URL/api/rutas/$id/',
+      method: PATCH,
+      url: 'api/rutas/$id/',
       body: {
         'nombre': nombre,
         'descripcion': descripcion,
@@ -76,7 +74,6 @@ Future<void> _updateRuta(int id, String nombre, String descripcion, String dific
         'distancia_km': distanciaKm,
         'tiempo_estimado_horas': tiempoEstimadoHoras,
       },
-      useToken: true, // Se requiere token para la autenticación
     );
 
     if (response.statusCode == 200) {
@@ -173,7 +170,9 @@ class RegistrarRutaState extends State<RegistrarRuta> {
         );
 
         _markers.clear();
-        _markers.add(buildLocationMarker(newPosition));
+        _markers.add(
+            buildLocationMarker(newPosition)
+        );
       });
 
       // Mover la cámara a la nueva posición

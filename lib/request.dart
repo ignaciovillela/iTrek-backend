@@ -1,10 +1,17 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:itrek/db/db.dart';
+import 'package:itrek/config.dart';
+import 'package:itrek/db.dart';
+
+const GET = 'GET';
+const POST = 'POST';
+const PATCH = 'PATCH';
+const DELETE = 'DELETE';
 
 Future<http.Response> makeRequest({
-  required String method, // 'GET', 'POST', 'PATCH', 'DELETE'
+  required String method, // GET, POST, PATCH, DELETE
+  String? baseUrl,
   required String url,
   Map<String, dynamic>? body, // Cuerpo opcional para POST y PATCH
   bool useToken = true, // Determina si se usa el token
@@ -15,23 +22,23 @@ Future<http.Response> makeRequest({
     'Content-Type': 'application/json; charset=UTF-8',
     if (useToken && token != null) 'Authorization': 'Token $token',
   };
-
-  Uri uri = Uri.parse(url);
+  baseUrl = baseUrl ?? BASE_URL;
+  Uri uri = Uri.parse('$baseUrl/$url');
 
   try {
     http.Response response;
 
     switch (method.toUpperCase()) {
-      case 'GET':
+      case GET:
         response = await http.get(uri, headers: headers);
         break;
-      case 'POST':
+      case POST:
         response = await http.post(uri, headers: headers, body: jsonEncode(body));
         break;
-      case 'PATCH':
+      case PATCH:
         response = await http.patch(uri, headers: headers, body: jsonEncode(body));
         break;
-      case 'DELETE':
+      case DELETE:
         response = await http.delete(uri, headers: headers);
         break;
       default:

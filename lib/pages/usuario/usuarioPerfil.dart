@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:itrek/db/db.dart';
+import 'package:itrek/db.dart';
 import 'package:itrek/pages/usuario/login.dart';
 
 class PerfilUsuarioScreen extends StatefulWidget {
