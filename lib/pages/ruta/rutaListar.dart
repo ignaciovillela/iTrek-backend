@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:itrek/img.dart';
 import 'package:itrek/pages/ruta/rutaRecorrer.dart';
 import 'package:itrek/request.dart';
+import 'package:itrek/db.dart'; // Importar el helper de base de datos
 
 class ListadoRutasScreen extends StatefulWidget {
   const ListadoRutasScreen({super.key});
@@ -204,7 +205,8 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   bool _isEditing = false;
   late TextEditingController _nombreController;
   late TextEditingController _descripcionController;
-  List<dynamic>? usuarios; // Lista de usuarios obtenida del backend
+  String? localUsername; // Username almacenado localmente
+  bool esPropietario = false; // Variable para verificar si es el propietario
   List<dynamic>? usuariosFiltrados; // Lista filtrada de usuarios
   TextEditingController _searchController = TextEditingController(); // Controlador de búsqueda
   String? errorMessage; // Variable para mostrar mensajes de error
@@ -214,6 +216,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     super.initState();
     _nombreController = TextEditingController(text: widget.ruta['nombre']);
     _descripcionController = TextEditingController(text: widget.ruta['descripcion']);
+    _fetchLocalUsername(); // Obtener el username almacenado localmente
   }
 
   @override
@@ -224,29 +227,43 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     super.dispose();
   }
 
+  // Obtener el username almacenado localmente
+  Future<void> _fetchLocalUsername() async {
+    final username = await db.get('username'); // Obtener el username de la base de datos
+    setState(() {
+      localUsername = username as String?;
+      esPropietario = (localUsername == widget.ruta['usuario']['username']); // Comparar con el username del creador de la ruta
+    });
+  }
+
   // Método para buscar usuarios solo cuando se presiona el botón de búsqueda
   Future<void> _fetchUsuarios() async {
     String query = _searchController.text.trim();
     if (query.length >= 3) {
       try {
+        print("Buscando usuarios con query: $query"); // Debug
         final response = await makeRequest(
           method: GET,
           url: 'api/buscar_usuario?q=$query', // Enviar la consulta al backend
         );
 
         if (response.statusCode == 200) {
+          final data = jsonDecode(utf8.decode(response.bodyBytes));
+          print("Usuarios encontrados: $data"); // Debug
           setState(() {
-            usuariosFiltrados = jsonDecode(utf8.decode(response.bodyBytes));
+            usuariosFiltrados = data;
             errorMessage = null; // Limpiar el mensaje de error si la búsqueda es exitosa
           });
         } else {
           var errorData = jsonDecode(response.body);
+          print("Error al buscar usuarios: $errorData"); // Debug
           setState(() {
             errorMessage = errorData['error'];
             usuariosFiltrados = []; // Limpiar la lista si hay un error
           });
         }
       } catch (e) {
+        print("Error de conexión al buscar usuarios: $e"); // Debug
         setState(() {
           errorMessage = 'Error de conexión: $e';
           usuariosFiltrados = [];
@@ -407,19 +424,20 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                minimumSize: const Size(double.infinity, 50),
+            if (esPropietario) // Solo mostrar el botón si el usuario es el propietario
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                onPressed: () {
+                  _showUsuariosBottomSheet(); // Mostrar y buscar usuarios para compartir
+                },
+                child: const Text(
+                  'Compartir Ruta',
+                  style: TextStyle(color: Colors.white, fontSize: 16.0),
+                ),
               ),
-              onPressed: () {
-                _showUsuariosBottomSheet(); // Mostrar y buscar usuarios para compartir
-              },
-              child: const Text(
-                'Compartir Ruta',
-                style: TextStyle(color: Colors.white, fontSize: 16.0),
-              ),
-            ),
           ],
         ),
       ),
