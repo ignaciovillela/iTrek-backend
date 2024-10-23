@@ -239,35 +239,33 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   // Método para buscar usuarios solo cuando se presiona el botón de búsqueda
   Future<void> _fetchUsuarios() async {
     String query = _searchController.text.trim();
-    if (query.length >= 3) {
-      try {
-        final response = await makeRequest(
-          method: GET,
-          url: 'api/buscar_usuario?q=$query', // Enviar la consulta al backend
-        );
+    if (query == '') {
+      errorMessage = '';
+      usuariosFiltrados = null;
+      return;
+    }
+    try {
+      final response = await makeRequest(
+        method: GET,
+        url: 'api/buscar_usuario?q=$query', // Enviar la consulta al backend
+      );
 
-        if (response.statusCode == 200) {
-          final data = jsonDecode(utf8.decode(response.bodyBytes));
-          setState(() {
-            usuariosFiltrados = data;
-            errorMessage = null; // Limpiar el mensaje de error si la búsqueda es exitosa
-          });
-        } else {
-          var errorData = jsonDecode(response.body);
-          setState(() {
-            errorMessage = errorData['error'];
-            usuariosFiltrados = []; // Limpiar la lista si hay un error
-          });
-        }
-      } catch (e) {
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
         setState(() {
-          errorMessage = 'Error de conexión: $e';
-          usuariosFiltrados = [];
+          usuariosFiltrados = data;
+          errorMessage = null; // Limpiar el mensaje de error si la búsqueda es exitosa
+        });
+      } else {
+        var errorData = jsonDecode(response.body);
+        setState(() {
+          errorMessage = errorData['error'];
+          usuariosFiltrados = null; // Limpiar la lista si hay un error
         });
       }
-    } else {
+    } catch (e) {
       setState(() {
-        errorMessage = 'La búsqueda debe tener al menos 3 letras.';
+        errorMessage = 'Error de conexión: $e';
         usuariosFiltrados = [];
       });
     }
@@ -317,6 +315,10 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                       Expanded(
                         child: TextField(
                           controller: _searchController,
+                          onChanged: (text) async {
+                            await _fetchUsuarios();
+                            setModalState(() {}); // Actualizar el estado del modal
+                          },
                           decoration: InputDecoration(
                             labelText: 'Buscar usuario',
                             prefixIcon: Icon(Icons.search),

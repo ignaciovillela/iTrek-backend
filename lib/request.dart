@@ -25,9 +25,9 @@ Future<http.Response> makeRequest({
   baseUrl = baseUrl ?? BASE_URL;
   Uri uri = Uri.parse('$baseUrl/$url');
 
-  try {
-    http.Response response;
+  http.Response response;
 
+  try {
     switch (method.toUpperCase()) {
       case GET:
         response = await http.get(uri, headers: headers);
@@ -45,12 +45,13 @@ Future<http.Response> makeRequest({
         throw Exception('Invalid HTTP method: $method');
     }
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return response; // Solicitud exitosa
-    } else {
-      throw Exception('Request failed with status: ${response.statusCode}');
-    }
+    // Decodificar el cuerpo de la respuesta con utf8
+    response = http.Response(utf8.decode(response.bodyBytes), response.statusCode,
+        headers: response.headers);
+
+    return response; // Devolver la respuesta decodificada
   } catch (e) {
-    throw Exception('Request error: $e');
+    // En caso de error en la solicitud (conexión u otro), retornar una respuesta simulada con código 500
+    return http.Response(utf8.encode('{"error": "Error de conexión: $e"}') as String, 500);
   }
 }
