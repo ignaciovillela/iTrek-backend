@@ -241,7 +241,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     String query = _searchController.text.trim();
     if (query.length >= 3) {
       try {
-        print("Buscando usuarios con query: $query"); // Debug
         final response = await makeRequest(
           method: GET,
           url: 'api/buscar_usuario?q=$query', // Enviar la consulta al backend
@@ -249,21 +248,18 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
 
         if (response.statusCode == 200) {
           final data = jsonDecode(utf8.decode(response.bodyBytes));
-          print("Usuarios encontrados: $data"); // Debug
           setState(() {
             usuariosFiltrados = data;
             errorMessage = null; // Limpiar el mensaje de error si la búsqueda es exitosa
           });
         } else {
           var errorData = jsonDecode(response.body);
-          print("Error al buscar usuarios: $errorData"); // Debug
           setState(() {
             errorMessage = errorData['error'];
             usuariosFiltrados = []; // Limpiar la lista si hay un error
           });
         }
       } catch (e) {
-        print("Error de conexión al buscar usuarios: $e"); // Debug
         setState(() {
           errorMessage = 'Error de conexión: $e';
           usuariosFiltrados = [];
@@ -274,6 +270,34 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
         errorMessage = 'La búsqueda debe tener al menos 3 letras.';
         usuariosFiltrados = [];
       });
+    }
+  }
+
+  // Método para compartir la ruta con el usuario seleccionado
+  Future<void> _compartirRutaConUsuario(int usuarioId) async {
+    try {
+      final response = await makeRequest(
+        method: POST,
+        url: 'api/rutas/${widget.ruta['id']}/compartir/$usuarioId/',
+      );
+
+      // Manejo de los códigos 200 y 201 como exitosos
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ruta compartida exitosamente con el usuario $usuarioId')),
+        );
+      } else {
+        // Manejo de errores si el código de estado no es 200 o 201
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al compartir la ruta: Código ${response.statusCode}')),
+        );
+      }
+    } catch (e) {
+      // Imprimir el error en la consola para facilitar la depuración
+      print("Error al compartir la ruta: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error de conexión: $e')),
+      );
     }
   }
 
@@ -334,9 +358,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                         title: Text(usuario['username']),
                         onTap: () {
                           Navigator.pop(context); // Cierra el BottomSheet
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Ruta compartida con ${usuario['username']}')),
-                          );
+                          _compartirRutaConUsuario(usuario['id']); // Llamar a compartir ruta con el usuario seleccionado
                         },
                       );
                     },
