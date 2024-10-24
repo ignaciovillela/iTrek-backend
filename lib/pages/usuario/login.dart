@@ -20,7 +20,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _isLoading = false;
   bool _hasUsername = false; // Para controlar si ya existe un username guardado
   String? _savedUsername; // Variable para almacenar el username guardado
 
@@ -80,19 +79,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final response = await makeRequest(
-        method: POST,
-        url: 'api/login/',
-        body: {'username': username, 'password': password},
-        useToken: false,
-      );
-
-      if (response.statusCode == 200) {
+    await makeRequest(
+      method: POST,
+      url: 'api/auth/login/',
+      body: {'username': username, 'password': password},
+      useToken: false,
+      onOk: (response) async {
         final jsonData = jsonDecode(response.body);
         final token = jsonData['token'];
         if (token != null) {
@@ -103,20 +95,18 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             MaterialPageRoute(builder: (context) => const MenuScreen()),
           );
         }
-      } else {
+      },
+      onError: (response) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error en la autenticación')),
         );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error en la autenticación: $e')),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+      },
+      onConnectionError: (errorMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error en la autenticación: $errorMessage')),
+        );
+      },
+    );
   }
 
   @override

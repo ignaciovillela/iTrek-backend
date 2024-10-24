@@ -1,9 +1,10 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:itrek/db.dart'; // Importar el helper de base de datos
 import 'package:itrek/img.dart';
 import 'package:itrek/pages/ruta/rutaRecorrer.dart';
 import 'package:itrek/request.dart';
-import 'package:itrek/db.dart'; // Importar el helper de base de datos
 
 class ListadoRutasScreen extends StatefulWidget {
   const ListadoRutasScreen({super.key});
@@ -22,52 +23,56 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   }
 
   Future<void> _fetchRutas() async {
-    try {
-      final response = await makeRequest(
-        method: GET,
-        url: 'api/rutas/',
-      );
-
-      if (response.statusCode == 200) {
+    await makeRequest(
+      method: GET,
+      url: 'api/routes/',
+      onOk: (response) {
         setState(() {
-          rutasGuardadas = jsonDecode(utf8.decode(response.bodyBytes));
+          rutasGuardadas = jsonDecode(response.body);
         });
-      } else {
+      },
+      onError: (response) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error al cargar las rutas')),
         );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error de conexión: $e')),
-      );
-    }
+      },
+      onDefault: (response) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error inesperado: ${response.statusCode}')),
+        );
+      },
+      onConnectionError: (errorMessage) {
+        print(errorMessage);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      },
+    );
   }
 
   Future<void> _deleteRuta(int id) async {
-    try {
-      final response = await makeRequest(
-        method: DELETE,
-        url: 'api/rutas/$id/',
-      );
-
-      if (response.statusCode == 204) {
+    await makeRequest(
+      method: DELETE,
+      url: 'api/routes/$id/',
+      onOk: (response) {
         setState(() {
           rutasGuardadas!.removeWhere((ruta) => ruta['id'] == id);
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ruta eliminada con éxito')),
         );
-      } else {
+      },
+      onError: (response) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error al eliminar la ruta')),
         );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error de conexión: $e')),
-      );
-    }
+      },
+      onConnectionError: (errorMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      },
+    );
   }
 
   Future<void> _confirmDelete(BuildContext context, int id) async {
@@ -239,64 +244,64 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   // Método para buscar usuarios solo cuando se presiona el botón de búsqueda
   Future<void> _fetchUsuarios() async {
     String query = _searchController.text.trim();
+
     if (query == '') {
-      errorMessage = '';
-      usuariosFiltrados = null;
+      setState(() {
+        errorMessage = '';
+        usuariosFiltrados = null;
+      });
       return;
     }
-    try {
-      final response = await makeRequest(
-        method: GET,
-        url: 'api/buscar_usuario?q=$query', // Enviar la consulta al backend
-      );
 
-      if (response.statusCode == 200) {
+    await makeRequest(
+      method: GET,
+      url: 'api/users/search?q=$query', // Enviar la consulta al backend
+      onOk: (response) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
         setState(() {
           usuariosFiltrados = data;
           errorMessage = null; // Limpiar el mensaje de error si la búsqueda es exitosa
         });
-      } else {
+      },
+      onError: (response) {
         var errorData = jsonDecode(response.body);
         setState(() {
           errorMessage = errorData['error'];
           usuariosFiltrados = null; // Limpiar la lista si hay un error
         });
-      }
-    } catch (e) {
-      setState(() {
-        errorMessage = 'Error de conexión: $e';
-        usuariosFiltrados = [];
-      });
-    }
+      },
+      onConnectionError: (errorMessage) {
+        setState(() {
+          this.errorMessage = 'Error de conexión: $errorMessage';
+          usuariosFiltrados = [];
+        });
+      },
+    );
   }
 
   // Método para compartir la ruta con el usuario seleccionado
   Future<void> _compartirRutaConUsuario(int usuarioId) async {
-    try {
-      final response = await makeRequest(
-        method: POST,
-        url: 'api/rutas/${widget.ruta['id']}/compartir/$usuarioId/',
-      );
-
-      // Manejo de los códigos 200 y 201 como exitosos
-      if (response.statusCode == 200 || response.statusCode == 201) {
+    await makeRequest(
+      method: POST,
+      url: 'api/routes/${widget.ruta['id']}/share/$usuarioId/',
+      onOk: (response) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Ruta compartida exitosamente con el usuario $usuarioId')),
         );
-      } else {
-        // Manejo de errores si el código de estado no es 200 o 201
+      },
+      onError: (response) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al compartir la ruta: Código ${response.statusCode}')),
         );
-      }
-    } catch (e) {
-      // Imprimir el error en la consola para facilitar la depuración
-      print("Error al compartir la ruta: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error de conexión: $e')),
-      );
-    }
+      },
+      onConnectionError: (errorMessage) {
+        // Imprimir el error en la consola para facilitar la depuración
+        print("Error al compartir la ruta: $errorMessage");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error de conexión: $errorMessage')),
+        );
+      },
+    );
   }
 
   // Mostrar lista de usuarios con campo de búsqueda
