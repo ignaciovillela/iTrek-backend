@@ -263,6 +263,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   String? errorMessage; // Variable para mensajes de error de búsqueda.
   late MapController _mapController; // Controlador para el mapa.
   List<LatLng> routePoints = []; // Puntos de la ruta.
+  LatLng? _initialPosition;
 
   @override
   void initState() {
@@ -518,11 +519,9 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                   } else {
                     final routePoints = snapshot.data ?? []; // Obtiene los puntos de la ruta.
 
-                    return buildMap(
+                    return buildMap2(
                       mapController: _mapController,
-                      initialPosition: (routePoints.isNotEmpty)
-                          ? routePoints.first // Posición inicial del mapa.
-                          : LatLng(51.509364, -0.128928), // Centro de Londres como predeterminado.
+                      initialPosition: routePoints.isNotEmpty ? routePoints.first : _initialPosition ?? LatLng(0, 0), // Centro de Londres como predeterminado.
                       routePolylines: [
                         Polyline(
                           points: routePoints, // Genera la lista de puntos para la polilínea.

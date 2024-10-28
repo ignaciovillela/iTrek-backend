@@ -12,7 +12,7 @@ Widget buildMap({
     mapController: mapController, // Asignar el controlador al mapa
     options: MapOptions(
       initialCenter: initialPosition ?? LatLng(0, 0), // Usa initialCenter
-      initialZoom: 14.0, // Usa initialZoom
+      initialZoom: 20.0, // Usa initialZoom
     ),
     children: [
       TileLayer(
@@ -64,3 +64,31 @@ Marker buildLocationMarker(LatLng position) {
     ),
   );
 }
+
+
+Widget buildMap2({
+  required MapController mapController,
+  required LatLng? initialPosition,
+  required List<Polyline> routePolylines,
+  required List<Marker> markers,
+}) {
+  return FlutterMap(
+    mapController: mapController, // Asignar el controlador al mapa
+    options: MapOptions(
+      initialCenter: initialPosition ?? LatLng(0, 0), // Usa initialCenter
+      initialZoom: 14.0, // Usa initialZoom
+    ),
+    children: [
+      TileLayer(
+        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      ),
+      PolylineLayer(
+        polylines: routePolylines,
+      ),
+      MarkerLayer(
+        markers: markers,
+      ),
+    ],
+  );
+}
+
