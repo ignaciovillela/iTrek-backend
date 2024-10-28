@@ -63,7 +63,8 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   Future<void> _deleteRuta(int id) async {
     await makeRequest(
       method: DELETE,
-      url: ROUTE_DETAIL, urlVars: {'id': id},
+      url: ROUTE_DETAIL,
+      urlVars: {'id': id},
       onOk: (response) {
         setState(() {
           rutasGuardadas!.removeWhere((ruta) => ruta['id'] == id); // Elimina la ruta localmente
@@ -266,7 +267,8 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   Future<void> _fetchRoutePoints() async {
     await makeRequest(
       method: GET,
-      url: 'api/routes/${widget.ruta['id']}', // Llama al backend con el ID de la ruta
+      url: ROUTE_DETAIL,
+      urlVars: {'id': widget.ruta['id']},
       onOk: (response) {
         final jsonResponse = jsonDecode(response.body); // Decodifica la respuesta JSON
         if (jsonResponse['puntos'] != null && jsonResponse['puntos'].isNotEmpty) {
@@ -383,7 +385,8 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
 
     await makeRequest(
       method: GET,
-      url: 'api/users/search?q=$query', // Envia la consulta al backend
+      url: SEARCH_USER,
+      urlVars: {'query': query},
       onOk: (response) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
         setState(() {
@@ -411,7 +414,8 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   Future<void> _compartirRutaConUsuario(int usuarioId) async {
     await makeRequest(
       method: POST,
-      url: 'api/routes/${widget.ruta['id']}/share/$usuarioId/',
+      url: ROUTE_DETAIL,
+      urlVars: {'id': widget.ruta['id'], 'usuarioId': usuarioId},
       onOk: (response) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Ruta compartida exitosamente con el usuario $usuarioId')),
