@@ -523,15 +523,21 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                     return Center(child: Text('Error: ${snapshot.error}')); // Muestra un error si ocurre.
                   } else {
                     final routePoints = snapshot.data ?? []; // Obtiene los puntos de la ruta.
-
+                    final result = getCenterAndZoomForBounds(routePoints);
+                    final LatLng center = result['center'];
+                    final double zoom = result['zoom'];
                     return buildMap(
                       mapController: _mapController,
-                      initialPosition: routePoints.isNotEmpty ? routePoints.first : _initialPosition ?? LatLng(0, 0), // Centro de Londres como predeterminado.
+                      initialPosition: center,
+                      initialZoom: zoom,
                       routePolylines: [
                         Polyline(
+                          pattern: StrokePattern.dashed(segments: [5, 6]),
                           points: routePoints, // Genera la lista de puntos para la polilínea.
                           color: Colors.blue, // Color de la ruta.
-                          strokeWidth: 4.0, // Grosor de la línea de la ruta.
+                          borderStrokeWidth: 1.5,
+                          borderColor: Color(0xdd5555ff),
+                          strokeWidth: 3.0, // Grosor de la línea de la ruta.
                         ),
                       ],
                       markers: [
