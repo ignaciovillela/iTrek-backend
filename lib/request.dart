@@ -9,13 +9,13 @@ const PATCH = 'PATCH';
 const DELETE = 'DELETE';
 
 const LOGIN =        'api/auth/login/';
-const LOGOUT =       '/api/auth/logout/';
+const LOGOUT =       'api/auth/logout/';
 const ROUTES =       'api/routes/';
 
-const ROUTE_DETAIL = 'api/routes/:id/';
-const ROUTE_SHARE =  'api/routes/:id/share/:usuarioId/';
+const ROUTE_DETAIL = 'api/routes/{id}/';
+const ROUTE_SHARE =  'api/routes/{id}/share/{usuarioId}/';
 
-const SEARCH_USER =  'api/users/search?q=:query';
+const SEARCH_USER =  'api/users/search?q={query}';
 
 typedef StatusCallback = void Function(http.Response response);
 typedef ErrorCallback = void Function(String errorMessage);
@@ -23,7 +23,7 @@ typedef ErrorCallback = void Function(String errorMessage);
 String formatUrl(String url, Map<String, dynamic>? urlVars) {
   if (urlVars != null) {
     urlVars.forEach((key, value) {
-      url = url.replaceAll(':$key', value.toString());
+      url = url.replaceAll('{$key}', value.toString());
     });
   }
   return url;
