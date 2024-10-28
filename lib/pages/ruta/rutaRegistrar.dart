@@ -46,7 +46,7 @@ Future<int?> postRuta(Map<String, dynamic> rutaData) async {
 
   await makeRequest(
     method: POST,
-    url: 'api/routes/',
+    url: ROUTES,
     body: rutaData,
     onOk: (response) {
       final responseData = jsonDecode(response.body);
@@ -68,7 +68,8 @@ Future<int?> postRuta(Map<String, dynamic> rutaData) async {
 Future<void> _updateRuta(int id, String nombre, String descripcion, String dificultad, double distanciaKm, double tiempoEstimadoHoras) async {
   await makeRequest(
     method: PATCH,
-    url: 'api/routes/$id/',
+    url: ROUTE_DETAIL,
+    urlVars: {'id': id},
     body: {
       'nombre': nombre,
       'descripcion': descripcion,

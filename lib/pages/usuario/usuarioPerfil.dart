@@ -30,7 +30,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
   Future<void> _cerrarSesion() async {
     await makeRequest(
       method: POST,
-      url: '/api/auth/logout/',
+      url: LOGOUT,
       useToken: true,
       onOk: (response) async {
         await db.delete(db.token);
