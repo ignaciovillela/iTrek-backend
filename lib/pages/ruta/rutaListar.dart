@@ -524,7 +524,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                   } else {
                     final routePoints = snapshot.data ?? []; // Obtiene los puntos de la ruta.
 
-                    return buildMap2(
+                    return buildMap(
                       mapController: _mapController,
                       initialPosition: routePoints.isNotEmpty ? routePoints.first : _initialPosition ?? LatLng(0, 0), // Centro de Londres como predeterminado.
                       routePolylines: [
