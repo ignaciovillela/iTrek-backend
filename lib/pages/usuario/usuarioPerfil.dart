@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:itrek/db.dart';
 import 'package:itrek/pages/usuario/login.dart';
+import 'package:itrek/request.dart';
+import 'dart:convert';
 
 class PerfilUsuarioScreen extends StatefulWidget {
   const PerfilUsuarioScreen({super.key});
@@ -25,25 +27,30 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
   String _sexo = 'Masculino'; // Valor inicial para el selector de sexo
   bool _editMode = false; // Controla si los campos están en modo edición
 
-  // Método para eliminar el token de la base de datos (cerrar sesión)
-// Método para eliminar el token de la base de datos (cerrar sesión)
   Future<void> _cerrarSesion() async {
-    try {
-      await db.delete(db.token);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sesión cerrada exitosamente')),
-      );
+    await makeRequest(
+      method: POST,
+      url: LOGOUT,
+      useToken: true,
+      onOk: (response) async {
+        await db.delete(db.token);
 
-      // Redirigir al login después de cerrar sesión
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()), // Asegúrate de tener LoginScreen creada
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cerrar sesión: $e')),
-      );
-    }
+        final message = jsonDecode(response.body)['message'];
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      },
+      onError: (response) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al cerrar sesión')),
+        );
+      },
+    );
   }
 
   @override

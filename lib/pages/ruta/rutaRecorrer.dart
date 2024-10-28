@@ -67,7 +67,8 @@ class _RecorrerRutaScreenState extends State<RecorrerRutaScreen> {
 
     await makeRequest(
       method: GET,
-      url: 'api/routes/${widget.ruta['id']}',
+      url: ROUTE_DETAIL,
+      urlVars: {'id': widget.ruta['id']},
       onOk: (response) {
         final jsonResponse = jsonDecode(response.body);
 

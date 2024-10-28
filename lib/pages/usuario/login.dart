@@ -81,7 +81,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
     await makeRequest(
       method: POST,
-      url: 'api/auth/login/',
+      url: LOGIN,
       body: {'username': username, 'password': password},
       useToken: false,
       onOk: (response) async {
