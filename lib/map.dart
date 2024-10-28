@@ -12,7 +12,7 @@ Widget buildMap({
     mapController: mapController, // Asignar el controlador al mapa
     options: MapOptions(
       initialCenter: initialPosition ?? LatLng(0, 0), // Usa initialCenter
-      initialZoom: 18.0, // Usa initialZoom
+      initialZoom: 14.0, // Usa initialZoom
     ),
     children: [
       TileLayer(
