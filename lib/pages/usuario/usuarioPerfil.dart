@@ -27,40 +27,30 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
   String _sexo = 'Masculino'; // Valor inicial para el selector de sexo
   bool _editMode = false; // Controla si los campos están en modo edición
 
-  // Método para eliminar el token de la base de datos (cerrar sesión)
   Future<void> _cerrarSesion() async {
-    try {
-      final response = await makeRequest(
-        method: POST,
-        url: '/api/auth/logout/',
-        useToken: true,
-      );
-
-      if (response.statusCode == 200) {
-        // Elimina el token localmente
+    await makeRequest(
+      method: POST,
+      url: '/api/auth/logout/',
+      useToken: true,
+      onOk: (response) async {
         await db.delete(db.token);
 
-        // Muestra el mensaje de éxito desde el backend
         final message = jsonDecode(response.body)['message'];
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(message)),
         );
 
-        // Redirigir al login después de cerrar sesión
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()), // Asegúrate de tener LoginScreen creada
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
-      } else {
+      },
+      onError: (response) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error al cerrar sesión')),
         );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cerrar sesión: $e')),
-      );
-    }
+      },
+    );
   }
 
   @override
