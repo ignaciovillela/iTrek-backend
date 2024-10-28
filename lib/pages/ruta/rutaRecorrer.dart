@@ -65,13 +65,10 @@ class _RecorrerRutaScreenState extends State<RecorrerRutaScreen> {
       isLoading = true;
     });
 
-    try {
-      final response = await makeRequest(
-        method: GET,
-        url: 'api/rutas/${widget.ruta['id']}',
-      );
-
-      if (response.statusCode == 200) {
+    await makeRequest(
+      method: GET,
+      url: 'api/routes/${widget.ruta['id']}',
+      onOk: (response) {
         final jsonResponse = jsonDecode(response.body);
 
         if (jsonResponse['puntos'] != null && jsonResponse['puntos'].isNotEmpty) {
@@ -93,22 +90,24 @@ class _RecorrerRutaScreenState extends State<RecorrerRutaScreen> {
             const SnackBar(content: Text('No se encontraron puntos en la ruta')),
           );
         }
-      } else {
+      },
+      onError: (response) {
         setState(() {
           isLoading = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al cargar los puntos de la ruta: ${response.body}')),
         );
-      }
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error de conexión: $e')),
-      );
-    }
+      },
+      onConnectionError: (errorMessage) {
+        setState(() {
+          isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error de conexión: $errorMessage')),
+        );
+      },
+    );
   }
 
   void _initMarkersAndPolylines() {
