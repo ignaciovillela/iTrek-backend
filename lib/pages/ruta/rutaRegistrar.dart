@@ -42,48 +42,50 @@ List<Map<String, dynamic>> convertirAFormato(List<LatLng> listaCoords) {
 
 // Función para enviar una ruta al backend mediante una solicitud HTTP POST
 Future<int?> postRuta(Map<String, dynamic> rutaData) async {
-  try {
-    final response = await makeRequest(
-      method: POST,
-      url: 'api/rutas/',
-      body: rutaData,
-    );
+  int? rutaId;
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
+  await makeRequest(
+    method: POST,
+    url: 'api/routes/',
+    body: rutaData,
+    onOk: (response) {
       final responseData = jsonDecode(response.body);
-      return responseData['id'];
-    } else {
+      rutaId = responseData['id'];
+    },
+    onError: (response) {
       print('Error al crear la ruta: ${response.statusCode}');
-    }
-  } catch (e) {
-    print('Error en la solicitud: $e');
-  }
-  return null;
+    },
+    onConnectionError: (errorMessage) {
+      print('Error en la solicitud: $errorMessage');
+    },
+  );
+
+
+  return rutaId;
 }
 
 // Función para actualizar la ruta con datos adicionales usando PATCH
 Future<void> _updateRuta(int id, String nombre, String descripcion, String dificultad, double distanciaKm, double tiempoEstimadoHoras) async {
-  try {
-    final response = await makeRequest(
-      method: PATCH,
-      url: 'api/rutas/$id/',
-      body: {
-        'nombre': nombre,
-        'descripcion': descripcion,
-        'dificultad': dificultad,
-        'distancia_km': distanciaKm,
-        'tiempo_estimado_horas': tiempoEstimadoHoras,
-      },
-    );
-
-    if (response.statusCode == 200) {
+  await makeRequest(
+    method: PATCH,
+    url: 'api/routes/$id/',
+    body: {
+      'nombre': nombre,
+      'descripcion': descripcion,
+      'dificultad': dificultad,
+      'distancia_km': distanciaKm,
+      'tiempo_estimado_horas': tiempoEstimadoHoras,
+    },
+    onOk: (response) {
       print('Ruta actualizada con éxito');
-    } else {
+    },
+    onError: (response) {
       print('Error al actualizar la ruta: ${response.statusCode}');
-    }
-  } catch (e) {
-    print('Error al actualizar la ruta: $e');
-  }
+    },
+    onConnectionError: (errorMessage) {
+      print('Error de conexión al actualizar la ruta: $errorMessage');
+    },
+  );
 }
 
 // Página principal del mapa donde se graba la ruta usando flutter_map
