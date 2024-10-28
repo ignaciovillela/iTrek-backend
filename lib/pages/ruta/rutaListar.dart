@@ -31,7 +31,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   Future<void> _fetchRutas() async {
     await makeRequest(
       method: GET,
-      url: 'api/routes/', // URL de la API para obtener rutas.
+      url: ROUTES, // URL de la API para obtener rutas.
       onOk: (response) {
         setState(() {
           rutasGuardadas = jsonDecode(response.body); // Decodifica y guarda las rutas en el estado.
@@ -62,7 +62,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   Future<void> _deleteRuta(int id) async {
     await makeRequest(
       method: DELETE,
-      url: 'api/routes/$id/', // URL de la API para eliminar una ruta específica.
+      url: ROUTE_DETAIL,urlVars: {'id' :id}, // URL de la API para eliminar una ruta específica.
       onOk: (response) {
         setState(() {
           rutasGuardadas!.removeWhere((ruta) => ruta['id'] == id); // Elimina la ruta localmente.
@@ -121,7 +121,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
 
     await makeRequest(
       method: GET,
-      url: 'api/routes/$routeId', // Llama al backend con el ID de la ruta.
+      url:  ROUTE_DETAIL, urlVars: {'id': routeId}, // Llama al backend con el ID de la ruta.
       onOk: (response) {
         final jsonResponse = jsonDecode(response.body); // Decodifica la respuesta JSON.
         if (jsonResponse['puntos'] != null && jsonResponse['puntos'].isNotEmpty) {
@@ -298,7 +298,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
 
     await makeRequest(
       method: GET,
-      url: 'api/routes/${widget.ruta['id']}', // Llama al backend con el ID de la ruta.
+      url: ROUTE_DETAIL, urlVars: {'id': widget.ruta['id']}, // Llama al backend con el ID de la ruta.
       onOk: (response) {
         final jsonResponse = jsonDecode(response.body); // Decodifica la respuesta JSON.
         if (jsonResponse['puntos'] != null && jsonResponse['puntos'].isNotEmpty) {
@@ -411,7 +411,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
 
     await makeRequest(
       method: GET,
-      url: 'api/users/search?q=$query', // Envia la consulta al backend.
+      url: SEARCH_USER, urlVars: {'query': query}, // Envia la consulta al backend.
       onOk: (response) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
         setState(() {
@@ -439,7 +439,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   Future<void> _compartirRutaConUsuario(int usuarioId) async {
     await makeRequest(
       method: POST,
-      url: 'api/routes/${widget.ruta['id']}/share/$usuarioId/', // Comparte la ruta con el usuario.
+      url: ROUTE_SHARE, urlVars: {'id':widget.ruta['id'],'usuarioId': usuarioId}, // Comparte la ruta con el usuario.
       onOk: (response) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Ruta compartida exitosamente con el usuario $usuarioId')),
