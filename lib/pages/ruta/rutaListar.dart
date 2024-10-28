@@ -508,7 +508,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
 
             // Sección para mostrar el mapa en un cuadro.
             SizedBox(
-              height: 400, // Ajusta la altura para mejorar la visualización del mapa.
+              height: 350, // Ajusta la altura para mejorar la visualización del mapa.
               child: FutureBuilder<List<LatLng>>(
                 future: _fetchRoutePoints(), // Obtiene los puntos de la ruta.
                 builder: (context, snapshot) {
