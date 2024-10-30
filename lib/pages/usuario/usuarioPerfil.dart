@@ -33,7 +33,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
       url: LOGOUT,
       useToken: true,
       onOk: (response) async {
-        await db.delete(db.token);
+        await db.values.delete(db.values.token);
 
         final message = jsonDecode(response.body)['message'];
         ScaffoldMessenger.of(context).showSnackBar(

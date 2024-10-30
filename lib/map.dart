@@ -49,13 +49,15 @@ Widget buildMap({
   required LatLng? initialPosition,
   required List<Polyline> routePolylines,
   required List<Marker> markers,
-  double initialZoom = 14.0,
+  PositionCallback? onPositionChanged,
+  double initialZoom = 18.0,
 }) {
   return FlutterMap(
     mapController: mapController, // Asignar el controlador al mapa
     options: MapOptions(
       initialCenter: initialPosition ?? LatLng(0, 0), // Usa initialCenter
       initialZoom: initialZoom,
+      onPositionChanged: onPositionChanged,
     ),
     children: [
       TileLayer(

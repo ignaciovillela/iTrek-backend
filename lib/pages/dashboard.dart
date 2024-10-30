@@ -14,7 +14,7 @@ class MenuScreen extends StatelessWidget {
   // Método para verificar si el token existe en la tabla `valores`
   Future<bool> _checkToken() async {
     // Busca en la base de datos si existe un token almacenado bajo la clave 'token'
-    Object? tokenData = await db.get(db.token);
+    Object? tokenData = await db.values.get(db.values.token);
 
     // Si encuentra un token, el usuario está autenticado
     return tokenData != null;
@@ -53,7 +53,7 @@ class MenuScreen extends StatelessWidget {
               children: [
                 const SizedBox(height: 40),
                 FutureBuilder<Object?>(
-                  future: db.get(db.username), // Llama a la función asíncrona
+                  future: db.values.get(db.values.username), // Llama a la función asíncrona
                   builder: (BuildContext context, AsyncSnapshot<Object?> snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const CircularProgressIndicator(); // Muestra un indicador de carga mientras espera
