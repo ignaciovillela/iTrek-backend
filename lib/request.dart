@@ -62,7 +62,7 @@ Future<http.Response?> makeRequest({
   Map<String, String>? customHeaders, // Headers personalizados opcionales
 }) async {
   // Obtención del token si se requiere
-  final token = useToken ? await db.get(db.token) : null;
+  final token = useToken ? await db.values.get(db.values.token) : null;
 
   // Construcción de los headers de la solicitud
   final headers = {

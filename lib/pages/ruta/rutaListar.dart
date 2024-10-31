@@ -265,7 +265,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   String? errorMessage; // Variable para mensajes de error de búsqueda.
   late MapController _mapController; // Controlador para el mapa.
   List<LatLng> routePoints = []; // Puntos de la ruta.
-  LatLng? _initialPosition;
 
   @override
   void initState() {
@@ -287,7 +286,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
 
   // Obtiene el username almacenado localmente.
   Future<void> _fetchLocalUsername() async {
-    final username = await db.get('username'); // Obtener el username de la base de datos.
+    final username = await db.values.get(db.values.username);
     setState(() {
       localUsername = username as String?; // Almacena el username.
       esPropietario = (localUsername == widget.ruta['usuario']['username']); // Verifica si es propietario.
@@ -534,9 +533,9 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                         Polyline(
                           pattern: StrokePattern.dashed(segments: [5, 6]),
                           points: routePoints, // Genera la lista de puntos para la polilínea.
-                          color: Colors.blue, // Color de la ruta.
+                          color: Colors.orange, // Color de la ruta.
                           borderStrokeWidth: 1.5,
-                          borderColor: Color(0xdd5555ff),
+                          borderColor: Colors.red,
                           strokeWidth: 3.0, // Grosor de la línea de la ruta.
                         ),
                       ],
