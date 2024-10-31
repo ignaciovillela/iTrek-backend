@@ -49,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   // Método para verificar si ya existe un username guardado en la DB
   Future<void> _checkForSavedUsername() async {
-    final username = await db.get(db.username); // Obtener el username de la DB
+    final username = await db.values.get(db.values.username); // Obtener el username de la DB
     if (username != null) {
       setState(() {
         _hasUsername = true;
@@ -60,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   // Método para borrar el username guardado
   Future<void> _deleteSavedUsername() async {
-    await db.delete(db.username); // Borrar el username de la DB
+    await db.values.delete(db.values.username); // Borrar el username de la DB
     setState(() {
       _hasUsername = false; // Volver a mostrar el campo de username
       _savedUsername = null; // Limpiar el username guardado
@@ -88,8 +88,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         final jsonData = jsonDecode(response.body);
         final token = jsonData['token'];
         if (token != null) {
-          await db.create(db.token, token);
-          await db.create(db.username, username);
+          await db.values.create(db.values.token, token);
+          await db.values.create(db.values.username, username);
 
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const MenuScreen()),
