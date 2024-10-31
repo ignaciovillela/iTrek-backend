@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:itrek/img.dart';
-import 'package:itrek/pages/dashboard.dart';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:itrek/request.dart'; // Importa 'makeRequest'
 import 'login.dart';
+
+const String POST_USER = 'api/users/create/'; // Define la constante para el endpoint
 
 class RegistroScreen extends StatefulWidget {
   const RegistroScreen({super.key});
@@ -15,53 +17,214 @@ class _RegistroScreenState extends State<RegistroScreen> {
   final _formKey = GlobalKey<FormState>();
 
   // Controladores para los campos del formulario
-  final TextEditingController _nombreController = TextEditingController();
-  final TextEditingController _correoController = TextEditingController();
-  final TextEditingController _numeroController = TextEditingController();
-  final TextEditingController _edadController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController(); // Nuevo controlador
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _biografiaController = TextEditingController();
 
-  String _sexo = 'Masculino'; // Valor inicial para el selector de sexo
+  bool _isLoading = false; // Para mostrar un indicador de carga
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose(); // Asegurarse de eliminar el controlador
+    _emailController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _biografiaController.dispose();
+    super.dispose();
+  }
+
+  // Función para registrar al usuario
+  Future<void> _registrarUsuario() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true; // Mostrar indicador de carga
+    });
+
+    // Recoger los datos del formulario
+    String username = _usernameController.text.trim();
+    String password = _passwordController.text.trim();
+    String email = _emailController.text.trim();
+    String firstName = _firstNameController.text.trim();
+    String lastName = _lastNameController.text.trim();
+    String biografia = _biografiaController.text.trim();
+
+    // Crear el cuerpo de la solicitud
+    Map<String, String> body = {
+      'username': username,
+      'password': password,
+      'email': email,
+      'first_name': firstName,
+      'last_name': lastName,
+      'biografia': biografia,
+    };
+
+    // Realizar la solicitud POST usando makeRequest
+    await makeRequest(
+      method: POST,
+      url: USER_CREATE,
+      body: body,
+      useToken: false,
+      onOk: (response) async {
+        final jsonData = jsonDecode(response.body);
+        final mensaje = jsonData['message'] ?? 'Registro exitoso';
+
+        // Mostrar mensaje de éxito
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(mensaje),
+          ),
+        );
+
+        // Navegar a la pantalla de inicio de sesión
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const LoginScreen(),
+          ),
+        );
+      },
+      onError: (response) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Error en el registro: ${response.statusCode} - ${response.reasonPhrase}'),
+          ),
+        );
+      },
+      onConnectionError: (errorMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error de conexión: $errorMessage')),
+        );
+      },
+    );
+
+    setState(() {
+      _isLoading = false; // Ocultar indicador de carga
+    });
+  }
+
+  // Función para cancelar y volver al login
+  void _cancelarRegistro() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const LoginScreen(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: const Text('Registro de Usuario'),
         backgroundColor: const Color(0xFF50C9B5), // Color del AppBar
-        title: Row(
-          children: [
-            logoWhite,
-            const SizedBox(width: 10), // Espacio entre el logo y el texto
-            const Text('Registro de Usuario'),
-          ],
-        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: ListView(
+            // Usamos ListView para permitir scroll si es necesario
             children: [
-              const Spacer(),
+              const SizedBox(height: 20),
 
-              // Logo encima del campo de nombre
-              Center(
-                child: Image.asset(
-                  'assets/images/perfil.png',
-                  height: 200, // Tamaño más grande del logo
-                ),
-              ),
-              const SizedBox(height: 30), // Espacio debajo del logo
-
-              // Campo para el nombre
+              // Campo para el username
               TextFormField(
-                controller: _nombreController,
+                controller: _usernameController,
+                decoration: InputDecoration(
+                  labelText: 'Nombre de Usuario',
+                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.person),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, ingrese un nombre de usuario';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // Campo para la contraseña
+              TextFormField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: 'Contraseña',
+                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.lock),
+                ),
+                obscureText: true, // Oculta el texto para contraseñas
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, ingrese una contraseña';
+                  }
+                  if (value.length < 6) {
+                    return 'La contraseña debe tener al menos 6 caracteres';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // Campo para la confirmación de contraseña
+              TextFormField(
+                controller: _confirmPasswordController,
+                decoration: InputDecoration(
+                  labelText: 'Confirmar Contraseña',
+                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.lock_outline),
+                ),
+                obscureText: true, // Oculta el texto para contraseñas
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, confirme su contraseña';
+                  }
+                  if (value != _passwordController.text) {
+                    return 'Las contraseñas no coinciden';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // Campo para el email
+              TextFormField(
+                controller: _emailController,
+                decoration: InputDecoration(
+                  labelText: 'Correo Electrónico',
+                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.email),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, ingrese su correo electrónico';
+                  }
+                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                    return 'Ingrese un correo válido';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // Campo para el primer nombre
+              TextFormField(
+                controller: _firstNameController,
                 decoration: InputDecoration(
                   labelText: 'Nombre',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  prefixIcon: const Icon(Icons.person),
+                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.account_circle),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -72,112 +235,47 @@ class _RegistroScreenState extends State<RegistroScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Campo para el correo
+              // Campo para el apellido
               TextFormField(
-                controller: _correoController,
+                controller: _lastNameController,
                 decoration: InputDecoration(
-                  labelText: 'Correo',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  prefixIcon: const Icon(Icons.email),
+                  labelText: 'Apellido',
+                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.account_circle_outlined),
                 ),
-                keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese su correo';
+                    return 'Por favor, ingrese su apellido';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 20),
 
-              // Campo para el número de contacto
+              // Campo para la biografía
               TextFormField(
-                controller: _numeroController,
+                controller: _biografiaController,
                 decoration: InputDecoration(
-                  labelText: 'Número de contacto',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  prefixIcon: const Icon(Icons.phone),
+                  labelText: 'Biografía',
+                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.description),
                 ),
-                keyboardType: TextInputType.phone,
+                maxLines: 3,
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese su número de contacto';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
-
-              // Selector para el sexo
-              DropdownButtonFormField<String>(
-                value: _sexo,
-                decoration: InputDecoration(
-                  labelText: 'Sexo',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  prefixIcon: const Icon(Icons.wc),
-                ),
-                items: const [
-                  DropdownMenuItem(
-                      value: 'Masculino', child: Text('Masculino')),
-                  DropdownMenuItem(value: 'Femenino', child: Text('Femenino')),
-                  DropdownMenuItem(value: 'Otro', child: Text('Otro')),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _sexo = value ?? 'Masculino';
-                  });
-                },
-              ),
-              const SizedBox(height: 20),
-
-              // Campo para la edad
-              TextFormField(
-                controller: _edadController,
-                decoration: InputDecoration(
-                  labelText: 'Edad',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  prefixIcon: const Icon(Icons.calendar_today),
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese su edad';
-                  }
+                  // La biografía puede ser opcional
                   return null;
                 },
               ),
               const SizedBox(height: 20),
 
               // Botones de registrar y cancelar
-              Row(
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        // Muestra un mensaje de éxito y navega a la pantalla Home
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Registro completado'),
-                          ),
-                        );
-                        // Navegar a la pantalla de inicio (HomeScreen)
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const MenuScreen(),
-                          ),
-                        );
-                      }
-                    },
+                    onPressed: _registrarUsuario, // Llama a la función de registro
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(
                           0xFF50C9B5), // Botón de registrar color verde
@@ -190,17 +288,10 @@ class _RegistroScreenState extends State<RegistroScreen> {
                     child: const Text('Registrar'),
                   ),
                   ElevatedButton(
-                    onPressed: () {
-                      // Vuelve a la pantalla de login
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LoginScreen(),
-                        ),
-                      );
-                    },
+                    onPressed: _cancelarRegistro, // Llama a la función de cancelar
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red, // Botón de cancelar en rojo
+                      backgroundColor:
+                      Colors.red, // Botón de cancelar en rojo
                       padding: const EdgeInsets.symmetric(
                           vertical: 15, horizontal: 30),
                       shape: RoundedRectangleBorder(
@@ -211,8 +302,6 @@ class _RegistroScreenState extends State<RegistroScreen> {
                   ),
                 ],
               ),
-
-              const Spacer(),
             ],
           ),
         ),

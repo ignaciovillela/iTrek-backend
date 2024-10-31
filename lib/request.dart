@@ -7,15 +7,21 @@ const GET = 'GET';
 const POST = 'POST';
 const PATCH = 'PATCH';
 const DELETE = 'DELETE';
+const PUT = 'PUT';
 
 const LOGIN =        'api/auth/login/';
 const LOGOUT =       'api/auth/logout/';
 const ROUTES =       'api/routes/';
 
+const USER_CREATE =  'api/users/create/';
+const USER_UPDATE =  'api/users/update-profile/';
+const USER_DELETE =  'api/users/delete-account/';
+
 const ROUTE_DETAIL = 'api/routes/{id}/';
 const ROUTE_SHARE =  'api/routes/{id}/share/{usuarioId}/';
 
 const SEARCH_USER =  'api/users/search?q={query}';
+const PASSWORD_CHANGE = 'api/users/change-password/';
 
 typedef StatusCallback = void Function(http.Response response);
 typedef ErrorCallback = void Function(String errorMessage);
