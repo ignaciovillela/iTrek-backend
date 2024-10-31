@@ -15,17 +15,37 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
   final _formKey = GlobalKey<FormState>();
 
   // Controladores para los campos del formulario
-  final TextEditingController _nombreController =
-  TextEditingController(text: 'Juan Pérez');
-  final TextEditingController _correoController =
-  TextEditingController(text: 'juanperez@gmail.com');
-  final TextEditingController _numeroController =
-  TextEditingController(text: '555-1234');
-  final TextEditingController _edadController =
-  TextEditingController(text: '25');
-
-  String _sexo = 'Masculino'; // Valor inicial para el selector de sexo
+  final TextEditingController _nombreController = TextEditingController();
+  final TextEditingController _correoController = TextEditingController();
+  final TextEditingController _biografiaController = TextEditingController();
+  String _imagenPerfil = ''; // Para almacenar la URL o el path de la imagen de perfil
   bool _editMode = false; // Controla si los campos están en modo edición
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData(); // Cargar datos del usuario desde la base de datos
+  }
+
+  // Cargar datos del usuario desde la base de datos
+  Future<void> _loadUserData() async {
+    final username = await db.values.get('usuario_username') as String?;
+    final email = await db.values.get('usuario_email') as String?;
+    final firstName = await db.values.get('usuario_first_name') as String?;
+    final lastName = await db.values.get('usuario_last_name') as String?;
+    final biografia = await db.values.get('usuario_biografia') as String?;
+    final imagenPerfil = await db.values.get('usuario_imagen_perfil') as String?;
+
+    setState(() {
+      _nombreController.text = firstName ?? '';
+      _correoController.text = email ?? '';
+      _biografiaController.text = biografia ?? '';
+      _imagenPerfil = imagenPerfil ?? '';
+    });
+
+    // Debug: Imprimir datos cargados
+    print("Cargado: $_imagenPerfil, $firstName, $email, $biografia");
+  }
 
   Future<void> _cerrarSesion() async {
     await makeRequest(
@@ -73,11 +93,10 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
           key: _formKey,
           child: Column(
             children: [
-              // Icono para personalizar el perfil (simulando una imagen de perfil)
+              // Mostrar imagen de perfil
               GestureDetector(
                 onTap: () {
                   if (_editMode) {
-                    // Solo permitir cambiar la imagen si está en modo edición
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Cambiar imagen de perfil'),
@@ -85,14 +104,12 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                     );
                   }
                 },
-                child: const CircleAvatar(
+                child: CircleAvatar(
                   radius: 50,
+                  backgroundImage: _imagenPerfil.isNotEmpty
+                      ? NetworkImage(_imagenPerfil) // Cambia a NetworkImage si la imagen es de la red
+                      : const AssetImage('assets/default_profile.png') as ImageProvider,
                   backgroundColor: Colors.blueAccent,
-                  child: Icon(
-                    Icons.person,
-                    size: 50,
-                    color: Colors.white,
-                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -132,71 +149,27 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Campo para el número de contacto
+              // Campo para biografía
               TextFormField(
-                controller: _numeroController,
+                controller: _biografiaController,
                 decoration: const InputDecoration(
-                  labelText: 'Número de contacto',
+                  labelText: 'Biografía',
                   border: OutlineInputBorder(),
                 ),
-                keyboardType: TextInputType.phone,
                 enabled: _editMode, // Deshabilitado si no está en modo edición
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese su número de contacto';
+                    return 'Por favor, ingrese su biografía';
                   }
                   return null;
                 },
               ),
-              const SizedBox(height: 20),
-
-              // Selector para el sexo
-              DropdownButtonFormField<String>(
-                value: _sexo,
-                decoration: const InputDecoration(
-                  labelText: 'Sexo',
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(
-                      value: 'Masculino', child: Text('Masculino')),
-                  DropdownMenuItem(value: 'Femenino', child: Text('Femenino')),
-                  DropdownMenuItem(value: 'Otro', child: Text('Otro')),
-                ],
-                onChanged: _editMode
-                    ? (value) {
-                  setState(() {
-                    _sexo = value ?? 'Masculino';
-                  });
-                }
-                    : null, // Deshabilitado si no está en modo edición
-              ),
-              const SizedBox(height: 20),
-
-              // Campo para la edad
-              TextFormField(
-                controller: _edadController,
-                decoration: const InputDecoration(
-                  labelText: 'Edad',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-                enabled: _editMode, // Deshabilitado si no está en modo edición
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese su edad';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(
-                  height: 40), // Espacio mayor antes del botón de editar
+              const SizedBox(height: 40), // Espacio mayor antes del botón de editar
 
               // Botón para editar el perfil
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                  const Color(0xFF50C9B5), // Color verde pastel del botón
+                  backgroundColor: const Color(0xFF50C9B5), // Color verde pastel del botón
                   minimumSize: const Size(double.infinity, 50), // Botón grande
                 ),
                 onPressed: () {
@@ -215,8 +188,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF50C9B5),
-                    minimumSize:
-                    const Size(double.infinity, 50), // Botón grande
+                    minimumSize: const Size(double.infinity, 50), // Botón grande
                   ),
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
@@ -227,8 +199,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                         ),
                       );
                       setState(() {
-                        _editMode =
-                        false; // Desactivar modo edición después de guardar
+                        _editMode = false; // Desactivar modo edición después de guardar
                       });
                     }
                   },

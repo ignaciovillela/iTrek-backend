@@ -2,10 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:itrek/db.dart';
-import 'package:itrek/img.dart';
 import 'package:itrek/pages/dashboard.dart';
 import 'package:itrek/request.dart';
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -58,15 +56,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     }
   }
 
-  // Método para borrar el username guardado
-  Future<void> _deleteSavedUsername() async {
-    await db.values.delete(db.values.username); // Borrar el username de la DB
-    setState(() {
-      _hasUsername = false; // Volver a mostrar el campo de username
-      _savedUsername = null; // Limpiar el username guardado
-    });
-  }
-
   // Función que maneja el proceso de login
   Future<void> _login() async {
     final String username = _hasUsername ? _savedUsername! : _usernameController.text;
@@ -87,9 +76,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       onOk: (response) async {
         final jsonData = jsonDecode(response.body);
         final token = jsonData['token'];
+
         if (token != null) {
+          // Guardar el token y los datos del usuario en la base de datos
           await db.values.create(db.values.token, token);
           await db.values.create(db.values.username, username);
+          await db.values.create('usuario_email', jsonData['email']);
+          await db.values.create('usuario_first_name', jsonData['first_name']);
+          await db.values.create('usuario_last_name', jsonData['last_name']);
+          await db.values.create('usuario_biografia', jsonData['biografia']);
+          await db.values.create('usuario_imagen_perfil', jsonData['imagen_perfil'] ?? '');
 
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const MenuScreen()),
@@ -116,8 +112,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         backgroundColor: const Color(0xFF50C2C9),
         title: Row(
           children: [
-            logoWhite,
-            const SizedBox(width: 10),
+            // Aquí va el logo, si lo tienes
             const Text(
               'iTrek',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
@@ -136,16 +131,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             ),
           ),
           const SizedBox(height: 20),
-          Center(
-            child: Image.asset('assets/images/maps-green.png', height: 200),
-          ),
+          // Aquí puedes agregar la imagen de tu aplicación
           const SizedBox(height: 60),
-
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Column(
               children: [
-                if (!_hasUsername) // Si no hay username guardado, muestra el campo de texto
+                if (!_hasUsername)
                   TextFormField(
                     controller: _usernameController,
                     decoration: const InputDecoration(
@@ -153,16 +145,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       border: OutlineInputBorder(),
                     ),
                   ),
-
-                if (_hasUsername) // Si hay username guardado, muestra el mensaje de bienvenida
+                if (_hasUsername)
                   Text(
                     'Hola, $_savedUsername! Nos alegra verte de nuevo.\n'
                         'Por favor, ingresa tu clave para continuar.',
                     style: const TextStyle(fontSize: 15, color: Color(0xFF999999), fontWeight: FontWeight.bold),
                   ),
                 const SizedBox(height: 20),
-
-                // Campo para la contraseña
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
@@ -172,10 +161,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Botón para login
                 SizedBox(
-                  width: double.infinity, // Ocupa el 100% del ancho disponible
+                  width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF50C2C9),
@@ -186,30 +173,21 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     child: const Text('Ingresar'),
                   ),
                 ),
-
                 const SizedBox(height: 10),
-
-                // Si hay username guardado, muestra el botón para "No eres $username?"
                 if (_hasUsername)
                   TextButton(
-                      onPressed: _deleteSavedUsername,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '¿No eres $_savedUsername? Haz clic aquí para cambiar de cuenta.',
-                            style: TextStyle(
-                              color: Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(height: 2), // Espacio entre el texto y la línea
-                          Container(
-                            height: 1, // Espesor de la línea
-                            color: Color(0xFFCCCCCC), // Color de la línea
-                          ),
-                        ],
-                      )
-
+                    onPressed: _deleteSavedUsername,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '¿No eres $_savedUsername? Haz clic aquí para cambiar de cuenta.',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                        const SizedBox(height: 2),
+                        Container(height: 1, color: Color(0xFFCCCCCC)),
+                      ],
+                    ),
                   ),
               ],
             ),
@@ -217,5 +195,14 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         ],
       ),
     );
+  }
+
+  // Método para borrar el username guardado
+  Future<void> _deleteSavedUsername() async {
+    await db.values.delete(db.values.username); // Borrar el username de la DB
+    setState(() {
+      _hasUsername = false; // Volver a mostrar el campo de username
+      _savedUsername = null; // Limpiar el username guardado
+    });
   }
 }
