@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:itrek/db.dart';
 import 'package:itrek/pages/usuario/login.dart';
 import 'package:itrek/request.dart';
 import 'dart:convert';
+import 'package:path_provider/path_provider.dart'; // Importa path_provider para obtener el directorio de almacenamiento
 
 class PerfilUsuarioScreen extends StatefulWidget {
   const PerfilUsuarioScreen({super.key});
@@ -13,37 +15,57 @@ class PerfilUsuarioScreen extends StatefulWidget {
 
 class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  // Controladores para los campos del formulario
   final TextEditingController _nombreController = TextEditingController();
   final TextEditingController _correoController = TextEditingController();
   final TextEditingController _biografiaController = TextEditingController();
-  String _imagenPerfil = ''; // Para almacenar la URL o el path de la imagen de perfil
-  bool _editMode = false; // Controla si los campos están en modo edición
+  String _imagenPerfil = '';
+  bool _editMode = false;
 
   @override
   void initState() {
     super.initState();
-    _loadUserData(); // Cargar datos del usuario desde la base de datos
+    _loadUserData();
   }
 
-  // Cargar datos del usuario desde la base de datos
   Future<void> _loadUserData() async {
-    final username = await db.values.get('usuario_username') as String?;
-    final email = await db.values.get('usuario_email') as String?;
     final firstName = await db.values.get('usuario_first_name') as String?;
-    final lastName = await db.values.get('usuario_last_name') as String?;
+    final email = await db.values.get('usuario_email') as String?;
     final biografia = await db.values.get('usuario_biografia') as String?;
     final imagenPerfil = await db.values.get('usuario_imagen_perfil') as String?;
+
+    // Si la imagen está en una ruta relativa, conviértela en absoluta
+    if (imagenPerfil != null && imagenPerfil.isNotEmpty) {
+      final Directory baseDir = await getApplicationDocumentsDirectory();
+      final String rutaCompletaImagen = '${baseDir.path}$imagenPerfil'; // Ruta absoluta
+
+      print("Ruta completa de la imagen construida: $rutaCompletaImagen");
+
+      // Verifica si el archivo realmente existe en esa ruta
+      final File file = File(rutaCompletaImagen);
+      if (file.existsSync()) {
+        print("Imagen encontrada en la ruta especificada.");
+        _imagenPerfil = rutaCompletaImagen;
+      } else {
+        print("Imagen NO encontrada en la ruta especificada: $rutaCompletaImagen");
+
+        // Imprime el contenido del directorio para verificar si el archivo realmente está allí
+        final directoryContents = baseDir.listSync();
+        print("Contenido del directorio base:");
+        for (var entity in directoryContents) {
+          print(entity.path); // Muestra los archivos y carpetas en el directorio base
+        }
+      }
+    } else {
+      print("No se ha especificado una imagen de perfil o está vacía.");
+      _imagenPerfil = ''; // Usa una imagen predeterminada si no hay ruta de imagen
+    }
 
     setState(() {
       _nombreController.text = firstName ?? '';
       _correoController.text = email ?? '';
       _biografiaController.text = biografia ?? '';
-      _imagenPerfil = imagenPerfil ?? '';
     });
 
-    // Debug: Imprimir datos cargados
     print("Cargado: $_imagenPerfil, $firstName, $email, $biografia");
   }
 
@@ -54,11 +76,8 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
       useToken: true,
       onOk: (response) async {
         await db.values.delete(db.values.token);
-
         final message = jsonDecode(response.body)['message'];
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 
         Navigator.pushReplacement(
           context,
@@ -76,14 +95,14 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFDFF0D8), // Fondo verde pastel
+      backgroundColor: const Color(0xFFFFFFFF),
       appBar: AppBar(
         backgroundColor: const Color(0xFF50C9B5),
         title: const Text('Perfil de Usuario'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context); // Regresa a la pantalla anterior
+            Navigator.pop(context);
           },
         ),
       ),
@@ -93,7 +112,6 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
           key: _formKey,
           child: Column(
             children: [
-              // Mostrar imagen de perfil
               GestureDetector(
                 onTap: () {
                   if (_editMode) {
@@ -107,21 +125,19 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                 child: CircleAvatar(
                   radius: 50,
                   backgroundImage: _imagenPerfil.isNotEmpty
-                      ? NetworkImage(_imagenPerfil) // Cambia a NetworkImage si la imagen es de la red
-                      : const AssetImage('assets/default_profile.png') as ImageProvider,
+                      ? FileImage(File(_imagenPerfil)) // Carga imagen local desde archivo
+                      : const AssetImage('assets/images/profile.png') as ImageProvider,
                   backgroundColor: Colors.blueAccent,
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Campo para el nombre
               TextFormField(
                 controller: _nombreController,
                 decoration: const InputDecoration(
                   labelText: 'Nombre',
                   border: OutlineInputBorder(),
                 ),
-                enabled: _editMode, // Deshabilitado si no está en modo edición
+                enabled: _editMode,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, ingrese su nombre';
@@ -130,8 +146,6 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                 },
               ),
               const SizedBox(height: 20),
-
-              // Campo para el correo
               TextFormField(
                 controller: _correoController,
                 decoration: const InputDecoration(
@@ -139,7 +153,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.emailAddress,
-                enabled: _editMode, // Deshabilitado si no está en modo edición
+                enabled: _editMode,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, ingrese su correo';
@@ -148,15 +162,13 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                 },
               ),
               const SizedBox(height: 20),
-
-              // Campo para biografía
               TextFormField(
                 controller: _biografiaController,
                 decoration: const InputDecoration(
                   labelText: 'Biografía',
                   border: OutlineInputBorder(),
                 ),
-                enabled: _editMode, // Deshabilitado si no está en modo edición
+                enabled: _editMode,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, ingrese su biografía';
@@ -164,57 +176,48 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 40), // Espacio mayor antes del botón de editar
-
-              // Botón para editar el perfil
+              const SizedBox(height: 40),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF50C9B5), // Color verde pastel del botón
-                  minimumSize: const Size(double.infinity, 50), // Botón grande
+                  backgroundColor: const Color(0xFF50C9B5),
+                  minimumSize: const Size(double.infinity, 50),
                 ),
                 onPressed: () {
                   setState(() {
-                    _editMode = !_editMode; // Habilitar o deshabilitar edición
+                    _editMode = !_editMode;
                   });
                 },
                 icon: const Icon(Icons.edit),
                 label: Text(_editMode ? 'Cancelar Edición' : 'Editar Perfil'),
               ),
-
               const SizedBox(height: 20),
-
-              // Botón para guardar los cambios
               if (_editMode)
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF50C9B5),
-                    minimumSize: const Size(double.infinity, 50), // Botón grande
+                    minimumSize: const Size(double.infinity, 50),
                   ),
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      // Lógica para guardar los cambios
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Cambios guardados exitosamente'),
                         ),
                       );
                       setState(() {
-                        _editMode = false; // Desactivar modo edición después de guardar
+                        _editMode = false;
                       });
                     }
                   },
                   child: const Text('Guardar Cambios'),
                 ),
-
               const SizedBox(height: 20),
-
-              // Botón para cerrar sesión
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,
-                  minimumSize: const Size(double.infinity, 50), // Botón grande
+                  minimumSize: const Size(double.infinity, 50),
                 ),
-                onPressed: _cerrarSesion, // Llama al método para cerrar sesión
+                onPressed: _cerrarSesion,
                 child: const Text('Cerrar Sesión'),
               ),
             ],
