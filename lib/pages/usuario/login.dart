@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart';
 import 'package:itrek/db.dart';
 import 'package:itrek/pages/dashboard.dart';
 import 'package:itrek/request.dart';
@@ -86,6 +87,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           await db.values.create('usuario_last_name', jsonData['last_name']);
           await db.values.create('usuario_biografia', jsonData['biografia']);
           await db.values.create('usuario_imagen_perfil', jsonData['imagen_perfil'] ?? '');
+            print("Imagen guardada ${jsonData['imagen_perfil']}");
 
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const MenuScreen()),

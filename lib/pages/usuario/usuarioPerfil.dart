@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart'; // Importa image_picker
+import 'package:itrek/config.dart';
 import 'package:itrek/db.dart';
 import 'package:itrek/pages/usuario/login.dart';
 import 'package:itrek/request.dart';
 import 'dart:convert';
-import 'package:path_provider/path_provider.dart'; // Importa path_provider para obtener el directorio de almacenamiento
 
 class PerfilUsuarioScreen extends StatefulWidget {
   const PerfilUsuarioScreen({super.key});
@@ -20,6 +21,8 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
   final TextEditingController _biografiaController = TextEditingController();
   String _imagenPerfil = '';
   bool _editMode = false;
+  final ImagePicker _picker = ImagePicker(); // Crea una instancia de ImagePicker
+  File? _imageFile; // Archivo temporal para la imagen seleccionada
 
   @override
   void initState() {
@@ -33,40 +36,48 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
     final biografia = await db.values.get('usuario_biografia') as String?;
     final imagenPerfil = await db.values.get('usuario_imagen_perfil') as String?;
 
-    // Si la imagen está en una ruta relativa, conviértela en absoluta
-    if (imagenPerfil != null && imagenPerfil.isNotEmpty) {
-      final Directory baseDir = await getApplicationDocumentsDirectory();
-      final String rutaCompletaImagen = '${baseDir.path}$imagenPerfil'; // Ruta absoluta
-
-      print("Ruta completa de la imagen construida: $rutaCompletaImagen");
-
-      // Verifica si el archivo realmente existe en esa ruta
-      final File file = File(rutaCompletaImagen);
-      if (file.existsSync()) {
-        print("Imagen encontrada en la ruta especificada.");
-        _imagenPerfil = rutaCompletaImagen;
-      } else {
-        print("Imagen NO encontrada en la ruta especificada: $rutaCompletaImagen");
-
-        // Imprime el contenido del directorio para verificar si el archivo realmente está allí
-        final directoryContents = baseDir.listSync();
-        print("Contenido del directorio base:");
-        for (var entity in directoryContents) {
-          print(entity.path); // Muestra los archivos y carpetas en el directorio base
-        }
-      }
-    } else {
-      print("No se ha especificado una imagen de perfil o está vacía.");
-      _imagenPerfil = ''; // Usa una imagen predeterminada si no hay ruta de imagen
-    }
-
     setState(() {
       _nombreController.text = firstName ?? '';
       _correoController.text = email ?? '';
       _biografiaController.text = biografia ?? '';
+
+      if (imagenPerfil != null && imagenPerfil.isNotEmpty) {
+        if (!imagenPerfil.startsWith('http')) {
+          _imagenPerfil = '${BASE_URL}${imagenPerfil}';
+        } else {
+          _imagenPerfil = imagenPerfil;
+        }
+      } else {
+        _imagenPerfil = 'assets/images/profile.png';
+      }
     });
 
     print("Cargado: $_imagenPerfil, $firstName, $email, $biografia");
+  }
+
+  // Método para seleccionar una nueva imagen de perfil
+  Future<void> _pickImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
+  }
+
+  // Método para subir la imagen al servidor
+  Future<void> _uploadImage() async {
+    if (_imageFile != null) {
+      // Aquí enviarías _imageFile al servidor y obtendrías una URL de respuesta
+      // Ejemplo ficticio:
+      final newImageUrl = '/media/imagenes_perfil/nueva_imagen.png';
+
+      setState(() {
+        _imagenPerfil = '${BASE_URL}$newImageUrl';
+      });
+
+      await db.values.create('usuario_imagen_perfil', newImageUrl);
+    }
   }
 
   Future<void> _cerrarSesion() async {
@@ -113,20 +124,14 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
           child: Column(
             children: [
               GestureDetector(
-                onTap: () {
-                  if (_editMode) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Cambiar imagen de perfil'),
-                      ),
-                    );
-                  }
+                onTap: () async {
+                  if (_editMode) await _pickImage();
                 },
                 child: CircleAvatar(
                   radius: 50,
-                  backgroundImage: _imagenPerfil.isNotEmpty
-                      ? FileImage(File(_imagenPerfil)) // Carga imagen local desde archivo
-                      : const AssetImage('assets/images/profile.png') as ImageProvider,
+                  backgroundImage: _imageFile != null
+                      ? FileImage(_imageFile!) // Imagen seleccionada por el usuario
+                      : NetworkImage(_imagenPerfil) as ImageProvider, // Carga imagen desde URL o predeterminada
                   backgroundColor: Colors.blueAccent,
                 ),
               ),
@@ -197,8 +202,9 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                     backgroundColor: const Color(0xFF50C9B5),
                     minimumSize: const Size(double.infinity, 50),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     if (_formKey.currentState!.validate()) {
+                      await _uploadImage(); // Sube la nueva imagen al servidor
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Cambios guardados exitosamente'),
