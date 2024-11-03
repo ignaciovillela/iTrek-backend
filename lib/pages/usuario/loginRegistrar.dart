@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:itrek/request.dart'; // Importa 'makeRequest'
 import 'login.dart';
 
-const String POST_USER = 'api/users/create/'; // Define la constante para el endpoint
-
 class RegistroScreen extends StatefulWidget {
   const RegistroScreen({super.key});
 
@@ -26,6 +24,15 @@ class _RegistroScreenState extends State<RegistroScreen> {
   final TextEditingController _biografiaController = TextEditingController();
 
   bool _isLoading = false; // Para mostrar un indicador de carga
+
+  Map<String, String?> _fieldErrors = {
+    'username': null,
+    'password': null,
+    'email': null,
+    'first_name': null,
+    'last_name': null,
+    'biografia': null,
+  };
 
   @override
   void dispose() {
@@ -93,12 +100,29 @@ class _RegistroScreenState extends State<RegistroScreen> {
         );
       },
       onError: (response) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                'Error en el registro: ${response.statusCode} - ${response.reasonPhrase}'),
-          ),
-        );
+        setState(() {
+          _fieldErrors = {
+            'username': null,
+            'password': null,
+            'email': null,
+            'first_name': null,
+            'last_name': null,
+            'biografia': null,
+          };
+
+          final jsonData = jsonDecode(response.body);
+          jsonData.forEach((key, value) {
+            if (_fieldErrors.containsKey(key)) {
+              _fieldErrors[key] = value is List ? value.join(', ') : value.toString();
+            }
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Corrija los errores'),
+            ),
+          );
+        });
       },
       onConnectionError: (errorMessage) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -145,13 +169,8 @@ class _RegistroScreenState extends State<RegistroScreen> {
                   labelText: 'Nombre de Usuario',
                   border: OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.person),
+                  errorText: _fieldErrors['username'],
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese un nombre de usuario';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 20),
 
@@ -162,17 +181,10 @@ class _RegistroScreenState extends State<RegistroScreen> {
                   labelText: 'Contraseña',
                   border: OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.lock),
+                  errorMaxLines: 2,
+                  errorText: _fieldErrors['password'],
                 ),
                 obscureText: true, // Oculta el texto para contraseñas
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese una contraseña';
-                  }
-                  if (value.length < 6) {
-                    return 'La contraseña debe tener al menos 6 caracteres';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 20),
 
@@ -204,17 +216,10 @@ class _RegistroScreenState extends State<RegistroScreen> {
                   labelText: 'Correo Electrónico',
                   border: OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.email),
+                  errorMaxLines: 2,
+                  errorText: _fieldErrors['email'],
                 ),
                 keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese su correo electrónico';
-                  }
-                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                    return 'Ingrese un correo válido';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 20),
 
@@ -225,13 +230,9 @@ class _RegistroScreenState extends State<RegistroScreen> {
                   labelText: 'Nombre',
                   border: OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.account_circle),
+                  errorMaxLines: 2,
+                  errorText: _fieldErrors['first_name'],
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese su nombre';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 20),
 
@@ -242,13 +243,9 @@ class _RegistroScreenState extends State<RegistroScreen> {
                   labelText: 'Apellido',
                   border: OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.account_circle_outlined),
+                  errorMaxLines: 2,
+                  errorText: _fieldErrors['last_name'],
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese su apellido';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 20),
 
@@ -259,12 +256,10 @@ class _RegistroScreenState extends State<RegistroScreen> {
                   labelText: 'Biografía',
                   border: OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.description),
+                  errorMaxLines: 2,
+                  errorText: _fieldErrors['biografia'],
                 ),
                 maxLines: 3,
-                validator: (value) {
-                  // La biografía puede ser opcional
-                  return null;
-                },
               ),
               const SizedBox(height: 20),
 
