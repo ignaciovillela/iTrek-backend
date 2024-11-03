@@ -5,6 +5,8 @@ import 'package:itrek/db.dart';
 import 'package:itrek/img.dart';
 import 'package:itrek/pages/dashboard.dart';
 import 'package:itrek/request.dart';
+import 'package:itrek/pages/usuario/loginRegistrar.dart';
+import 'package:itrek/pages/usuario/loginCuentaRecuperar.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -108,7 +110,20 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       },
     );
   }
-
+  // Función para manejar la navegación a la página de registro
+  Future<void> _loginRegistrar() async {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const RegistroScreen()),
+    );
+  }
+  // Función para manejar la navegación a la página de Recuperar Cuenta
+  Future<void> _loginCuentaRecuperar() async {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const RecuperarContrasenaScreen()),
+    );
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -186,7 +201,34 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     child: const Text('Ingresar'),
                   ),
                 ),
-
+                const SizedBox(height: 20), // Espacio de 20 píxeles entre los botones
+                // Botón para Registrarse
+                SizedBox(
+                  width: double.infinity, // Ocupa el 100% del ancho disponible
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFA500), // Color naranja
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      textStyle: const TextStyle(fontSize: 18),
+                    ),
+                    onPressed: _loginRegistrar,
+                    child: const Text('Registrarse'),
+                  ),
+                ),
+                const SizedBox(height: 20), // Espacio de 20 píxeles entre los botones
+                // Botón para Recuperar Cuenta
+                SizedBox(
+                  width: double.infinity, // Ocupa el 100% del ancho disponible
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF7F7F), // Color Rojo
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      textStyle: const TextStyle(fontSize: 18),
+                    ),
+                    onPressed: _loginCuentaRecuperar,
+                    child: const Text('Recuperar Cuenta'),
+                  ),
+                ),
                 const SizedBox(height: 10),
 
                 // Si hay username guardado, muestra el botón para "No eres $username?"
