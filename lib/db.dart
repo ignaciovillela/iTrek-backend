@@ -45,6 +45,11 @@ class ValuesHelper extends DatabaseHelper {
   static final ValuesHelper instance = ValuesHelper._init();
 
   final String username = 'username';
+  final String email = 'email';
+  final String first_name = 'first_name';
+  final String last_name = 'last_name';
+  final String biografia = 'biografia';
+  final String imagen_perfil = 'imagen_perfil';
   final String token = 'token';
 
   // Constructor privado
@@ -91,6 +96,27 @@ class ValuesHelper extends DatabaseHelper {
   Future<int> delete(String key) async {
     final db = await database;  // Accede al getter directamente
     return await db.delete('valores', where: 'key = ?', whereArgs: [key]);
+  }
+
+  Future<void> createLoginData(Map<String, dynamic> data) async {
+    final fields = {
+      'username': username,
+      'email': email,
+      'first_name': first_name,
+      'last_name': last_name,
+      'biografia': biografia,
+      'imagen_perfil': imagen_perfil,
+      'token': token,
+    };
+
+    for (var entry in fields.entries) {
+      final key = entry.key;
+      final dbKey = entry.value;
+
+      if (data.containsKey(key)) {
+        await db.values.create(dbKey, data[key]);
+      }
+    }
   }
 }
 

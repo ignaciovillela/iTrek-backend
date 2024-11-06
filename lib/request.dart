@@ -10,6 +10,7 @@ const DELETE = 'DELETE';
 const PUT = 'PUT';
 
 const LOGIN =        'api/auth/login/';
+const LOGIN_CHECK =  'api/auth/check-login/';
 const LOGOUT =       'api/auth/logout/';
 const ROUTES =       'api/routes/';
 
@@ -57,6 +58,7 @@ Future<http.Response?> makeRequest({
   required String method, // GET, POST, PATCH, DELETE
   String? baseUrl, // URL base opcional, si no se proporciona se utiliza BASE_URL
   required String url, // URL del endpoint con placeholders opcionales
+  bool isFullUrl = false,
   Map<String, dynamic>? urlVars, // Parámetros opcionales que serán reemplazados en la URL
   Map<String, dynamic>? body, // Cuerpo opcional para POST y PATCH, codificado en JSON
   bool useToken = true, // Determina si se usa el token almacenado en la base de datos
@@ -77,11 +79,13 @@ Future<http.Response?> makeRequest({
     if (customHeaders != null) ...customHeaders, // Agregar headers personalizados
   };
 
-  // Reemplazar los parámetros en la URL
-  url = formatUrl(url, urlVars);
-  baseUrl = baseUrl ?? BASE_URL;
-  Uri uri = Uri.parse('$baseUrl/$url');
-
+  if (!isFullUrl) {
+    // Reemplazar los parámetros en la URL
+    url = formatUrl(url, urlVars);
+    baseUrl = baseUrl ?? BASE_URL;
+    url = '$baseUrl/$url';
+  }
+  Uri uri = Uri.parse(url);
   http.Response response;
 
   try {

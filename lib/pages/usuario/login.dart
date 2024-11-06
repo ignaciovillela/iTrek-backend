@@ -87,14 +87,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       body: {'username': username, 'password': password},
       useToken: false,
       onOk: (response) async {
-        final jsonData = jsonDecode(response.body);
-        final token = jsonData['token'];
-        if (token != null) {
-          await db.values.create(db.values.token, token);
-          await db.values.create(db.values.username, username);
+        final data = jsonDecode(response.body);
+        if (data['token'] != null) {
+          await db.values.createLoginData(data);
 
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const MenuScreen()),
+            MaterialPageRoute(builder: (context) => const DashboardScreen()),
           );
         }
       },
@@ -187,7 +185,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   ),
                 ),
                 const SizedBox(height: 20),
-
                 // Botón para login
                 SizedBox(
                   width: double.infinity, // Ocupa el 100% del ancho disponible
@@ -199,20 +196,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     ),
                     onPressed: _login,
                     child: const Text('Ingresar'),
-                  ),
-                ),
-                const SizedBox(height: 20), // Espacio de 20 píxeles entre los botones
-                // Botón para Registrarse
-                SizedBox(
-                  width: double.infinity, // Ocupa el 100% del ancho disponible
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFA500), // Color naranja
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      textStyle: const TextStyle(fontSize: 18),
-                    ),
-                    onPressed: _loginRegistrar,
-                    child: const Text('Registrarse'),
                   ),
                 ),
                 const SizedBox(height: 20), // Espacio de 20 píxeles entre los botones
@@ -229,9 +212,24 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     child: const Text('Recuperar Cuenta'),
                   ),
                 ),
-                const SizedBox(height: 10),
 
                 // Si hay username guardado, muestra el botón para "No eres $username?"
+                if (!_hasUsername)
+                  const SizedBox(height: 20), // Espacio de 20 píxeles entre los botones
+                // Botón para Registrarse
+                if (!_hasUsername)
+                  SizedBox(
+                    width: double.infinity, // Ocupa el 100% del ancho disponible
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFA500), // Color naranja
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        textStyle: const TextStyle(fontSize: 18),
+                      ),
+                      onPressed: _loginRegistrar,
+                      child: const Text('Registrarse'),
+                    ),
+                  ),
                 if (_hasUsername)
                   TextButton(
                       onPressed: _deleteSavedUsername,
@@ -251,7 +249,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           ),
                         ],
                       )
-
                   ),
               ],
             ),

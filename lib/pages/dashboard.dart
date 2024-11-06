@@ -8,12 +8,10 @@ import 'package:itrek/pages/usuario/login.dart';
 import 'package:itrek/pages/usuario/usuarioPerfil.dart';
 
 
-class MenuScreen extends StatelessWidget {
-  const MenuScreen({super.key});
+class DashboardScreen extends StatelessWidget {
+  const DashboardScreen({super.key});
 
-  // Método para verificar si el token existe en la tabla `valores`
   Future<bool> _checkToken() async {
-    // Busca en la base de datos si existe un token almacenado bajo la clave 'token'
     Object? tokenData = await db.values.get(db.values.token);
 
     // Si encuentra un token, el usuario está autenticado
@@ -53,7 +51,7 @@ class MenuScreen extends StatelessWidget {
               children: [
                 const SizedBox(height: 40),
                 FutureBuilder<Object?>(
-                  future: db.values.get(db.values.username), // Llama a la función asíncrona
+                  future: db.values.get(db.values.first_name),
                   builder: (BuildContext context, AsyncSnapshot<Object?> snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const CircularProgressIndicator(); // Muestra un indicador de carga mientras espera
