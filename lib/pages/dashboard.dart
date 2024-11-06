@@ -7,16 +7,33 @@ import 'package:itrek/pages/ruta/rutaRegistrar.dart';
 import 'package:itrek/pages/usuario/login.dart';
 import 'package:itrek/pages/usuario/usuarioPerfil.dart';
 
-
-class MenuScreen extends StatelessWidget {
+class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
+
+  @override
+  _MenuScreenState createState() => _MenuScreenState();
+}
+
+class _MenuScreenState extends State<MenuScreen> {
+  String username = '';
+
+  // Método para cargar el nombre de usuario desde la base de datos local
+  Future<void> _loadUserData() async {
+    final name = await db.values.get('username') as String?;
+    setState(() {
+      username = name ?? 'Usuario'; // Usa 'Usuario' como valor predeterminado si el nombre es nulo
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
 
   // Método para verificar si el token existe en la tabla `valores`
   Future<bool> _checkToken() async {
-    // Busca en la base de datos si existe un token almacenado bajo la clave 'token'
     Object? tokenData = await db.values.get(db.values.token);
-
-    // Si encuentra un token, el usuario está autenticado
     return tokenData != null;
   }
 
@@ -52,34 +69,13 @@ class MenuScreen extends StatelessWidget {
             body: Column(
               children: [
                 const SizedBox(height: 40),
-                FutureBuilder<Object?>(
-                  future: db.values.get(db.values.username), // Llama a la función asíncrona
-                  builder: (BuildContext context, AsyncSnapshot<Object?> snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const CircularProgressIndicator(); // Muestra un indicador de carga mientras espera
-                    } else if (snapshot.hasError) {
-                      return Text('Error: ${snapshot.error}');
-                    } else if (!snapshot.hasData || snapshot.data == null) {
-                      return const Text(
-                        'No data available',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      );
-                    } else {
-                      final username = snapshot.data.toString();
-                      return Text(
-                        'Hola, $username', // Muestra el valor obtenido de la DB
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      );
-                    }
-                  },
+                Text(
+                  'Hola, $username',
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Center(
@@ -140,7 +136,9 @@ class MenuScreen extends StatelessWidget {
                                 context,
                                 MaterialPageRoute(
                                     builder: (context) => const PerfilUsuarioScreen()),
-                              );
+                              ).then((_) {
+                                _loadUserData(); // Recarga los datos cuando vuelvas del perfil
+                              });
                             },
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,

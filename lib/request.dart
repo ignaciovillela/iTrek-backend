@@ -22,6 +22,7 @@ const ROUTE_SHARE =  'api/routes/{id}/share/{usuarioId}/';
 
 const SEARCH_USER =  'api/users/search?q={query}';
 const PASSWORD_CHANGE = 'api/users/change-password/';
+const UPDATE_USER = 'api/users/update-profile/';
 
 typedef StatusCallback = void Function(http.Response response);
 typedef ErrorCallback = void Function(String errorMessage);

@@ -87,7 +87,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
     print("Encabezados de la solicitud: $headers");
 
     // Define la URL para la solicitud
-    final url = Uri.parse('$BASE_URL/api/users/update-profile/');
+    final url = Uri.parse('$BASE_URL/$UPDATE_USER');
 
     // Verifica que los campos no estén vacíos y asigna valores predeterminados si es necesario
     final lastName = _apellidoController.text.trim().isEmpty ? "Apellido" : _apellidoController.text.trim();
