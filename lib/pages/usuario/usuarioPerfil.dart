@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart'; // Importa image_picker
+import 'package:image_picker/image_picker.dart';
 import 'package:itrek/config.dart';
 import 'package:itrek/db.dart';
 import 'package:itrek/pages/usuario/login.dart';
 import 'package:itrek/request.dart';
+import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class PerfilUsuarioScreen extends StatefulWidget {
@@ -19,14 +20,22 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
   final TextEditingController _nombreController = TextEditingController();
   final TextEditingController _correoController = TextEditingController();
   final TextEditingController _biografiaController = TextEditingController();
+  final TextEditingController _apellidoController = TextEditingController();
+
   String _imagenPerfil = '';
   bool _editMode = false;
-  final ImagePicker _picker = ImagePicker(); // Crea una instancia de ImagePicker
-  File? _imageFile; // Archivo temporal para la imagen seleccionada
+  final ImagePicker _picker = ImagePicker();
+  File? _imageFile;
 
   @override
   void initState() {
     super.initState();
+    _loadUserData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     _loadUserData();
   }
 
@@ -40,24 +49,16 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
       _nombreController.text = firstName ?? '';
       _correoController.text = email ?? '';
       _biografiaController.text = biografia ?? '';
-
-      if (imagenPerfil != null && imagenPerfil.isNotEmpty) {
-        if (!imagenPerfil.startsWith('http')) {
-          _imagenPerfil = '${BASE_URL}${imagenPerfil}';
-        } else {
-          _imagenPerfil = imagenPerfil;
-        }
-      } else {
-        _imagenPerfil = 'assets/images/profile.png';
-      }
+      _imagenPerfil = imagenPerfil != null && imagenPerfil.isNotEmpty
+          ? (imagenPerfil.startsWith('http') ? imagenPerfil : '$BASE_URL$imagenPerfil')
+          : 'assets/images/profile.png';
     });
 
     print("Cargado: $_imagenPerfil, $firstName, $email, $biografia");
   }
 
-  // Método para seleccionar una nueva imagen de perfil
   Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await _picker.pickImage(source: ImageSource.camera);
     if (pickedFile != null) {
       setState(() {
         _imageFile = File(pickedFile.path);
@@ -65,20 +66,85 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
     }
   }
 
-  // Método para subir la imagen al servidor
-  Future<void> _uploadImage() async {
-    if (_imageFile != null) {
-      // Aquí enviarías _imageFile al servidor y obtendrías una URL de respuesta
-      // Ejemplo ficticio:
-      final newImageUrl = '/media/imagenes_perfil/nueva_imagen.png';
+  Future<void> _updateProfile() async {
+    // Obtiene el token de la base de datos
+    final token = await db.values.get('token');
 
-      setState(() {
-        _imagenPerfil = '${BASE_URL}$newImageUrl';
-      });
+    // Verifica si el token es nulo o está vacío
+    if (token == null || token.toString().trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error: Token de autenticación no encontrado.")),
+      );
+      return;
+    }
 
-      await db.values.create('usuario_imagen_perfil', newImageUrl);
+    // Configura los encabezados con el token
+    final headers = {
+      "Content-Type": "application/json",
+      "Authorization": "Token ${token.toString().trim()}"
+    };
+
+    print("Encabezados de la solicitud: $headers");
+
+    // Define la URL para la solicitud
+    final url = Uri.parse('$BASE_URL/api/users/update-profile/');
+
+    // Verifica que los campos no estén vacíos y asigna valores predeterminados si es necesario
+    final lastName = _apellidoController.text.trim().isEmpty ? "Apellido" : _apellidoController.text.trim();
+    final password = "Sofia1234Trinidad"; // Usa una contraseña predeterminada (modifícalo según sea necesario)
+
+    // Define el cuerpo de la solicitud sin `imagen_perfil`
+    final body = jsonEncode({
+      "username": _nombreController.text.trim(),
+      "password": password,
+      "email": _correoController.text.trim(),
+      "first_name": _nombreController.text.trim(),
+      "last_name": lastName,
+      "biografia": _biografiaController.text.trim()
+    });
+
+    try {
+      // Realiza la solicitud HTTP PUT
+      final response = await http.put(url, headers: headers, body: body);
+
+      // Comprueba el estado de la respuesta
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+
+        // Actualiza los valores en la base de datos local
+        await db.values.create('usuario_first_name', responseData['first_name']);
+        await db.values.create('usuario_email', responseData['email']);
+        await db.values.create('usuario_biografia', responseData['biografia']);
+        await db.values.create('usuario_last_name', responseData['last_name']);
+        await db.values.create('username', responseData['username']);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(responseData['message'])),
+        );
+
+        setState(() {
+          _editMode = false;
+        });
+
+        // Recarga los datos actualizados del usuario
+        _loadUserData();
+      } else {
+        print("Error: ${response.statusCode}, Body: ${response.body}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error al actualizar el perfil: ${response.body}")),
+        );
+      }
+    } catch (e) {
+      print("Error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
     }
   }
+
+
+
+
 
   Future<void> _cerrarSesion() async {
     await makeRequest(
@@ -123,17 +189,22 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
           key: _formKey,
           child: Column(
             children: [
-              GestureDetector(
-                onTap: () async {
-                  if (_editMode) await _pickImage();
-                },
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundImage: _imageFile != null
-                      ? FileImage(_imageFile!) // Imagen seleccionada por el usuario
-                      : NetworkImage(_imagenPerfil) as ImageProvider, // Carga imagen desde URL o predeterminada
-                  backgroundColor: Colors.blueAccent,
-                ),
+              Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundImage: _imageFile != null
+                        ? FileImage(_imageFile!)
+                        : NetworkImage(_imagenPerfil) as ImageProvider,
+                    backgroundColor: Colors.grey[200],
+                  ),
+                  if (_editMode)
+                    IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.black),
+                      onPressed: _pickImage,
+                    ),
+                ],
               ),
               const SizedBox(height: 20),
               TextFormField(
@@ -191,6 +262,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                   setState(() {
                     _editMode = !_editMode;
                   });
+                  if (!_editMode) _loadUserData();
                 },
                 icon: const Icon(Icons.edit),
                 label: Text(_editMode ? 'Cancelar Edición' : 'Editar Perfil'),
@@ -204,15 +276,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                   ),
                   onPressed: () async {
                     if (_formKey.currentState!.validate()) {
-                      await _uploadImage(); // Sube la nueva imagen al servidor
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Cambios guardados exitosamente'),
-                        ),
-                      );
-                      setState(() {
-                        _editMode = false;
-                      });
+                      await _updateProfile();
                     }
                   },
                   child: const Text('Guardar Cambios'),
