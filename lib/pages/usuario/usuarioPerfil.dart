@@ -70,7 +70,6 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
     // Obtiene el token de la base de datos
     final token = await db.values.get('token');
 
-    // Verifica si el token es nulo o está vacío
     if (token == null || token.toString().trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Error: Token de autenticación no encontrado.")),
@@ -84,30 +83,36 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
       "Authorization": "Token ${token.toString().trim()}"
     };
 
-    print("Encabezados de la solicitud: $headers");
-
-    // Define la URL para la solicitud
     final url = Uri.parse('$BASE_URL/$UPDATE_USER');
 
     // Verifica que los campos no estén vacíos y asigna valores predeterminados si es necesario
     final lastName = _apellidoController.text.trim().isEmpty ? "Apellido" : _apellidoController.text.trim();
-    final password = "Sofia1234Trinidad"; // Usa una contraseña predeterminada (modifícalo según sea necesario)
+    final password = "My\$ecureP@ssword2024!"; // Contraseña más segura y sin relación con el correo
 
-    // Define el cuerpo de la solicitud sin `imagen_perfil`
+    // Convierte la imagen a base64 si existe
+    String? base64Image;
+    if (_imageFile != null) {
+      List<int> imageBytes = await _imageFile!.readAsBytes();
+      base64Image = base64Encode(imageBytes);
+    }
+
+    // Define el cuerpo de la solicitud, incluyendo la imagen en formato base64
     final body = jsonEncode({
       "username": _nombreController.text.trim(),
       "password": password,
       "email": _correoController.text.trim(),
       "first_name": _nombreController.text.trim(),
       "last_name": lastName,
-      "biografia": _biografiaController.text.trim()
+      "biografia": _biografiaController.text.trim(),
+      "imagen_perfil": base64Image != null ? "data:image/jpeg;base64,$base64Image" : null
     });
+
+    print("Body de la solicitud: $body"); // Imprime el cuerpo de la solicitud para depurar
 
     try {
       // Realiza la solicitud HTTP PUT
       final response = await http.put(url, headers: headers, body: body);
 
-      // Comprueba el estado de la respuesta
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
 
@@ -117,6 +122,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
         await db.values.create('usuario_biografia', responseData['biografia']);
         await db.values.create('usuario_last_name', responseData['last_name']);
         await db.values.create('username', responseData['username']);
+        await db.values.create('usuario_imagen_perfil', responseData['imagen_perfil']);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(responseData['message'])),
@@ -126,7 +132,6 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
           _editMode = false;
         });
 
-        // Recarga los datos actualizados del usuario
         _loadUserData();
       } else {
         print("Error: ${response.statusCode}, Body: ${response.body}");
@@ -141,8 +146,6 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
       );
     }
   }
-
-
 
 
 
