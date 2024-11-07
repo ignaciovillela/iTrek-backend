@@ -7,18 +7,14 @@ import 'package:itrek/pages/ruta/rutaRegistrar.dart';
 import 'package:itrek/pages/usuario/login.dart';
 import 'package:itrek/pages/usuario/usuarioPerfil.dart';
 
-class DashboardScreen extends StatefulWidget {
+
+class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
-
-  @override
-  _DashboardScreenState createState() => _DashboardScreenState(); // Implementa createState()
-}
-
-class _DashboardScreenState extends State<DashboardScreen> {
-  // Aquí puedes incluir tus métodos, como _checkToken() y _loadUserData()
 
   Future<bool> _checkToken() async {
     Object? tokenData = await db.values.get(db.values.token);
+
+    // Si encuentra un token, el usuario está autenticado
     return tokenData != null;
   }
 
@@ -55,7 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 const SizedBox(height: 40),
                 FutureBuilder<Object?>(
-                  future: db.values.get(db.values.username), // Llama a la función asíncrona
+                  future: db.values.get(db.values.first_name),
                   builder: (BuildContext context, AsyncSnapshot<Object?> snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const CircularProgressIndicator(); // Muestra un indicador de carga mientras espera
@@ -142,9 +138,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 context,
                                 MaterialPageRoute(
                                     builder: (context) => const PerfilUsuarioScreen()),
-                              ).then((_) {
-                                _loadUserData(); // Recarga los datos cuando vuelvas del perfil
-                              });
+                              );
                             },
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
