@@ -1,8 +1,12 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:itrek/config.dart';
 import 'package:itrek/db.dart';
 import 'package:itrek/pages/usuario/login.dart';
 import 'package:itrek/request.dart';
-import 'dart:convert';
 
 class PerfilUsuarioScreen extends StatefulWidget {
   const PerfilUsuarioScreen({super.key});
@@ -13,19 +17,102 @@ class PerfilUsuarioScreen extends StatefulWidget {
 
 class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _userNameController = TextEditingController();
+  final TextEditingController _nombreController = TextEditingController();
+  final TextEditingController _biografiaController = TextEditingController();
+  final TextEditingController _apellidoController = TextEditingController();
 
-  // Controladores para los campos del formulario
-  final TextEditingController _nombreController =
-  TextEditingController(text: 'Juan Pérez');
-  final TextEditingController _correoController =
-  TextEditingController(text: 'juanperez@gmail.com');
-  final TextEditingController _numeroController =
-  TextEditingController(text: '555-1234');
-  final TextEditingController _edadController =
-  TextEditingController(text: '25');
+  String _imagenPerfil = '';
+  bool _editMode = false;
+  final ImagePicker _picker = ImagePicker();
+  File? _imageFile;
 
-  String _sexo = 'Masculino'; // Valor inicial para el selector de sexo
-  bool _editMode = false; // Controla si los campos están en modo edición
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final userData = await db.values.getUserData();
+    final imagenPerfil = userData[db.values.imagen_perfil];
+    setState(() {
+      _userNameController.text = userData[db.values.username] ?? "";
+      _nombreController.text = userData[db.values.first_name] ?? "";
+      _apellidoController.text = userData[db.values.last_name] ?? "";
+      _biografiaController.text = userData[db.values.biografia] ?? "";
+      _imagenPerfil = (imagenPerfil != null && imagenPerfil.isNotEmpty) ? '$BASE_URL$imagenPerfil' : 'assets/images/profile.png';
+    });
+  }
+
+  Future<void> _pickImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.camera);
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<void> _updateProfile() async {
+    // Convierte la imagen a base64 si existe
+    String? base64Image;
+    if (_imageFile != null) {
+      List<int> imageBytes = await _imageFile!.readAsBytes();
+      base64Image = base64Encode(imageBytes);
+    }
+
+    // Define el cuerpo de la solicitud, incluyendo la imagen en formato base64
+    final body = {
+      "first_name": _nombreController.text.trim(),
+      "last_name": _apellidoController.text.trim(),
+      "biografia": _biografiaController.text.trim(),
+      if (base64Image != null) "imagen_perfil": base64Image,
+    };
+    print(body);
+    await makeRequest(
+      method: PUT,
+      url: USER_UPDATE,
+      body: body,
+      onOk: (response) async {
+        final responseData = jsonDecode(response.body);
+
+        // Usa el método `setUserData` para guardar los datos en la base de datos
+        await db.values.setUserData({
+          db.values.first_name: responseData['first_name'],
+          db.values.last_name: responseData['last_name'],
+          db.values.biografia: responseData['biografia'],
+          db.values.imagen_perfil: responseData['imagen_perfil'],
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(responseData['message'])),
+        );
+
+        setState(() {
+          _editMode = false;
+        });
+
+        _loadUserData();
+      },
+      onError: (response) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error al actualizar el perfil: ${response.body}")),
+        );
+      },
+      onConnectionError: (errorMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $errorMessage")),
+        );
+      },
+    );
+  }
 
   Future<void> _cerrarSesion() async {
     await makeRequest(
@@ -37,7 +124,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
 
         final message = jsonDecode(response.body)['message'];
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
+            SnackBar(content: Text(message))
         );
 
         Navigator.pushReplacement(
@@ -56,14 +143,14 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFDFF0D8), // Fondo verde pastel
+      backgroundColor: const Color(0xFFFFFFFF),
       appBar: AppBar(
         backgroundColor: const Color(0xFF50C9B5),
         title: const Text('Perfil de Usuario'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context); // Regresa a la pantalla anterior
+            Navigator.pop(context);
           },
         ),
       ),
@@ -73,38 +160,47 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
           key: _formKey,
           child: Column(
             children: [
-              // Icono para personalizar el perfil (simulando una imagen de perfil)
-              GestureDetector(
-                onTap: () {
-                  if (_editMode) {
-                    // Solo permitir cambiar la imagen si está en modo edición
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Cambiar imagen de perfil'),
-                      ),
-                    );
-                  }
-                },
-                child: const CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.blueAccent,
-                  child: Icon(
-                    Icons.person,
-                    size: 50,
-                    color: Colors.white,
+              Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundImage: _imageFile != null
+                        ? FileImage(_imageFile!)
+                        : NetworkImage(_imagenPerfil) as ImageProvider,
+                    backgroundColor: Colors.grey[200],
                   ),
+                  if (_editMode)
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Color(0xFFA5D6A7),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.white),
+                        onPressed: _pickImage,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                _userNameController.text, // Nombre de usuario
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Campo para el nombre
               TextFormField(
                 controller: _nombreController,
                 decoration: const InputDecoration(
                   labelText: 'Nombre',
                   border: OutlineInputBorder(),
                 ),
-                enabled: _editMode, // Deshabilitado si no está en modo edición
+                enabled: _editMode,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, ingrese su nombre';
@@ -113,137 +209,71 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                 },
               ),
               const SizedBox(height: 20),
-
-              // Campo para el correo
               TextFormField(
-                controller: _correoController,
+                controller: _apellidoController,
                 decoration: const InputDecoration(
-                  labelText: 'Correo',
+                  labelText: 'Apellido',
                   border: OutlineInputBorder(),
                 ),
-                keyboardType: TextInputType.emailAddress,
-                enabled: _editMode, // Deshabilitado si no está en modo edición
+                enabled: _editMode,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese su correo';
+                    return 'Por favor, ingrese su apellido';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 20),
-
-              // Campo para el número de contacto
               TextFormField(
-                controller: _numeroController,
+                controller: _biografiaController,
                 decoration: const InputDecoration(
-                  labelText: 'Número de contacto',
+                  labelText: 'Biografía',
                   border: OutlineInputBorder(),
                 ),
-                keyboardType: TextInputType.phone,
-                enabled: _editMode, // Deshabilitado si no está en modo edición
+                enabled: _editMode,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese su número de contacto';
+                    return 'Por favor, ingrese su biografía';
                   }
                   return null;
                 },
               ),
-              const SizedBox(height: 20),
-
-              // Selector para el sexo
-              DropdownButtonFormField<String>(
-                value: _sexo,
-                decoration: const InputDecoration(
-                  labelText: 'Sexo',
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(
-                      value: 'Masculino', child: Text('Masculino')),
-                  DropdownMenuItem(value: 'Femenino', child: Text('Femenino')),
-                  DropdownMenuItem(value: 'Otro', child: Text('Otro')),
-                ],
-                onChanged: _editMode
-                    ? (value) {
-                  setState(() {
-                    _sexo = value ?? 'Masculino';
-                  });
-                }
-                    : null, // Deshabilitado si no está en modo edición
-              ),
-              const SizedBox(height: 20),
-
-              // Campo para la edad
-              TextFormField(
-                controller: _edadController,
-                decoration: const InputDecoration(
-                  labelText: 'Edad',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-                enabled: _editMode, // Deshabilitado si no está en modo edición
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese su edad';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(
-                  height: 40), // Espacio mayor antes del botón de editar
-
-              // Botón para editar el perfil
+              const SizedBox(height: 40),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                  const Color(0xFF50C9B5), // Color verde pastel del botón
-                  minimumSize: const Size(double.infinity, 50), // Botón grande
+                  backgroundColor: const Color(0xFF50C9B5),
+                  minimumSize: const Size(double.infinity, 50),
                 ),
                 onPressed: () {
                   setState(() {
-                    _editMode = !_editMode; // Habilitar o deshabilitar edición
+                    _editMode = !_editMode;
                   });
+                  if (!_editMode) _loadUserData();
                 },
                 icon: const Icon(Icons.edit),
                 label: Text(_editMode ? 'Cancelar Edición' : 'Editar Perfil'),
               ),
-
               const SizedBox(height: 20),
-
-              // Botón para guardar los cambios
               if (_editMode)
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF50C9B5),
-                    minimumSize:
-                    const Size(double.infinity, 50), // Botón grande
+                    minimumSize: const Size(double.infinity, 50),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     if (_formKey.currentState!.validate()) {
-                      // Lógica para guardar los cambios
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Cambios guardados exitosamente'),
-                        ),
-                      );
-                      setState(() {
-                        _editMode =
-                        false; // Desactivar modo edición después de guardar
-                      });
+                      await _updateProfile();
                     }
                   },
                   child: const Text('Guardar Cambios'),
                 ),
-
               const SizedBox(height: 20),
-
-              // Botón para cerrar sesión
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,
-                  minimumSize: const Size(double.infinity, 50), // Botón grande
+                  minimumSize: const Size(double.infinity, 50),
                 ),
-                onPressed: _cerrarSesion, // Llama al método para cerrar sesión
+                onPressed: _cerrarSesion,
                 child: const Text('Cerrar Sesión'),
               ),
             ],

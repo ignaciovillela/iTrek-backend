@@ -8,11 +8,16 @@ import 'package:itrek/pages/usuario/login.dart';
 import 'package:itrek/pages/usuario/usuarioPerfil.dart';
 
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
+  @override
+  _DashboardScreenState createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
   Future<bool> _checkToken() async {
-    Object? tokenData = await db.values.get(db.values.token);
+    String? tokenData = await db.values.get(db.values.token);
 
     // Si encuentra un token, el usuario está autenticado
     return tokenData != null;
@@ -50,9 +55,9 @@ class DashboardScreen extends StatelessWidget {
             body: Column(
               children: [
                 const SizedBox(height: 40),
-                FutureBuilder<Object?>(
+                FutureBuilder<String?>(
                   future: db.values.get(db.values.first_name),
-                  builder: (BuildContext context, AsyncSnapshot<Object?> snapshot) {
+                  builder: (BuildContext context, AsyncSnapshot<String?> snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const CircularProgressIndicator(); // Muestra un indicador de carga mientras espera
                     } else if (snapshot.hasError) {
@@ -67,9 +72,9 @@ class DashboardScreen extends StatelessWidget {
                         ),
                       );
                     } else {
-                      final username = snapshot.data.toString();
+                      final first_name = snapshot.data.toString();
                       return Text(
-                        'Hola, $username', // Muestra el valor obtenido de la DB
+                        'Hola, $first_name', // Muestra el valor obtenido de la DB
                         style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -110,7 +115,8 @@ class DashboardScreen extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => const RegistrarRuta()),
+                                  builder: (context) => const RegistrarRuta(),
+                                ),
                               );
                             },
                             child: Column(
@@ -133,12 +139,14 @@ class DashboardScreen extends StatelessWidget {
                               ),
                               padding: const EdgeInsets.all(10),
                             ),
-                            onPressed: () {
-                              Navigator.push(
+                            onPressed: () async {
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => const PerfilUsuarioScreen()),
+                                  builder: (context) => const PerfilUsuarioScreen(),
+                                ),
                               );
+                              setState(() {});
                             },
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -164,7 +172,8 @@ class DashboardScreen extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => const ListadoRutasScreen()),
+                                  builder: (context) => const ListadoRutasScreen(),
+                                ),
                               );
                             },
                             child: Column(
@@ -191,8 +200,9 @@ class DashboardScreen extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) =>
-                                    const RutasCompartidasScreen()),
+                                  builder: (context) =>
+                                  const RutasCompartidasScreen(),
+                                ),
                               );
                             },
                             child: Column(
