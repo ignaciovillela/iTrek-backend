@@ -17,8 +17,8 @@ class PerfilUsuarioScreen extends StatefulWidget {
 
 class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _userNameController = TextEditingController();
   final TextEditingController _nombreController = TextEditingController();
-  final TextEditingController _correoController = TextEditingController();
   final TextEditingController _biografiaController = TextEditingController();
   final TextEditingController _apellidoController = TextEditingController();
 
@@ -40,21 +40,23 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
   }
 
   Future<void> _loadUserData() async {
+    final userName = await db.values.get('username') as String?;
     final firstName = await db.values.get('usuario_first_name') as String?;
-    final email = await db.values.get('usuario_email') as String?;
+    final lastName = await db.values.get('usuario_last_name') as String?;
     final biografia = await db.values.get('usuario_biografia') as String?;
     final imagenPerfil = await db.values.get('usuario_imagen_perfil') as String?;
 
     setState(() {
+      _userNameController.text = userName ?? '';
       _nombreController.text = firstName ?? '';
-      _correoController.text = email ?? '';
+      _apellidoController.text = lastName ?? '';
       _biografiaController.text = biografia ?? '';
       _imagenPerfil = imagenPerfil != null && imagenPerfil.isNotEmpty
           ? (imagenPerfil.startsWith('http') ? imagenPerfil : '$BASE_URL$imagenPerfil')
           : 'assets/images/profile.png';
     });
 
-    print("Cargado: $_imagenPerfil, $firstName, $email, $biografia");
+    print("Cargado: $userName $_imagenPerfil, $firstName, $biografia");
   }
 
   Future<void> _pickImage() async {
@@ -85,9 +87,6 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
 
     final url = Uri.parse('$BASE_URL/$UPDATE_USER');
 
-    // Verifica que los campos no estén vacíos y asigna valores predeterminados si es necesario
-    final lastName = _apellidoController.text.trim().isEmpty ? "Apellido" : _apellidoController.text.trim();
-
     // Convierte la imagen a base64 si existe
     String? base64Image;
     if (_imageFile != null) {
@@ -97,10 +96,8 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
 
     // Define el cuerpo de la solicitud, incluyendo la imagen en formato base64
     final body = jsonEncode({
-      "username": _nombreController.text.trim(),
-      "email": _correoController.text.trim(),
       "first_name": _nombreController.text.trim(),
-      "last_name": lastName,
+      "last_name": _apellidoController.text.trim(),
       "biografia": _biografiaController.text.trim(),
       if (base64Image != null) "imagen_perfil": base64Image,
     });
@@ -116,10 +113,8 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
 
         // Actualiza los valores en la base de datos local
         await db.values.create('usuario_first_name', responseData['first_name']);
-        await db.values.create('usuario_email', responseData['email']);
         await db.values.create('usuario_biografia', responseData['biografia']);
         await db.values.create('usuario_last_name', responseData['last_name']);
-        await db.values.create('username', responseData['username']);
         await db.values.create('usuario_imagen_perfil', responseData['imagen_perfil']);
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -201,11 +196,27 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                     backgroundColor: Colors.grey[200],
                   ),
                   if (_editMode)
-                    IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.black),
-                      onPressed: _pickImage,
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Color(0xFFA5D6A7),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.white),
+                        onPressed: _pickImage,
+                      ),
                     ),
                 ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                _userNameController.text, // Nombre de usuario
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 20),
               TextFormField(
@@ -224,16 +235,15 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
               ),
               const SizedBox(height: 20),
               TextFormField(
-                controller: _correoController,
+                controller: _apellidoController,
                 decoration: const InputDecoration(
-                  labelText: 'Correo',
+                  labelText: 'Apellido',
                   border: OutlineInputBorder(),
                 ),
-                keyboardType: TextInputType.emailAddress,
                 enabled: _editMode,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese su correo';
+                    return 'Por favor, ingrese su apellido';
                   }
                   return null;
                 },

@@ -19,7 +19,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
   // Método para cargar el nombre de usuario desde la base de datos local
   Future<void> _loadUserData() async {
-    final name = await db.values.get('username') as String?;
+    final name = await db.values.get('usuario_first_name') as String?;
     setState(() {
       username = name ?? 'Usuario'; // Usa 'Usuario' como valor predeterminado si el nombre es nulo
     });
