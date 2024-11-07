@@ -146,6 +146,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   builder: (context) => const PerfilUsuarioScreen(),
                                 ),
                               );
+                              setState(() {});
                             },
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
