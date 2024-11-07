@@ -120,6 +120,33 @@ class ValuesHelper extends DatabaseHelper {
   }
 }
 
+Future<void> _loadUserData() async {
+  try {
+    // Obtén los datos del usuario desde la base de datos
+    final username = await db.values.get(db.values.username) as String?;
+    final firstName = await db.values.get(db.values.first_name) as String?;
+    final lastName = await db.values.get(db.values.last_name) as String?;
+    final email = await db.values.get(db.values.email) as String?;
+    final biografia = await db.values.get(db.values.biografia) as String?;
+    final imagenPerfil = await db.values.get(db.values.imagen_perfil) as String?;
+
+    // Actualiza el estado con los datos obtenidos
+    setState(() {
+      // Puedes usar estas variables para actualizar la interfaz de usuario
+      print("Nombre de usuario: $username");
+      print("Nombre: $firstName");
+      print("Apellido: $lastName");
+      print("Correo electrónico: $email");
+      print("Biografía: $biografia");
+      print("Imagen de perfil: $imagenPerfil");
+    });
+  } catch (e) {
+    // Maneja cualquier error que ocurra al cargar los datos
+    print("Error al cargar los datos del usuario: $e");
+  }
+}
+
+
 // RoutesHelper: gestiona las tablas 'rutas' y 'puntos'
 class RoutesHelper extends DatabaseHelper {
   static final RoutesHelper instance = RoutesHelper._init();

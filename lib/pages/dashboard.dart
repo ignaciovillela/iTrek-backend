@@ -10,12 +10,15 @@ import 'package:itrek/pages/usuario/usuarioPerfil.dart';
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
-  // Método para verificar si el token existe en la tabla `valores`
-  Future<bool> _checkToken() async {
-    // Busca en la base de datos si existe un token almacenado bajo la clave 'token'
-    Object? tokenData = await db.values.get(db.values.token);
+  @override
+  _DashboardScreenState createState() => _DashboardScreenState(); // Implementa createState()
+}
 
-    // Si encuentra un token, el usuario está autenticado
+class _DashboardScreenState extends State<DashboardScreen> {
+  // Aquí puedes incluir tus métodos, como _checkToken() y _loadUserData()
+
+  Future<bool> _checkToken() async {
+    Object? tokenData = await db.values.get(db.values.token);
     return tokenData != null;
   }
 
