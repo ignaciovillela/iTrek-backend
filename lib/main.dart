@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:app_links/app_links.dart';
 import 'package:itrek/db.dart';
 import 'package:itrek/pages/dashboard.dart';
 import 'package:itrek/request.dart';
@@ -71,7 +72,7 @@ class _MyAppState extends State<MyApp> {
           scaffoldMessengerKey.currentState?.showSnackBar(
             SnackBar(content: Text('Todo ok: $data')),
           );
-          await db.values.createLoginData(data);
+          await db.values.setUserData(data);
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => DashboardScreen()),

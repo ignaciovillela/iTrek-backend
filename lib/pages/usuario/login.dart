@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:itrek/db.dart';
 import 'package:itrek/img.dart';
 import 'package:itrek/pages/dashboard.dart';
-import 'package:itrek/request.dart';
-import 'package:itrek/pages/usuario/loginRegistrar.dart';
 import 'package:itrek/pages/usuario/loginCuentaRecuperar.dart';
+import 'package:itrek/pages/usuario/loginRegistrar.dart';
+import 'package:itrek/request.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -88,9 +88,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       useToken: false,
       onOk: (response) async {
         final data = jsonDecode(response.body);
-
         if (data['token'] != null) {
-          await db.values.createLoginData(data);
+          await db.values.setUserData(data);
+
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const DashboardScreen()),
           );
@@ -116,6 +116,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       MaterialPageRoute(builder: (context) => const RegistroScreen()),
     );
   }
+
   // Función para manejar la navegación a la página de Recuperar Cuenta
   Future<void> _loginCuentaRecuperar() async {
     Navigator.push(
@@ -123,6 +124,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       MaterialPageRoute(builder: (context) => const RecuperarContrasenaScreen()),
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
