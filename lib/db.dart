@@ -115,7 +115,6 @@ class ValuesHelper extends DatabaseHelper {
       final dbKey = entry.value;
 
       if (data.containsKey(key)) {
-        print('Guardando $dbKey: ${data[key]}'); // Depuración
         await create(dbKey, data[key]);
       }
     }

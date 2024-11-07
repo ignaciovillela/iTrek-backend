@@ -88,10 +88,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       useToken: false,
       onOk: (response) async {
         final data = jsonDecode(response.body);
-        print("Datos recibidos: $data"); // Imprime los datos para depurar
 
         if (data['token'] != null) {
-          print("Datos recibidos2: $data");
           await db.values.createLoginData(data);
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const DashboardScreen()),

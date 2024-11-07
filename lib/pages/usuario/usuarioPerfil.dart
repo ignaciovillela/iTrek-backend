@@ -45,7 +45,6 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
     final lastName = await db.values.get('last_name') as String?;
     final biografia = await db.values.get('biografia') as String?;
     final imagenPerfil = await db.values.get('imagen_perfil') as String?;
-    print("Datos cargados: $userName, $firstName, $lastName, $biografia, $imagenPerfil");
     setState(() {
       _userNameController.text = userName ?? '';
       _nombreController.text = firstName ?? '';
@@ -55,8 +54,6 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
           ? (imagenPerfil.startsWith('http') ? imagenPerfil : '$BASE_URL$imagenPerfil')
           : 'assets/images/profile.png';
     });
-
-    print("Cargado: $userName $_imagenPerfil, $firstName, $biografia");
   }
 
   Future<void> _pickImage() async {
@@ -101,9 +98,6 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
       "biografia": _biografiaController.text.trim(),
       if (base64Image != null) "imagen_perfil": base64Image,
     });
-
-    print("Body de la solicitud: $body"); // Imprime el cuerpo de la solicitud para depurar
-
     try {
       // Realiza la solicitud HTTP PUT
       final response = await http.put(url, headers: headers, body: body);
