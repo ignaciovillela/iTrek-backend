@@ -1,12 +1,13 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
 import 'package:itrek/db.dart';
+import 'package:itrek/img.dart';
 import 'package:itrek/pages/dashboard.dart';
 import 'package:itrek/request.dart';
 import 'package:itrek/pages/usuario/loginRegistrar.dart';
 import 'package:itrek/pages/usuario/loginCuentaRecuperar.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -59,6 +60,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     }
   }
 
+  // Método para borrar el username guardado
+  Future<void> _deleteSavedUsername() async {
+    await db.values.delete(db.values.username); // Borrar el username de la DB
+    setState(() {
+      _hasUsername = false; // Volver a mostrar el campo de username
+      _savedUsername = null; // Limpiar el username guardado
+    });
+  }
+
   // Función que maneja el proceso de login
   Future<void> _login() async {
     final String username = _hasUsername ? _savedUsername! : _usernameController.text;
@@ -90,9 +100,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           await db.values.create('usuario_biografia', jsonData['biografia']);
           await db.values.create('usuario_imagen_perfil', jsonData['imagen_perfil'] ?? '');
             print("Imagen guardada ${jsonData['imagen_perfil']}");
+        final data = jsonDecode(response.body);
+        if (data['token'] != null) {
+          await db.values.createLoginData(data);
 
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const MenuScreen()),
+            MaterialPageRoute(builder: (context) => const DashboardScreen()),
           );
         }
       },
@@ -150,6 +163,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           const SizedBox(height: 20),
           // Aquí puedes agregar la imagen de tu aplicación
           const SizedBox(height: 60),
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Column(
@@ -169,6 +183,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     style: const TextStyle(fontSize: 15, color: Color(0xFF999999), fontWeight: FontWeight.bold),
                   ),
                 const SizedBox(height: 20),
+
+                // Campo para la contraseña
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
@@ -178,6 +194,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   ),
                 ),
                 const SizedBox(height: 20),
+
+                // Botón para login
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -191,19 +209,37 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   ),
                 ),
                 const SizedBox(height: 20), // Espacio de 20 píxeles entre los botones
-                // Botón para Registrarse
+                // Botón para Recuperar Cuenta
                 SizedBox(
                   width: double.infinity, // Ocupa el 100% del ancho disponible
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFA500), // Color naranja
+                      backgroundColor: const Color(0xFFFF7F7F), // Color Rojo
                       padding: const EdgeInsets.symmetric(vertical: 15),
                       textStyle: const TextStyle(fontSize: 18),
                     ),
-                    onPressed: _loginRegistrar,
-                    child: const Text('Registrarse'),
+                    onPressed: _loginCuentaRecuperar,
+                    child: const Text('Recuperar Cuenta'),
                   ),
                 ),
+
+                // Si hay username guardado, muestra el botón para "No eres $username?"
+                if (!_hasUsername)
+                  const SizedBox(height: 20), // Espacio de 20 píxeles entre los botones
+                // Botón para Registrarse
+                if (!_hasUsername)
+                  SizedBox(
+                    width: double.infinity, // Ocupa el 100% del ancho disponible
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFA500), // Color naranja
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        textStyle: const TextStyle(fontSize: 18),
+                      ),
+                      onPressed: _loginRegistrar,
+                      child: const Text('Registrarse'),
+                    ),
+                  ),
                 const SizedBox(height: 20), // Espacio de 20 píxeles entre los botones
                 // Botón para Recuperar Cuenta
                 SizedBox(
@@ -221,18 +257,23 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 const SizedBox(height: 10),
                 if (_hasUsername)
                   TextButton(
-                    onPressed: _deleteSavedUsername,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '¿No eres $_savedUsername? Haz clic aquí para cambiar de cuenta.',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                        const SizedBox(height: 2),
-                        Container(height: 1, color: Color(0xFFCCCCCC)),
-                      ],
-                    ),
+                      onPressed: _deleteSavedUsername,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '¿No eres $_savedUsername? Haz clic aquí para cambiar de cuenta.',
+                            style: TextStyle(
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 2), // Espacio entre el texto y la línea
+                          Container(
+                            height: 1, // Espesor de la línea
+                            color: Color(0xFFCCCCCC), // Color de la línea
+                          ),
+                        ],
+                      )
                   ),
               ],
             ),
