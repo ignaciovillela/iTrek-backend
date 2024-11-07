@@ -87,19 +87,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       body: {'username': username, 'password': password},
       useToken: false,
       onOk: (response) async {
-        final jsonData = jsonDecode(response.body);
-        final token = jsonData['token'];
-
-        if (token != null) {
-          // Guardar el token y los datos del usuario en la base de datos
-          await db.values.create(db.values.token, token);
-          await db.values.create(db.values.username, username);
-          await db.values.create('usuario_email', jsonData['email']);
-          await db.values.create('usuario_first_name', jsonData['first_name']);
-          await db.values.create('usuario_last_name', jsonData['last_name']);
-          await db.values.create('usuario_biografia', jsonData['biografia']);
-          await db.values.create('usuario_imagen_perfil', jsonData['imagen_perfil'] ?? '');
-            print("Imagen guardada ${jsonData['imagen_perfil']}");
         final data = jsonDecode(response.body);
         if (data['token'] != null) {
           await db.values.createLoginData(data);
@@ -142,7 +129,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         backgroundColor: const Color(0xFF50C2C9),
         title: Row(
           children: [
-            // Aquí va el logo, si lo tienes
+            logoWhite,
+            const SizedBox(width: 10),
             const Text(
               'iTrek',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
@@ -161,14 +149,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             ),
           ),
           const SizedBox(height: 20),
-          // Aquí puedes agregar la imagen de tu aplicación
+          Center(
+            child: Image.asset('assets/images/maps-green.png', height: 200),
+          ),
           const SizedBox(height: 60),
 
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Column(
               children: [
-                if (!_hasUsername)
+                if (!_hasUsername) // Si no hay username guardado, muestra el campo de texto
                   TextFormField(
                     controller: _usernameController,
                     decoration: const InputDecoration(
@@ -176,7 +166,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       border: OutlineInputBorder(),
                     ),
                   ),
-                if (_hasUsername)
+
+                if (_hasUsername) // Si hay username guardado, muestra el mensaje de bienvenida
                   Text(
                     'Hola, $_savedUsername! Nos alegra verte de nuevo.\n'
                         'Por favor, ingresa tu clave para continuar.',
@@ -194,10 +185,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   ),
                 ),
                 const SizedBox(height: 20),
-
                 // Botón para login
                 SizedBox(
-                  width: double.infinity,
+                  width: double.infinity, // Ocupa el 100% del ancho disponible
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF50C2C9),
@@ -240,21 +230,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       child: const Text('Registrarse'),
                     ),
                   ),
-                const SizedBox(height: 20), // Espacio de 20 píxeles entre los botones
-                // Botón para Recuperar Cuenta
-                SizedBox(
-                  width: double.infinity, // Ocupa el 100% del ancho disponible
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF7F7F), // Color Rojo
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      textStyle: const TextStyle(fontSize: 18),
-                    ),
-                    onPressed: _loginCuentaRecuperar,
-                    child: const Text('Recuperar Cuenta'),
-                  ),
-                ),
-                const SizedBox(height: 10),
                 if (_hasUsername)
                   TextButton(
                       onPressed: _deleteSavedUsername,
@@ -281,14 +256,5 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         ],
       ),
     );
-  }
-
-  // Método para borrar el username guardado
-  Future<void> _deleteSavedUsername() async {
-    await db.values.delete(db.values.username); // Borrar el username de la DB
-    setState(() {
-      _hasUsername = false; // Volver a mostrar el campo de username
-      _savedUsername = null; // Limpiar el username guardado
-    });
   }
 }
