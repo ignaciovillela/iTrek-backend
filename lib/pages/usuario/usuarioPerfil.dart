@@ -87,7 +87,6 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
 
     // Verifica que los campos no estén vacíos y asigna valores predeterminados si es necesario
     final lastName = _apellidoController.text.trim().isEmpty ? "Apellido" : _apellidoController.text.trim();
-    final password = "My\$ecureP@ssword2024!"; // Contraseña más segura y sin relación con el correo
 
     // Convierte la imagen a base64 si existe
     String? base64Image;
@@ -99,12 +98,11 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
     // Define el cuerpo de la solicitud, incluyendo la imagen en formato base64
     final body = jsonEncode({
       "username": _nombreController.text.trim(),
-      "password": password,
       "email": _correoController.text.trim(),
       "first_name": _nombreController.text.trim(),
       "last_name": lastName,
       "biografia": _biografiaController.text.trim(),
-      "imagen_perfil": base64Image != null ? "data:image/jpeg;base64,$base64Image" : null
+      if (base64Image != null) "imagen_perfil": base64Image,
     });
 
     print("Body de la solicitud: $body"); // Imprime el cuerpo de la solicitud para depurar
