@@ -88,9 +88,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       useToken: false,
       onOk: (response) async {
         final data = jsonDecode(response.body);
-        if (data['token'] != null) {
-          await db.values.createLoginData(data);
+        print("Datos recibidos: $data"); // Imprime los datos para depurar
 
+        if (data['token'] != null) {
+          print("Datos recibidos2: $data");
+          await db.values.createLoginData(data);
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const DashboardScreen()),
           );
@@ -108,6 +110,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       },
     );
   }
+
   // Función para manejar la navegación a la página de registro
   Future<void> _loginRegistrar() async {
     Navigator.push(

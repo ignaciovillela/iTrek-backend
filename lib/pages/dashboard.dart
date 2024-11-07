@@ -7,15 +7,23 @@ import 'package:itrek/pages/ruta/rutaRegistrar.dart';
 import 'package:itrek/pages/usuario/login.dart';
 import 'package:itrek/pages/usuario/usuarioPerfil.dart';
 
-
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
+  @override
+  _DashboardScreenState createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
   Future<bool> _checkToken() async {
     Object? tokenData = await db.values.get(db.values.token);
-
     // Si encuentra un token, el usuario está autenticado
     return tokenData != null;
+  }
+
+  // Método para recargar el nombre de usuario cuando se regresa de la pantalla de perfil
+  void _reloadUserData() {
+    setState(() {});
   }
 
   @override
@@ -67,9 +75,9 @@ class DashboardScreen extends StatelessWidget {
                         ),
                       );
                     } else {
-                      final username = snapshot.data.toString();
+                      final first_name = snapshot.data.toString();
                       return Text(
-                        'Hola, $username', // Muestra el valor obtenido de la DB
+                        'Hola, $first_name', // Muestra el valor obtenido de la DB
                         style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -110,7 +118,8 @@ class DashboardScreen extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => const RegistrarRuta()),
+                                  builder: (context) => const RegistrarRuta(),
+                                ),
                               );
                             },
                             child: Column(
@@ -133,12 +142,15 @@ class DashboardScreen extends StatelessWidget {
                               ),
                               padding: const EdgeInsets.all(10),
                             ),
-                            onPressed: () {
-                              Navigator.push(
+                            onPressed: () async {
+                              // Espera a que se complete la navegación y luego recarga los datos
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => const PerfilUsuarioScreen()),
+                                  builder: (context) => const PerfilUsuarioScreen(),
+                                ),
                               );
+                              _reloadUserData(); // Recargar los datos al volver
                             },
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -164,7 +176,8 @@ class DashboardScreen extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => const ListadoRutasScreen()),
+                                  builder: (context) => const ListadoRutasScreen(),
+                                ),
                               );
                             },
                             child: Column(
@@ -191,8 +204,9 @@ class DashboardScreen extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) =>
-                                    const RutasCompartidasScreen()),
+                                  builder: (context) =>
+                                  const RutasCompartidasScreen(),
+                                ),
                               );
                             },
                             child: Column(

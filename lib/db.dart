@@ -98,6 +98,7 @@ class ValuesHelper extends DatabaseHelper {
     return await db.delete('valores', where: 'key = ?', whereArgs: [key]);
   }
 
+// createLoginData en db.dart
   Future<void> createLoginData(Map<String, dynamic> data) async {
     final fields = {
       'username': username,
@@ -114,10 +115,12 @@ class ValuesHelper extends DatabaseHelper {
       final dbKey = entry.value;
 
       if (data.containsKey(key)) {
-        await db.values.create(dbKey, data[key]);
+        print('Guardando $dbKey: ${data[key]}'); // Depuración
+        await create(dbKey, data[key]);
       }
     }
   }
+
 }
 
 // RoutesHelper: gestiona las tablas 'rutas' y 'puntos'

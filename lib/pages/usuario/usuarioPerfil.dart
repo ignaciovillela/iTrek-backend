@@ -41,11 +41,11 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
 
   Future<void> _loadUserData() async {
     final userName = await db.values.get('username') as String?;
-    final firstName = await db.values.get('usuario_first_name') as String?;
-    final lastName = await db.values.get('usuario_last_name') as String?;
-    final biografia = await db.values.get('usuario_biografia') as String?;
-    final imagenPerfil = await db.values.get('usuario_imagen_perfil') as String?;
-
+    final firstName = await db.values.get('first_name') as String?;
+    final lastName = await db.values.get('last_name') as String?;
+    final biografia = await db.values.get('biografia') as String?;
+    final imagenPerfil = await db.values.get('imagen_perfil') as String?;
+    print("Datos cargados: $userName, $firstName, $lastName, $biografia, $imagenPerfil");
     setState(() {
       _userNameController.text = userName ?? '';
       _nombreController.text = firstName ?? '';
@@ -85,7 +85,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
       "Authorization": "Token ${token.toString().trim()}"
     };
 
-    final url = Uri.parse('$BASE_URL/$UPDATE_USER');
+    final url = Uri.parse('$BASE_URL/$USER_UPDATE');
 
     // Convierte la imagen a base64 si existe
     String? base64Image;
@@ -111,11 +111,13 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
 
-        // Actualiza los valores en la base de datos local
-        await db.values.create('usuario_first_name', responseData['first_name']);
-        await db.values.create('usuario_biografia', responseData['biografia']);
-        await db.values.create('usuario_last_name', responseData['last_name']);
-        await db.values.create('usuario_imagen_perfil', responseData['imagen_perfil']);
+        // Usa el método `createLoginData` para guardar los datos en la base de datos
+        await db.values.createLoginData({
+          'first_name': responseData['first_name'],
+          'last_name': responseData['last_name'],
+          'biografia': responseData['biografia'],
+          'imagen_perfil': responseData['imagen_perfil'],
+        });
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(responseData['message'])),
