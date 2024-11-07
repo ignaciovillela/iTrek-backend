@@ -1,12 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:itrek/config.dart';
 import 'package:itrek/db.dart';
 import 'package:itrek/pages/usuario/login.dart';
 import 'package:itrek/request.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class PerfilUsuarioScreen extends StatefulWidget {
   const PerfilUsuarioScreen({super.key});
@@ -40,19 +40,14 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
   }
 
   Future<void> _loadUserData() async {
-    final userName = await db.values.get('username') as String?;
-    final firstName = await db.values.get('first_name') as String?;
-    final lastName = await db.values.get('last_name') as String?;
-    final biografia = await db.values.get('biografia') as String?;
-    final imagenPerfil = await db.values.get('imagen_perfil') as String?;
+    final userData = await db.values.getUserData();
+    final imagenPerfil = userData[db.values.imagen_perfil];
     setState(() {
-      _userNameController.text = userName ?? '';
-      _nombreController.text = firstName ?? '';
-      _apellidoController.text = lastName ?? '';
-      _biografiaController.text = biografia ?? '';
-      _imagenPerfil = imagenPerfil != null && imagenPerfil.isNotEmpty
-          ? (imagenPerfil.startsWith('http') ? imagenPerfil : '$BASE_URL$imagenPerfil')
-          : 'assets/images/profile.png';
+      _userNameController.text = userData[db.values.username] ?? "";
+      _nombreController.text = userData[db.values.first_name] ?? "";
+      _apellidoController.text = userData[db.values.last_name] ?? "";
+      _biografiaController.text = userData[db.values.biografia] ?? "";
+      _imagenPerfil = (imagenPerfil != null && imagenPerfil.isNotEmpty) ? '$BASE_URL$imagenPerfil' : 'assets/images/profile.png';
     });
   }
 
@@ -66,24 +61,6 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
   }
 
   Future<void> _updateProfile() async {
-    // Obtiene el token de la base de datos
-    final token = await db.values.get('token');
-
-    if (token == null || token.toString().trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Error: Token de autenticación no encontrado.")),
-      );
-      return;
-    }
-
-    // Configura los encabezados con el token
-    final headers = {
-      "Content-Type": "application/json",
-      "Authorization": "Token ${token.toString().trim()}"
-    };
-
-    final url = Uri.parse('$BASE_URL/$USER_UPDATE');
-
     // Convierte la imagen a base64 si existe
     String? base64Image;
     if (_imageFile != null) {
@@ -92,25 +69,26 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
     }
 
     // Define el cuerpo de la solicitud, incluyendo la imagen en formato base64
-    final body = jsonEncode({
+    final body = {
       "first_name": _nombreController.text.trim(),
       "last_name": _apellidoController.text.trim(),
       "biografia": _biografiaController.text.trim(),
       if (base64Image != null) "imagen_perfil": base64Image,
-    });
-    try {
-      // Realiza la solicitud HTTP PUT
-      final response = await http.put(url, headers: headers, body: body);
-
-      if (response.statusCode == 200) {
+    };
+    print(body);
+    await makeRequest(
+      method: PUT,
+      url: USER_UPDATE,
+      body: body,
+      onOk: (response) async {
         final responseData = jsonDecode(response.body);
 
-        // Usa el método `createLoginData` para guardar los datos en la base de datos
-        await db.values.createLoginData({
-          'first_name': responseData['first_name'],
-          'last_name': responseData['last_name'],
-          'biografia': responseData['biografia'],
-          'imagen_perfil': responseData['imagen_perfil'],
+        // Usa el método `setUserData` para guardar los datos en la base de datos
+        await db.values.setUserData({
+          db.values.first_name: responseData['first_name'],
+          db.values.last_name: responseData['last_name'],
+          db.values.biografia: responseData['biografia'],
+          db.values.imagen_perfil: responseData['imagen_perfil'],
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -122,21 +100,19 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
         });
 
         _loadUserData();
-      } else {
-        print("Error: ${response.statusCode}, Body: ${response.body}");
+      },
+      onError: (response) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error al actualizar el perfil: ${response.body}")),
         );
-      }
-    } catch (e) {
-      print("Error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
-    }
+      },
+      onConnectionError: (errorMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $errorMessage")),
+        );
+      },
+    );
   }
-
-
 
   Future<void> _cerrarSesion() async {
     await makeRequest(
@@ -145,8 +121,11 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
       useToken: true,
       onOk: (response) async {
         await db.values.delete(db.values.token);
+
         final message = jsonDecode(response.body)['message'];
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message))
+        );
 
         Navigator.pushReplacement(
           context,

@@ -22,7 +22,7 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
     print("Se llama al _initDb");
-    return await openDatabase(path, version: 2, onCreate: _createDB);
+    return await openDatabase(path, version: 1, onCreate: _createDB, onUpgrade: _onUpgrade);
   }
 
   // Crea la estructura de la base de datos
@@ -30,8 +30,14 @@ class DatabaseHelper {
     await createTables(db); // Llama a este método para crear todas las tablas
   }
 
-  // Sobrescrito por subclases para crear sus tablas
+  Future _onUpgrade(db, oldVersion, newVersion) async {
+    updateTables(db, oldVersion, newVersion);
+  }
+
   Future<void> createTables(Database db) async {}
+
+
+  Future<void> updateTables(Database db, oldVersion, newVersion) async {}
 
   // Método para cerrar la base de datos
   Future close() async {
@@ -87,10 +93,10 @@ class ValuesHelper extends DatabaseHelper {
     }
   }
 
-  Future<Object?> get(String key) async {
+  Future<String?> get(String key) async {
     final db = await database;  // Accede al getter directamente
     final result = await db.query('valores', where: 'key = ?', whereArgs: [key]);
-    return result.isNotEmpty ? result.first['value'] : null;
+    return result.isNotEmpty ? result.first['value'] as String : null;
   }
 
   Future<int> delete(String key) async {
@@ -98,8 +104,7 @@ class ValuesHelper extends DatabaseHelper {
     return await db.delete('valores', where: 'key = ?', whereArgs: [key]);
   }
 
-// createLoginData en db.dart
-  Future<void> createLoginData(Map<String, dynamic> data) async {
+  Future<void> setUserData(Map<String, dynamic> data) async {
     final fields = {
       'username': username,
       'email': email,
@@ -120,6 +125,31 @@ class ValuesHelper extends DatabaseHelper {
     }
   }
 
+  Future<Map<String, String?>> getUserData() async {
+    final fields = {
+      'username': username,
+      'email': email,
+      'first_name': first_name,
+      'last_name': last_name,
+      'biografia': biografia,
+      'imagen_perfil': imagen_perfil,
+      'token': token,
+    };
+
+    final Map<String, String?> data = {};
+
+    for (var entry in fields.entries) {
+      final key = entry.key;
+      final dbKey = entry.value;
+
+      final value = await get(dbKey);
+      if (value != null) {
+        data[key] = value;
+      }
+    }
+
+    return data;
+  }
 }
 
 // RoutesHelper: gestiona las tablas 'rutas' y 'puntos'
@@ -296,8 +326,9 @@ class _DbHelper {
 
   // Inicializa la base de datos asegurando que ambas tablas se creen
   Future<void> initDatabase() async {
-    final db = await values.database;  // Inicializa la base de datos y crea tablas de valores
-    await routes.createTables(db);     // Asegúrate de crear las tablas de rutas después
+    final db = await values.database;  // Inicializa la base de datos
+    await values.createTables(db);     // Asegúrate de crear las tablas de valores
+    await routes.createTables(db);     // Asegúrate de crear las tablas de rutas
   }
 }
 

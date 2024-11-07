@@ -7,6 +7,7 @@ import 'package:itrek/pages/ruta/rutaRegistrar.dart';
 import 'package:itrek/pages/usuario/login.dart';
 import 'package:itrek/pages/usuario/usuarioPerfil.dart';
 
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -16,14 +17,10 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   Future<bool> _checkToken() async {
-    Object? tokenData = await db.values.get(db.values.token);
+    String? tokenData = await db.values.get(db.values.token);
+
     // Si encuentra un token, el usuario está autenticado
     return tokenData != null;
-  }
-
-  // Método para recargar el nombre de usuario cuando se regresa de la pantalla de perfil
-  void _reloadUserData() {
-    setState(() {});
   }
 
   @override
@@ -58,9 +55,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             body: Column(
               children: [
                 const SizedBox(height: 40),
-                FutureBuilder<Object?>(
+                FutureBuilder<String?>(
                   future: db.values.get(db.values.first_name),
-                  builder: (BuildContext context, AsyncSnapshot<Object?> snapshot) {
+                  builder: (BuildContext context, AsyncSnapshot<String?> snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const CircularProgressIndicator(); // Muestra un indicador de carga mientras espera
                     } else if (snapshot.hasError) {
@@ -143,14 +140,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               padding: const EdgeInsets.all(10),
                             ),
                             onPressed: () async {
-                              // Espera a que se complete la navegación y luego recarga los datos
                               await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => const PerfilUsuarioScreen(),
                                 ),
                               );
-                              _reloadUserData(); // Recargar los datos al volver
                             },
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,

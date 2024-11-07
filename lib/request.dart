@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:itrek/config.dart';
 import 'package:itrek/db.dart';
@@ -9,21 +10,20 @@ const PATCH = 'PATCH';
 const DELETE = 'DELETE';
 const PUT = 'PUT';
 
-const LOGIN =        'api/auth/login/';
-const LOGIN_CHECK =  'api/auth/check-login/';
-const LOGOUT =       'api/auth/logout/';
-const ROUTES =       'api/routes/';
+const LOGIN =           'api/auth/login/';
+const LOGIN_CHECK =     'api/auth/check-login/';
+const LOGOUT =          'api/auth/logout/';
+const ROUTES =          'api/routes/';
 
-const USER_CREATE =  'api/users/create/';
-const USER_UPDATE =  'api/users/update-profile/';
-const USER_DELETE =  'api/users/delete-account/';
+const USER_CREATE =     'api/users/create/';
+const USER_UPDATE =     'api/users/update-profile/';
+const USER_DELETE =     'api/users/delete-account/';
 
-const ROUTE_DETAIL = 'api/routes/{id}/';
-const ROUTE_SHARE =  'api/routes/{id}/share/{usuarioId}/';
+const ROUTE_DETAIL =    'api/routes/{id}/';
+const ROUTE_SHARE =     'api/routes/{id}/share/{usuarioId}/';
 
-const SEARCH_USER =  'api/users/search?q={query}';
+const SEARCH_USER =     'api/users/search?q={query}';
 const PASSWORD_CHANGE = 'api/users/change-password/';
-const UPDATE_USER = 'api/users/update-profile/';
 
 typedef StatusCallback = void Function(http.Response response);
 typedef ErrorCallback = void Function(String errorMessage);
@@ -97,6 +97,9 @@ Future<http.Response?> makeRequest({
         break;
       case POST:
         response = await http.post(uri, headers: headers, body: jsonEncode(body));
+        break;
+      case PUT:
+        response = await http.put(uri, headers: headers, body: jsonEncode(body));
         break;
       case PATCH:
         response = await http.patch(uri, headers: headers, body: jsonEncode(body));
