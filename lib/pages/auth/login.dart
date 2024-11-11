@@ -141,122 +141,108 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           ],
         ),
       ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          FadeTransition(
-            opacity: _animation,
-            child: const Text(
-              'Bienvenido a iTrek',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Center(
-            child: Image.asset('assets/images/maps-green.png', height: 200),
-          ),
-          const SizedBox(height: 60),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              children: [
-                if (!_hasUsername) // Si no hay username guardado, muestra el campo de texto
-                  TextFormField(
-                    controller: _usernameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nombre de Usuario',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-
-                if (_hasUsername) // Si hay username guardado, muestra el mensaje de bienvenida
-                  Text(
-                    'Hola, $_savedUsername! Nos alegra verte de nuevo.\n'
-                        'Por favor, ingresa tu clave para continuar.',
-                    style: const TextStyle(fontSize: 15, color: Color(0xFF999999), fontWeight: FontWeight.bold),
-                  ),
-                const SizedBox(height: 20),
-
-                // Campo para la contraseña
+      body: SingleChildScrollView( // Envuelve el contenido en un SingleChildScrollView
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              FadeTransition(
+                opacity: _animation,
+                child: const Text(
+                  'Bienvenido a iTrek',
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Center(
+                child: Image.asset('assets/images/maps-green.png', height: 200),
+              ),
+              const SizedBox(height: 60),
+              if (!_hasUsername)
                 TextFormField(
-                  controller: _passwordController,
-                  obscureText: true,
+                  controller: _usernameController,
                   decoration: const InputDecoration(
-                    labelText: 'Contraseña',
+                    labelText: 'Nombre de Usuario',
                     border: OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(height: 20),
-                // Botón para login
+              if (_hasUsername)
+                Text(
+                  'Hola, $_savedUsername! Nos alegra verte de nuevo.\n'
+                      'Por favor, ingresa tu clave para continuar.',
+                  style: const TextStyle(fontSize: 15, color: Color(0xFF999999), fontWeight: FontWeight.bold),
+                ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Contraseña',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF50C2C9),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    textStyle: const TextStyle(fontSize: 18),
+                  ),
+                  onPressed: _login,
+                  child: const Text('Ingresar'),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF7F7F),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    textStyle: const TextStyle(fontSize: 18),
+                  ),
+                  onPressed: _loginCuentaRecuperar,
+                  child: const Text('Recuperar Cuenta'),
+                ),
+              ),
+              if (!_hasUsername) const SizedBox(height: 20),
+              if (!_hasUsername)
                 SizedBox(
-                  width: double.infinity, // Ocupa el 100% del ancho disponible
+                  width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF50C2C9),
+                      backgroundColor: const Color(0xFFFFA500),
                       padding: const EdgeInsets.symmetric(vertical: 15),
                       textStyle: const TextStyle(fontSize: 18),
                     ),
-                    onPressed: _login,
-                    child: const Text('Ingresar'),
+                    onPressed: _loginRegistrar,
+                    child: const Text('Registrarse'),
                   ),
                 ),
-                const SizedBox(height: 20), // Espacio de 20 píxeles entre los botones
-                // Botón para Recuperar Cuenta
-                SizedBox(
-                  width: double.infinity, // Ocupa el 100% del ancho disponible
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF7F7F), // Color Rojo
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      textStyle: const TextStyle(fontSize: 18),
-                    ),
-                    onPressed: _loginCuentaRecuperar,
-                    child: const Text('Recuperar Cuenta'),
-                  ),
-                ),
-
-                // Si hay username guardado, muestra el botón para "No eres $username?"
-                if (!_hasUsername)
-                  const SizedBox(height: 20), // Espacio de 20 píxeles entre los botones
-                // Botón para Registrarse
-                if (!_hasUsername)
-                  SizedBox(
-                    width: double.infinity, // Ocupa el 100% del ancho disponible
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFFA500), // Color naranja
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        textStyle: const TextStyle(fontSize: 18),
+              if (_hasUsername)
+                TextButton(
+                  onPressed: _deleteSavedUsername,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '¿No eres $_savedUsername? Haz clic aquí para cambiar de cuenta.',
+                        style: const TextStyle(color: Colors.grey),
                       ),
-                      onPressed: _loginRegistrar,
-                      child: const Text('Registrarse'),
-                    ),
+                      const SizedBox(height: 2),
+                      Container(
+                        height: 1,
+                        color: const Color(0xFFCCCCCC),
+                      ),
+                    ],
                   ),
-                if (_hasUsername)
-                  TextButton(
-                      onPressed: _deleteSavedUsername,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '¿No eres $_savedUsername? Haz clic aquí para cambiar de cuenta.',
-                            style: TextStyle(
-                              color: Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(height: 2), // Espacio entre el texto y la línea
-                          Container(
-                            height: 1, // Espesor de la línea
-                            color: Color(0xFFCCCCCC), // Color de la línea
-                          ),
-                        ],
-                      )
-                  ),
-              ],
-            ),
+                ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
