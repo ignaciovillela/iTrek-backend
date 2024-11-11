@@ -119,10 +119,10 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
       method: POST,
       url: LOGOUT,
       useToken: true,
-      onOk: (response) async {
+      onDefault: (response) async {
         await db.values.delete(db.values.token);
 
-        final message = jsonDecode(response.body)['message'];
+        final message = jsonDecode(response.body)['message'] ?? 'Sesión cerrada';
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(message))
         );
@@ -132,7 +132,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
           MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
       },
-      onError: (response) {
+      onConnectionError: (response) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error al cerrar sesión')),
         );
@@ -165,9 +165,9 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                 children: [
                   CircleAvatar(
                     radius: 50,
-                    backgroundImage: _imageFile != null
+                    backgroundImage: (_imageFile != null)
                         ? FileImage(_imageFile!)
-                        : NetworkImage(_imagenPerfil) as ImageProvider,
+                        : (_imagenPerfil.isNotEmpty ? NetworkImage(_imagenPerfil) : AssetImage('assets/images/profile.png')) as ImageProvider,
                     backgroundColor: Colors.grey[200],
                   ),
                   if (_editMode)
