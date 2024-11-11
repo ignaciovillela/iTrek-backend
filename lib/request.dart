@@ -64,9 +64,9 @@ Future<http.Response?> makeRequest({
   Map<String, dynamic>? body, // Cuerpo opcional para POST y PATCH, codificado en JSON
   bool useToken = true, // Determina si se usa el token almacenado en la base de datos
   Map<dynamic, StatusCallback>? statusCallbacks, // Callbacks para códigos específicos de estado
-  StatusCallback? onDefault, // Callback genérico para otros códigos de estado
   StatusCallback? onOk, // Callback para respuestas exitosas (códigos 200-299)
   StatusCallback? onError, // Callback para respuestas de error del lado del cliente (códigos 400-499)
+  StatusCallback? onDefault, // Callback genérico para otros códigos de estado
   ErrorCallback? onConnectionError, // Callback para manejar errores de conexión o excepciones
   Map<String, String>? customHeaders, // Headers personalizados opcionales
 }) async {
