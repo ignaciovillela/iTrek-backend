@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:itrek/request.dart'; // Importa 'makeRequest'
+
 import 'login.dart';
 
 class RegistroScreen extends StatefulWidget {

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:itrek/config.dart';
 import 'package:itrek/db.dart';
-import 'package:itrek/pages/usuario/login.dart';
+import 'package:itrek/pages/auth/login.dart';
 import 'package:itrek/request.dart';
 
 class PerfilUsuarioScreen extends StatefulWidget {

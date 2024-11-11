@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:itrek/db.dart';
 import 'package:itrek/img.dart';
+import 'package:itrek/pages/auth/login_recover.dart';
+import 'package:itrek/pages/auth/login_register.dart';
 import 'package:itrek/pages/dashboard.dart';
-import 'package:itrek/pages/usuario/loginCuentaRecuperar.dart';
-import 'package:itrek/pages/usuario/loginRegistrar.dart';
 import 'package:itrek/request.dart';
 
 
