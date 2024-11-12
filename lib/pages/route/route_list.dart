@@ -207,16 +207,13 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
               ),
               onTap: () async {
                 // Navega a DetalleRutaScreen y actualiza las rutas tras regresar.
-                final result = await Navigator.push(
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => DetalleRutaScreen(ruta: ruta),
                   ),
                 );
-
-                if (result != true) {
-                  _fetchRutas(); // Actualiza la lista de rutas si se regresó de la pantalla de detalles.
-                }
+                _fetchRutas();
               },
             ),
           );
