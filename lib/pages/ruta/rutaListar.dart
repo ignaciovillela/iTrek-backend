@@ -20,6 +20,8 @@ class ListadoRutasScreen extends StatefulWidget {
 // Estado de la pantalla que gestiona la lógica y el estado de las rutas guardadas.
 class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   List<dynamic>? rutasGuardadas; // Lista de rutas obtenidas desde la API.
+  List<dynamic>? rutasFiltradas; // Lista de rutas después de aplicar el filtro.
+  bool mostrarRutasLocales = false; // Indica si se deben mostrar solo rutas locales.
 
   @override
   void initState() {
@@ -35,6 +37,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
       onOk: (response) {
         setState(() {
           rutasGuardadas = jsonDecode(response.body); // Decodifica y guarda las rutas en el estado.
+          _aplicarFiltro(); // Aplica el filtro inicial.
         });
       },
       onError: (response) {
@@ -58,15 +61,67 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
     );
   }
 
+  // Función para aplicar el filtro de rutas.
+  void _aplicarFiltro() {
+    if (mostrarRutasLocales) {
+      // Filtra solo las rutas locales almacenadas en el dispositivo.
+      rutasFiltradas = rutasGuardadas?.where((ruta) => ruta['local']).toList();
+    } else {
+      // Muestra todas las rutas (locales y del backend).
+      rutasFiltradas = rutasGuardadas;
+    }
+    setState(() {});
+  }
+
+  // Widget para mostrar los botones de filtro.
+  Widget _buildFiltros() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        TextButton(
+          onPressed: () {
+            setState(() {
+              mostrarRutasLocales = false; // Mostrar todas las rutas.
+              _aplicarFiltro();
+            });
+          },
+          child: Text(
+            'Todas',
+            style: TextStyle(
+              color: !mostrarRutasLocales ? Colors.blue : Colors.black,
+              fontWeight: !mostrarRutasLocales ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            setState(() {
+              mostrarRutasLocales = true; // Mostrar solo rutas locales.
+              _aplicarFiltro();
+            });
+          },
+          child: Text(
+            'Locales',
+            style: TextStyle(
+              color: mostrarRutasLocales ? Colors.blue : Colors.black,
+              fontWeight: mostrarRutasLocales ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   // Función para eliminar una ruta a través de la API.
   Future<void> _deleteRuta(int id) async {
     await makeRequest(
       method: DELETE,
       url: ROUTE_DETAIL,
-      urlVars: {'id' :id}, // URL de la API para eliminar una ruta específica.
+      urlVars: {'id': id}, // URL de la API para eliminar una ruta específica.
       onOk: (response) {
         setState(() {
           rutasGuardadas!.removeWhere((ruta) => ruta['id'] == id); // Elimina la ruta localmente.
+          _aplicarFiltro(); // Aplica el filtro después de eliminar.
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ruta eliminada con éxito')),
@@ -122,7 +177,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
 
     await makeRequest(
       method: GET,
-      url:  ROUTE_DETAIL,
+      url: ROUTE_DETAIL,
       urlVars: {'id': routeId}, // Llama al backend con el ID de la ruta.
       onOk: (response) {
         final jsonResponse = jsonDecode(response.body); // Decodifica la respuesta JSON.
@@ -151,8 +206,8 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   Widget build(BuildContext context) {
     Widget bodyContent;
 
-    // Muestra el contenido dependiendo del estado de rutasGuardadas.
-    if (rutasGuardadas == null) {
+    // Muestra el contenido dependiendo del estado de rutasFiltradas.
+    if (rutasFiltradas == null) {
       // Pantalla de carga.
       bodyContent = const Center(
         child: Column(
@@ -167,7 +222,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
           ],
         ),
       );
-    } else if (rutasGuardadas!.isEmpty) {
+    } else if (rutasFiltradas!.isEmpty) {
       // Mensaje cuando no hay rutas.
       bodyContent = const Center(
         child: Text(
@@ -178,9 +233,9 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
     } else {
       // Lista de rutas cargadas.
       bodyContent = ListView.builder(
-        itemCount: rutasGuardadas!.length,
+        itemCount: rutasFiltradas!.length,
         itemBuilder: (context, index) {
-          final ruta = rutasGuardadas![index]; // Obtiene la ruta actual.
+          final ruta = rutasFiltradas![index]; // Obtiene la ruta actual.
 
           return Card(
             margin: const EdgeInsets.all(8.0),
@@ -238,7 +293,12 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
           ],
         ),
       ),
-      body: bodyContent, // Contenido del cuerpo.
+      body: Column(
+        children: [
+          _buildFiltros(), // Espacio para los filtros debajo del AppBar.
+          Expanded(child: bodyContent),
+        ],
+      ),
     );
   }
 }
@@ -443,7 +503,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     await makeRequest(
       method: POST,
       url: ROUTE_SHARE,
-      urlVars: {'id':widget.ruta['id'],'usuarioId': usuarioId}, // Comparte la ruta con el usuario.
+      urlVars: {'id': widget.ruta['id'], 'usuarioId': usuarioId}, // Comparte la ruta con el usuario.
       onOk: (response) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Ruta compartida exitosamente con el usuario $usuarioId')),
