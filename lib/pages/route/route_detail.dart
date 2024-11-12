@@ -61,6 +61,43 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     });
   }
 
+  Future<void> updateRuta() async {
+    // 1. Preparamos los datos actualizados en un mapa.
+    final Map<String, dynamic> updatedData = {
+      'nombre': _nombreController.text.trim(), // Obtiene el nombre de la ruta del controlador.
+      'descripcion': _descripcionController.text.trim(), // Obtiene la descripción de la ruta del controlador.
+    };
+
+    // 2. Realizamos la solicitud PATCH al backend.
+    await makeRequest(
+      method: PATCH,
+      url: ROUTE_DETAIL, // La URL del endpoint donde se actualiza la ruta.
+      urlVars: {'id': widget.ruta['id']}, // El ID de la ruta que queremos actualizar.
+      body: updatedData, // Pasa el mapa directamente en lugar de convertirlo a un JSON.
+      onOk: (response) {
+        // 3. Si la solicitud es exitosa, mostramos un mensaje de éxito.
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ruta actualizada exitosamente')),
+        );
+        setState(() {
+          _isEditing = false; // Desactivamos el modo de edición.
+        });
+      },
+      onError: (response) {
+        // 4. Si hay un error, mostramos un mensaje de error.
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al actualizar la ruta')),
+        );
+      },
+      onConnectionError: (errorMessage) {
+        // 5. Si hay un error de conexión, mostramos un mensaje de error.
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error de conexión: $errorMessage')),
+        );
+      },
+    );
+  }
+
   // Obtiene los puntos de la ruta desde el backend.
   Future<List<LatLng>> _fetchRoutePoints() async {
     final List<LatLng> points = []; // Lista para almacenar los puntos
@@ -243,145 +280,152 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
         ),
         backgroundColor: const Color(0xFF50C9B5),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _nombreController,
-              decoration: const InputDecoration(labelText: 'Nombre de la Ruta'),
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              enabled: _isEditing, // Campo solo editable en modo edición.
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _descripcionController,
-              decoration: const InputDecoration(labelText: 'Descripción'),
-              style: const TextStyle(fontSize: 16),
-              enabled: _isEditing, // Campo solo editable en modo edición.
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Dificultad: ${widget.ruta['dificultad']}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Distancia: ${widget.ruta['distancia_km']} km', // Distancia en km.
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Tiempo estimado: ${widget.ruta['tiempo_estimado_horas']} horas', // Tiempo estimado.
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 20),
+      body: SingleChildScrollView( // Envolvemos el contenido con SingleChildScrollView
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _nombreController,
+                decoration: const InputDecoration(labelText: 'Nombre de la Ruta'),
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                enabled: _isEditing, // Campo solo editable en modo edición.
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _descripcionController,
+                decoration: const InputDecoration(labelText: 'Descripción'),
+                style: const TextStyle(fontSize: 16),
+                enabled: _isEditing, // Campo solo editable en modo edición.
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Dificultad: ${widget.ruta['dificultad']}',
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Distancia: ${widget.ruta['distancia_km']} km', // Distancia en km.
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Tiempo estimado: ${widget.ruta['tiempo_estimado_horas']} horas', // Tiempo estimado.
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 20),
 
-            // Sección para mostrar el mapa en un cuadro.
-            SizedBox(
-              height: 350, // Ajusta la altura para mejorar la visualización del mapa.
-              child: FutureBuilder<List<LatLng>>(
-                future: _fetchRoutePoints(), // Obtiene los puntos de la ruta.
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator()); // Muestra un indicador de carga.
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}')); // Muestra un error si ocurre.
-                  } else {
-                    final routePoints = snapshot.data ?? []; // Obtiene los puntos de la ruta.
-                    final result = getCenterAndZoomForBounds(routePoints);
-                    final LatLng center = result['center'];
-                    final double zoom = result['zoom'];
-                    return buildMap(
-                      mapController: _mapController,
-                      initialPosition: center,
-                      initialZoom: zoom,
-                      routePolylines: [
-                        Polyline(
-                          pattern: StrokePattern.dashed(segments: [5, 6]),
-                          points: routePoints, // Genera la lista de puntos para la polilínea.
-                          color: Colors.orange, // Color de la ruta.
-                          borderStrokeWidth: 1.5,
-                          borderColor: Colors.red,
-                          strokeWidth: 3.0, // Grosor de la línea de la ruta.
-                        ),
-                      ],
-                      markers: [
-                        if (routePoints.isNotEmpty)
-                          Marker(
-                            point: routePoints.first,
-                            width: 80, // Añade un ancho al marcador.
-                            height: 80, // Añade una altura al marcador.
-                            child: const Icon(Icons.flag, color: Colors.green), // Icono verde para el inicio.
+              // Sección para mostrar el mapa en un cuadro.
+              SizedBox(
+                height: 350, // Ajusta la altura para mejorar la visualización del mapa.
+                child: FutureBuilder<List<LatLng>>(
+                  future: _fetchRoutePoints(), // Obtiene los puntos de la ruta.
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator()); // Muestra un indicador de carga.
+                    } else if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}')); // Muestra un error si ocurre.
+                    } else {
+                      final routePoints = snapshot.data ?? []; // Obtiene los puntos de la ruta.
+                      final result = getCenterAndZoomForBounds(routePoints);
+                      final LatLng center = result['center'];
+                      final double zoom = result['zoom'];
+                      return buildMap(
+                        mapController: _mapController,
+                        initialPosition: center,
+                        initialZoom: zoom,
+                        routePolylines: [
+                          Polyline(
+                            pattern: StrokePattern.dashed(segments: [5, 6]),
+                            points: routePoints, // Genera la lista de puntos para la polilínea.
+                            color: Colors.orange, // Color de la ruta.
+                            borderStrokeWidth: 1.5,
+                            borderColor: Colors.red,
+                            strokeWidth: 3.0, // Grosor de la línea de la ruta.
                           ),
-                        if (routePoints.isNotEmpty)
-                          Marker(
-                            point: routePoints.last,
-                            width: 80, // Añade un ancho al marcador.
-                            height: 80, // Añade una altura al marcador.
-                            child: const Icon(Icons.flag, color: Colors.red), // Icono rojo para el final.
-                          ),
-                      ],
-                    );
-                  }
-                },
+                        ],
+                        markers: [
+                          if (routePoints.isNotEmpty)
+                            Marker(
+                              point: routePoints.first,
+                              width: 80, // Añade un ancho al marcador.
+                              height: 80, // Añade una altura al marcador.
+                              child: const Icon(Icons.flag, color: Colors.green), // Icono verde para el inicio.
+                            ),
+                          if (routePoints.isNotEmpty)
+                            Marker(
+                              point: routePoints.last,
+                              width: 80, // Añade un ancho al marcador.
+                              height: 80, // Añade una altura al marcador.
+                              child: const Icon(Icons.flag, color: Colors.red), // Icono rojo para el final.
+                            ),
+                        ],
+                      );
+                    }
+                  },
+                ),
               ),
-            ),
-
-            const Spacer(),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF50C9B5),
-                minimumSize: const Size(double.infinity, 50),
-              ),
-              onPressed: () {
-                setState(() {
-                  _isEditing = !_isEditing; // Alterna entre editar y guardar.
-                });
-              },
-              child: Text(
-                _isEditing ? 'Guardar' : 'Editar',
-                style: const TextStyle(color: Colors.white, fontSize: 16.0),
-              ),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                minimumSize: const Size(double.infinity, 50),
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => RecorrerRutaScreen(
-                      ruta: widget.ruta,
-                    ),
-                  ),
-                );
-              },
-              child: const Text(
-                'Recorrer Ruta',
-                style: TextStyle(color: Colors.white, fontSize: 16.0),
-              ),
-            ),
-            const SizedBox(height: 10),
-            if (esPropietario) // Solo muestra el botón si el usuario es el propietario.
+              const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
+                  backgroundColor: const Color(0xFF50C9B5),
                   minimumSize: const Size(double.infinity, 50),
                 ),
                 onPressed: () {
-                  _showUsuariosBottomSheet(); // Muestra el modal para compartir.
+                  if (_isEditing) {
+                    // Si estamos en modo edición, llamamos a updateRuta para guardar los cambios.
+                    updateRuta();
+                  } else {
+                    // Si no estamos en modo edición, activamos el modo edición.
+                    setState(() {
+                      _isEditing = true;
+                    });
+                  }
+                },
+                child: Text(
+                  _isEditing ? 'Guardar' : 'Editar', // Cambiamos el texto del botón según el estado.
+                  style: const TextStyle(color: Colors.white, fontSize: 16.0),
+                ),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RecorrerRutaScreen(
+                        ruta: widget.ruta,
+                      ),
+                    ),
+                  );
                 },
                 child: const Text(
-                  'Compartir Ruta',
+                  'Recorrer Ruta',
                   style: TextStyle(color: Colors.white, fontSize: 16.0),
                 ),
               ),
-          ],
+              const SizedBox(height: 10),
+              if (esPropietario) // Solo muestra el botón si el usuario es el propietario.
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                  onPressed: () {
+                    _showUsuariosBottomSheet(); // Muestra el modal para compartir.
+                  },
+                  child: const Text(
+                    'Compartir Ruta',
+                    style: TextStyle(color: Colors.white, fontSize: 16.0),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

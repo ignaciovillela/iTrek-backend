@@ -154,129 +154,138 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
           },
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundImage: (_imageFile != null)
-                        ? FileImage(_imageFile!)
-                        : (_imagenPerfil.isNotEmpty ? NetworkImage(_imagenPerfil) : AssetImage('assets/images/profile.png')) as ImageProvider,
-                    backgroundColor: Colors.grey[200],
+      body: SingleChildScrollView( // Envolvemos el contenido en SingleChildScrollView
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundImage: (_imageFile != null)
+                            ? FileImage(_imageFile!)
+                            : (_imagenPerfil.isNotEmpty ? NetworkImage(
+                            _imagenPerfil) : AssetImage(
+                            'assets/images/profile.png')) as ImageProvider,
+                        backgroundColor: Colors.grey[200],
+                      ),
+                      if (_editMode)
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Color(0xFFA5D6A7),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.white),
+                            onPressed: _pickImage,
+                          ),
+                        ),
+                    ],
                   ),
-                  if (_editMode)
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Color(0xFFA5D6A7),
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.white),
-                        onPressed: _pickImage,
-                      ),
+                ),
+                const SizedBox(height: 10),
+                Center(
+                  child: Text(
+                    _userNameController.text,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                _userNameController.text, // Nombre de usuario
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _nombreController,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _nombreController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre',
+                    border: OutlineInputBorder(),
+                  ),
+                  enabled: _editMode,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor, ingrese su nombre';
+                    }
+                    return null;
+                  },
                 ),
-                enabled: _editMode,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese su nombre';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _apellidoController,
-                decoration: const InputDecoration(
-                  labelText: 'Apellido',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _apellidoController,
+                  decoration: const InputDecoration(
+                    labelText: 'Apellido',
+                    border: OutlineInputBorder(),
+                  ),
+                  enabled: _editMode,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor, ingrese su apellido';
+                    }
+                    return null;
+                  },
                 ),
-                enabled: _editMode,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese su apellido';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _biografiaController,
-                decoration: const InputDecoration(
-                  labelText: 'Biografía',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _biografiaController,
+                  decoration: const InputDecoration(
+                    labelText: 'Biografía',
+                    border: OutlineInputBorder(),
+                  ),
+                  enabled: _editMode,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor, ingrese su biografía';
+                    }
+                    return null;
+                  },
                 ),
-                enabled: _editMode,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese su biografía';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 40),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF50C9B5),
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-                onPressed: () {
-                  setState(() {
-                    _editMode = !_editMode;
-                  });
-                  if (!_editMode) _loadUserData();
-                },
-                icon: const Icon(Icons.edit),
-                label: Text(_editMode ? 'Cancelar Edición' : 'Editar Perfil'),
-              ),
-              const SizedBox(height: 20),
-              if (_editMode)
-                ElevatedButton(
+                const SizedBox(height: 40),
+                ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF50C9B5),
                     minimumSize: const Size(double.infinity, 50),
                   ),
-                  onPressed: () async {
-                    if (_formKey.currentState!.validate()) {
-                      await _updateProfile();
-                    }
+                  onPressed: () {
+                    setState(() {
+                      _editMode = !_editMode;
+                    });
+                    if (!_editMode) _loadUserData();
                   },
-                  child: const Text('Guardar Cambios'),
+                  icon: const Icon(Icons.edit),
+                  label: Text(_editMode ? 'Cancelar Edición' : 'Editar Perfil'),
                 ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  minimumSize: const Size(double.infinity, 50),
+                const SizedBox(height: 20),
+                if (_editMode)
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF50C9B5),
+                      minimumSize: const Size(double.infinity, 50),
+                    ),
+                    onPressed: () async {
+                      if (_formKey.currentState!.validate()) {
+                        await _updateProfile();
+                      }
+                    },
+                    child: const Text('Guardar Cambios'),
+                  ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                  onPressed: _cerrarSesion,
+                  child: const Text('Cerrar Sesión'),
                 ),
-                onPressed: _cerrarSesion,
-                child: const Text('Cerrar Sesión'),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
