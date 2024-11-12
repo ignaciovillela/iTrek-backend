@@ -61,6 +61,43 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     });
   }
 
+  Future<void> updateRuta() async {
+    // 1. Preparamos los datos actualizados en un mapa.
+    final Map<String, dynamic> updatedData = {
+      'nombre': _nombreController.text.trim(), // Obtiene el nombre de la ruta del controlador.
+      'descripcion': _descripcionController.text.trim(), // Obtiene la descripción de la ruta del controlador.
+    };
+
+    // 2. Realizamos la solicitud PATCH al backend.
+    await makeRequest(
+      method: PATCH,
+      url: ROUTE_DETAIL, // La URL del endpoint donde se actualiza la ruta.
+      urlVars: {'id': widget.ruta['id']}, // El ID de la ruta que queremos actualizar.
+      body: updatedData, // Pasa el mapa directamente en lugar de convertirlo a un JSON.
+      onOk: (response) {
+        // 3. Si la solicitud es exitosa, mostramos un mensaje de éxito.
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ruta actualizada exitosamente')),
+        );
+        setState(() {
+          _isEditing = false; // Desactivamos el modo de edición.
+        });
+      },
+      onError: (response) {
+        // 4. Si hay un error, mostramos un mensaje de error.
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al actualizar la ruta')),
+        );
+      },
+      onConnectionError: (errorMessage) {
+        // 5. Si hay un error de conexión, mostramos un mensaje de error.
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error de conexión: $errorMessage')),
+        );
+      },
+    );
+  }
+
   // Obtiene los puntos de la ruta desde el backend.
   Future<List<LatLng>> _fetchRoutePoints() async {
     final List<LatLng> points = []; // Lista para almacenar los puntos
@@ -336,12 +373,18 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                   minimumSize: const Size(double.infinity, 50),
                 ),
                 onPressed: () {
-                  setState(() {
-                    _isEditing = !_isEditing; // Alterna entre editar y guardar.
-                  });
+                  if (_isEditing) {
+                    // Si estamos en modo edición, llamamos a updateRuta para guardar los cambios.
+                    updateRuta();
+                  } else {
+                    // Si no estamos en modo edición, activamos el modo edición.
+                    setState(() {
+                      _isEditing = true;
+                    });
+                  }
                 },
                 child: Text(
-                  _isEditing ? 'Guardar' : 'Editar',
+                  _isEditing ? 'Guardar' : 'Editar', // Cambiamos el texto del botón según el estado.
                   style: const TextStyle(color: Colors.white, fontSize: 16.0),
                 ),
               ),

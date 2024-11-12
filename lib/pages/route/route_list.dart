@@ -214,7 +214,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                   ),
                 );
 
-                if (result == true) {
+                if (result != true) {
                   _fetchRutas(); // Actualiza la lista de rutas si se regresó de la pantalla de detalles.
                 }
               },
