@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:itrek/db.dart';
 import 'package:itrek/img.dart';
-import 'package:itrek/pages/comunidad.dart';
-import 'package:itrek/pages/ruta/rutaListar.dart';
-import 'package:itrek/pages/ruta/rutaRegistrar.dart';
-import 'package:itrek/pages/usuario/login.dart';
-import 'package:itrek/pages/usuario/usuarioPerfil.dart';
+import 'package:itrek/pages/auth/login.dart';
+import 'package:itrek/pages/comunity.dart';
+import 'package:itrek/pages/route/route_list.dart';
+import 'package:itrek/pages/route/route_register.dart';
+import 'package:itrek/pages/user/user_profile.dart';
 
 
 class DashboardScreen extends StatefulWidget {
@@ -111,8 +111,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                               padding: const EdgeInsets.all(10),
                             ),
-                            onPressed: () {
-                              Navigator.push(
+                            onPressed: () async {
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => const RegistrarRuta(),
@@ -168,8 +168,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                               padding: const EdgeInsets.all(10),
                             ),
-                            onPressed: () {
-                              Navigator.push(
+                            onPressed: () async {
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => const ListadoRutasScreen(),
@@ -196,8 +196,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                               padding: const EdgeInsets.all(10),
                             ),
-                            onPressed: () {
-                              Navigator.push(
+                            onPressed: () async {
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>

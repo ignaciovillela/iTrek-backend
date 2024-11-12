@@ -1,13 +1,13 @@
 import 'dart:convert'; // Importa la biblioteca para trabajar con JSON.
+
 import 'package:flutter/material.dart'; // Importa el paquete de Flutter para crear interfaces de usuario.
 import 'package:flutter_map/flutter_map.dart'; // Importa el paquete para trabajar con mapas en Flutter.
-import 'package:latlong2/latlong.dart'; // Importa el paquete para trabajar con coordenadas geográficas.
 import 'package:itrek/db.dart'; // Importa el helper de base de datos.
 import 'package:itrek/img.dart'; // Importa recursos de imagen.
-import 'package:itrek/pages/ruta/rutaRecorrer.dart'; // Importa la pantalla para recorrer rutas.
+import 'package:itrek/map.dart'; // Importa funciones relacionadas con la visualización de mapas.
+import 'package:itrek/pages/route/route_walk.dart'; // Importa la pantalla para recorrer rutas.
 import 'package:itrek/request.dart'; // Importa funciones para realizar solicitudes HTTP.
-
-import '../../map.dart'; // Importa funciones relacionadas con la visualización de mapas.
+import 'package:latlong2/latlong.dart'; // Importa el paquete para trabajar con coordenadas geográficas.
 
 // Pantalla principal que muestra el listado de rutas guardadas.
 class ListadoRutasScreen extends StatefulWidget {

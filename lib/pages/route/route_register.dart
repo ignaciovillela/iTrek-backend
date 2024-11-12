@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:itrek/db.dart';
 import 'package:itrek/map.dart';
-import 'package:itrek/pages/ruta/RutaFormPage.dart';
+import 'package:itrek/pages/route/route_register_form.dart';
 import 'package:itrek/request.dart';
 import 'package:latlong2/latlong.dart';
 
