@@ -1,6 +1,7 @@
+import 'package:itrek/img.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:uuid/uuid.dart'; // Para generar UUIDs
+import 'package:uuid/uuid.dart';
 
 // Clase base para gestionar la base de datos
 class DatabaseHelper {
@@ -22,7 +23,7 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
     print("Se llama al _initDb");
-    return await openDatabase(path, version: 1, onCreate: _createDB, onUpgrade: _onUpgrade);
+    return await openDatabase(path, version: 2, onCreate: _createDB, onUpgrade: _onUpgrade);
   }
 
   // Crea la estructura de la base de datos
@@ -30,8 +31,9 @@ class DatabaseHelper {
     await createTables(db); // Llama a este método para crear todas las tablas
   }
 
-  Future _onUpgrade(db, oldVersion, newVersion) async {
-    updateTables(db, oldVersion, newVersion);
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    await ValuesHelper.instance.updateTables(db, oldVersion, newVersion);
+    await RoutesHelper.instance.updateTables(db, oldVersion, newVersion);
   }
 
   Future<void> createTables(Database db) async {}
@@ -66,6 +68,9 @@ class ValuesHelper extends DatabaseHelper {
     print("Se llama al createTables de values");
     await _createValuesTable(db);
   }
+
+  @override
+  Future<void> updateTables(db, oldVersion, newVersion) async { }
 
   // Método para crear la tabla 'valores'
   Future _createValuesTable(Database db) async {
@@ -167,6 +172,15 @@ class RoutesHelper extends DatabaseHelper {
     await _createPuntosTable(db);
   }
 
+  @override
+  Future<void> updateTables(db, oldVersion, newVersion) async {
+    // Version 1 -> 2
+    if (oldVersion <= 1 && newVersion >= 2) {
+      await db.execute('ALTER TABLE rutas ADD COLUMN tiempo_estimado_minutos INTEGER;');
+      await db.execute('UPDATE rutas SET tiempo_estimado_minutos = CAST(tiempo_estimado_horas * 60 AS INTEGER);');
+    }
+  }
+
   // Método para crear la tabla 'rutas'
   Future _createRouteTable(Database db) async {
     await db.execute('''
@@ -177,7 +191,7 @@ class RoutesHelper extends DatabaseHelper {
         dificultad TEXT,
         creado_en TEXT,
         distancia_km REAL,
-        tiempo_estimado_horas REAL,
+        tiempo_estimado_minutos INTEGER,
         usuario_username TEXT,
         usuario_email TEXT,
         usuario_first_name TEXT,
@@ -230,19 +244,67 @@ class RoutesHelper extends DatabaseHelper {
     }
   }
 
-  // Método para crear una ruta desde el backend (sin 'local_id' y 'local' en false)
+// Método para crear una ruta y sus puntos con imágenes en Base64
   Future<int> createBackendRoute(Map<String, dynamic> routeData) async {
-    final db = await database;  // Accede al getter directamente
-    try {
-      final result = await db.insert(
-        'rutas',
-        {'local': false, ...routeData}, // El 'id' viene del backend
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-      return result;
-    } catch (e) {
-      return -1;
+    final db = await database;
+    // Extraer y convertir los puntos a una lista de Map<String, dynamic>
+    List<Map<String, dynamic>>? puntos = (routeData.remove('puntos') as List)
+        .map((p) => Map<String, dynamic>.from(p))
+        .toList();
+
+    await deleteRoute(routeData['id'].toString());
+
+    final rutaDataToInsert = {
+      'local': 0,
+      'id': routeData['id'].toString(),
+      'nombre': routeData['nombre'],
+      'descripcion': routeData['descripcion'],
+      'dificultad': routeData['dificultad'],
+      'creado_en': routeData['creado_en'],
+      'distancia_km': routeData['distancia_km'],
+      'tiempo_estimado_minutos': routeData['tiempo_estimado_minutos'],
+      'usuario_username': routeData['usuario']['username'],
+      'usuario_email': routeData['usuario']['email'],
+      'usuario_first_name': routeData['usuario']['first_name'],
+      'usuario_last_name': routeData['usuario']['last_name'],
+      'usuario_biografia': routeData['usuario']['biografia'],
+      'usuario_imagen_perfil': routeData['usuario']['imagen_perfil'],
+      'publica': routeData['publica'] ? 1 : 0,
+    };
+
+    // Inserta la ruta en la tabla 'rutas'
+    final result = await db.insert(
+      'rutas',
+      rutaDataToInsert,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    // Si la ruta fue insertada con éxito, inserta los puntos asociados
+    if (result != 0 && puntos.isNotEmpty) {
+      final sortedPoints = puntos.toList()..sort((a, b) => a['orden'].compareTo(b['orden']),);
+      print('se insertan los puntos $sortedPoints}');
+      for (var punto in sortedPoints) {
+        String? base64Image;
+        if (punto['interes']?['imagen'] != null) {
+          base64Image = await downloadImageAsBase64(punto['interes']['imagen']);
+        }
+
+        await db.insert(
+          'puntos',
+          {
+            'ruta_id': routeData['id'],
+            'latitud': punto['latitud'],
+            'longitud': punto['longitud'],
+            'orden': punto['orden'],
+            'interes_descripcion': punto['interes']?['descripcion'],
+            'interes_imagen': base64Image,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
     }
+
+    return result;
   }
 
   // Método para crear un punto asociado a una ruta
@@ -302,7 +364,7 @@ class RoutesHelper extends DatabaseHelper {
   // Obtener puntos asociados a una ruta (tanto locales como del backend)
   Future<List<Map<String, dynamic>>> getPuntosByRutaId(String rutaId) async {
     final db = await database;
-    return await db.query('puntos', where: 'ruta_id = ?', whereArgs: [rutaId]);
+    return await db.query('puntos', where: 'ruta_id = ?', whereArgs: [rutaId], orderBy: 'orden');
   }
 
   // Obtener una ruta por su ID
@@ -315,7 +377,9 @@ class RoutesHelper extends DatabaseHelper {
   // Eliminar una ruta por su ID
   Future<int> deleteRoute(String id) async {
     final db = await database;
-    return await db.delete('rutas', where: 'id = ?', whereArgs: [id]);
+    final ret = await db.delete('rutas', where: 'id = ?', whereArgs: [id]);
+    await db.delete('puntos', where: 'ruta_id = ?', whereArgs: [id]);
+    return ret;
   }
 }
 

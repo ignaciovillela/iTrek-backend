@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'dart:convert';
 
 Map<String, dynamic> getCenterAndZoomForBounds(List<LatLng> points, {double padding = -0.3}) {
   if (points.isEmpty) return {'center': LatLng(0, 0), 'zoom': 15.0}; // Retorna un valor por defecto si no hay puntos
@@ -109,3 +110,72 @@ Marker buildLocationMarker(LatLng position) {
     ),
   );
 }
+
+Marker buildInterestMarker({
+  required LatLng position,
+  String? text,
+  String? base64Image,
+  required BuildContext context,
+}) {
+  return Marker(
+    point: position,
+    width: 40.0,
+    height: 40.0,
+    alignment: Alignment.topCenter,
+    child: GestureDetector(
+      onTap: () {
+        _showInfoDialog(context, text, base64Image);
+      },
+      child: Icon(
+        Icons.location_on,
+        color: Colors.blue,
+        size: 40.0,
+      ),
+    ),
+  );
+}
+
+void _showInfoDialog(BuildContext context, String? description, String? base64Image) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Mostrar la imagen si está presente
+          if (base64Image != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Image.memory(
+                base64Decode(base64Image),
+                // width: 100,
+                // height: 100,
+                fit: BoxFit.cover,
+              ),
+            ),
+          // Mostrar el texto si está presente
+          if (description != null)
+            Text(
+              description,
+              style: TextStyle(fontSize: 16),
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('Cerrar'),
+        ),
+      ],
+    ),
+  );
+}
+
+Polyline buildPreviousPloyline (routePoints) => Polyline(
+  pattern: StrokePattern.dashed(segments: [10, 15]),
+  points: routePoints,
+  color: Colors.orange,
+  strokeWidth: 2,
+  borderStrokeWidth: 8,
+  borderColor: Colors.red,
+);

@@ -43,7 +43,7 @@ Future<Map<String, dynamic>> getPostRouteData(String routeId, int seconds, doubl
     'dificultad': routeData?['dificultad'],
     //'creado_en': '',
     'distancia_km': distanceTraveled / 1000,
-    'tiempo_estimado_horas': seconds / 3600,
+    'tiempo_estimado_minutos': seconds ~/ 60,
     //'publica': '',
     'puntos': getPointsData(pointsData),
   };
@@ -102,7 +102,7 @@ Future<int?> postRuta(Map<String, dynamic> rutaData) async {
 }
 
 // Función para actualizar la ruta con datos adicionales usando PATCH
-Future<void> _updateRuta(int id, String nombre, String descripcion, String dificultad, double distanciaKm, double tiempoEstimadoHoras) async {
+Future<void> _updateRuta(int id, String nombre, String descripcion, String dificultad, double distanciaKm, int tiempoEstimadoMinutos) async {
   await makeRequest(
     method: PATCH,
     url: ROUTE_DETAIL,
@@ -112,7 +112,7 @@ Future<void> _updateRuta(int id, String nombre, String descripcion, String dific
       'descripcion': descripcion,
       'dificultad': dificultad,
       'distancia_km': distanciaKm,
-      'tiempo_estimado_horas': tiempoEstimadoHoras,
+      'tiempo_estimado_minutos': tiempoEstimadoMinutos,
     },
     onOk: (response) {
       print('Ruta actualizada con éxito');
@@ -128,7 +128,8 @@ Future<void> _updateRuta(int id, String nombre, String descripcion, String dific
 
 // Página principal del mapa donde se graba la ruta usando flutter_map
 class RegistrarRuta extends StatefulWidget {
-  const RegistrarRuta({super.key});
+  final String? initialRouteId;
+  const RegistrarRuta({super.key, this.initialRouteId});
 
   @override
   RegistrarRutaState createState() => RegistrarRutaState();
@@ -140,11 +141,17 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   int? _lastPointId;
   final List<Marker> _markers = [];
   final List<LatLng> _routeCoords = [];
+  Polyline _previousRoutePolyline = Polyline(
+    points: [],
+    strokeWidth: 5,
+    color: Colors.blue,
+  );
   Polyline _routePolyline = Polyline(
     points: [],
     strokeWidth: 5,
     color: Colors.blue,
   );
+  final List<Marker> _interestPoints = [];
   bool _isRecording = false;
   Timer? _timer;
   int _seconds = 0;
@@ -161,6 +168,28 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       _getCurrentLocation(); // Llamar después de que el widget esté completamente renderizado
     });
     _iniciarSeguimientoUbicacionSinRegistro(); // Iniciar seguimiento de ubicación al inicio sin grabar
+
+    if (widget.initialRouteId != null) {
+      db.routes.getPuntosByRutaId(widget.initialRouteId!).then((pointsData) {
+        final List<LatLng> routeCoords = pointsData.map((point) {
+          final position = LatLng(point['latitud'], point['longitud']);
+          print(point);
+          if (point['interes_descripcion'] != null || point['interes_imagen'] != null) {
+            print('se agrega un punto de interés, con descripcion: ${point['interes_descripcion'] != null}, imagen: ${point['interes_imagen'] != null}');
+            _interestPoints.add(buildInterestMarker(
+              position: position,
+              text: point['interes_descripcion'],
+              base64Image: point['interes_imagen'],
+              context: context,
+            ));
+          } else {
+            print('Punto sin interes');
+          }
+          return position;
+        }).toList();
+        _previousRoutePolyline = buildPreviousPloyline(routeCoords);
+      });
+    }
   }
 
   @override
@@ -213,7 +242,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       'dificultad': '',
       'creado_en': '',
       'distancia_km': 0,
-      'tiempo_estimado_horas': 0,
+      'tiempo_estimado_minutos': 0,
       'usuario_username': '',
       'usuario_email': '',
       'usuario_first_name': '',
@@ -320,8 +349,8 @@ class RegistrarRutaState extends State<RegistrarRuta> {
                 rutaData['nombre'],
                 rutaData['descripcion'],
                 rutaData['dificultad'],
-                _distanceTraveled / 1000,
-                _seconds / 3600,
+                _distanceTraveled ~/ 100 / 10,
+                _seconds ~/ 60,
               );
               Navigator.of(context).pop();
             },
@@ -399,12 +428,13 @@ class RegistrarRutaState extends State<RegistrarRuta> {
           buildMap(
             mapController: mapController,
             initialPosition: _currentPosition,
-            routePolylines: [_routePolyline],
+            routePolylines: [_previousRoutePolyline, _routePolyline],
             onPositionChanged: _handleMapMovement,
             markers: [
               ..._markers,
               if (_currentPositionMarker != null)
                 _currentPositionMarker!,
+              ..._interestPoints,
             ],
           ),
           Positioned(

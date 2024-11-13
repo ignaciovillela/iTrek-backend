@@ -1,17 +1,13 @@
-import 'dart:convert'; // Importa la biblioteca para trabajar con JSON.
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:itrek/db.dart';
+import 'package:itrek/img.dart';
+import 'package:itrek/map.dart';
+import 'package:itrek/pages/route/route_register.dart';
+import 'package:itrek/request.dart';
+import 'package:latlong2/latlong.dart';
 
-import 'package:flutter/material.dart'; // Importa el paquete de Flutter para crear interfaces de usuario.
-import 'package:flutter_map/flutter_map.dart'; // Importa el paquete para trabajar con mapas en Flutter.
-import 'package:itrek/db.dart'; // Importa el helper de base de datos.
-import 'package:itrek/img.dart'; // Importa recursos de imagen.
-import 'package:itrek/map.dart'; // Importa funciones relacionadas con la visualización de mapas.
-import 'package:itrek/pages/route/route_walk.dart'; // Importa la pantalla para recorrer rutas.
-import 'package:itrek/request.dart'; // Importa funciones para realizar solicitudes HTTP.
-import 'package:latlong2/latlong.dart'; // Importa el paquete para trabajar con coordenadas geográficas.
-
-// Pantalla principal que muestra el listado de rutas guardadas.
-
-// Pantalla para ver y editar los detalles de una ruta.
 class DetalleRutaScreen extends StatefulWidget {
   final Map<String, dynamic> ruta;
 
@@ -21,76 +17,70 @@ class DetalleRutaScreen extends StatefulWidget {
   _DetalleRutaScreenState createState() => _DetalleRutaScreenState();
 }
 
-// Estado que gestiona la pantalla DetalleRutaScreen.
 class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
-  bool _isEditing = false; // Modo de edición habilitado/deshabilitado.
-  late TextEditingController _nombreController; // Controlador para el campo de nombre.
-  late TextEditingController _descripcionController; // Controlador para el campo de descripción.
-  String? localUsername; // Username almacenado localmente.
-  bool esPropietario = false; // Indica si el usuario es el propietario de la ruta.
-  List<dynamic>? usuariosFiltrados; // Lista de usuarios obtenidos en la búsqueda.
-  TextEditingController _searchController = TextEditingController(); // Controlador de búsqueda.
-  String? errorMessage; // Variable para mensajes de error de búsqueda.
-  late MapController _mapController; // Controlador para el mapa.
-  List<LatLng> routePoints = []; // Puntos de la ruta.
+  bool _isEditing = false;
+  late TextEditingController _nombreController;
+  late TextEditingController _descripcionController;
+  String? localUsername;
+  bool esPropietario = false;
+  List<dynamic>? usuariosFiltrados;
+  TextEditingController _searchController = TextEditingController();
+  String? errorMessage;
+  late MapController _mapController;
+  List<LatLng> routePoints = [];
+  final List<Marker> _interestPoints = [];
 
   @override
   void initState() {
     super.initState();
-    _nombreController = TextEditingController(text: widget.ruta['nombre']); // Inicializa el controlador de nombre.
-    _descripcionController = TextEditingController(text: widget.ruta['descripcion']); // Inicializa el controlador de descripción.
-    _fetchLocalUsername(); // Obtiene el username almacenado localmente.
-    _mapController = MapController(); // Inicializa el controlador del mapa.
-    _fetchRoutePoints(); // Llama a _fetchRoutePoints para cargar los puntos de la ruta.
+    _nombreController = TextEditingController(text: widget.ruta['nombre']);
+    _descripcionController = TextEditingController(text: widget.ruta['descripcion']);
+    _mapController = MapController();
+    _fetchLocalUsername();
+    _loadRoutePoints();
   }
 
   @override
   void dispose() {
-    _nombreController.dispose(); // Libera el controlador de nombre.
-    _descripcionController.dispose(); // Libera el controlador de descripción.
-    _searchController.dispose(); // Libera el controlador de búsqueda.
+    _nombreController.dispose();
+    _descripcionController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
-  // Obtiene el username almacenado localmente.
   Future<void> _fetchLocalUsername() async {
     final username = await db.values.get(db.values.username);
     setState(() {
-      localUsername = username as String?; // Almacena el username.
-      esPropietario = (localUsername == widget.ruta['usuario']['username']); // Verifica si es propietario.
+      localUsername = username as String?;
+      esPropietario = localUsername == widget.ruta['usuario']['username'];
     });
   }
 
   Future<void> updateRuta() async {
-    // 1. Preparamos los datos actualizados en un mapa.
     final Map<String, dynamic> updatedData = {
-      'nombre': _nombreController.text.trim(), // Obtiene el nombre de la ruta del controlador.
-      'descripcion': _descripcionController.text.trim(), // Obtiene la descripción de la ruta del controlador.
+      'nombre': _nombreController.text.trim(),
+      'descripcion': _descripcionController.text.trim(),
     };
 
-    // 2. Realizamos la solicitud PATCH al backend.
     await makeRequest(
       method: PATCH,
-      url: ROUTE_DETAIL, // La URL del endpoint donde se actualiza la ruta.
-      urlVars: {'id': widget.ruta['id']}, // El ID de la ruta que queremos actualizar.
-      body: updatedData, // Pasa el mapa directamente en lugar de convertirlo a un JSON.
+      url: ROUTE_DETAIL,
+      urlVars: {'id': widget.ruta['id']},
+      body: updatedData,
       onOk: (response) {
-        // 3. Si la solicitud es exitosa, mostramos un mensaje de éxito.
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ruta actualizada exitosamente')),
         );
         setState(() {
-          _isEditing = false; // Desactivamos el modo de edición.
+          _isEditing = false;
         });
       },
       onError: (response) {
-        // 4. Si hay un error, mostramos un mensaje de error.
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error al actualizar la ruta')),
         );
       },
       onConnectionError: (errorMessage) {
-        // 5. Si hay un error de conexión, mostramos un mensaje de error.
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error de conexión: $errorMessage')),
         );
@@ -98,38 +88,91 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     );
   }
 
-  // Obtiene los puntos de la ruta desde el backend.
-  Future<List<LatLng>> _fetchRoutePoints() async {
-    final List<LatLng> points = []; // Lista para almacenar los puntos
+  void _updateInterestPoints() async {
+    // Limpiar la lista actual de puntos de interés antes de agregar nuevos
+    _interestPoints.clear();
 
-    await makeRequest(
-      method: GET,
-      url: ROUTE_DETAIL,
-      urlVars: {'id': widget.ruta['id']}, // Llama al backend con el ID de la ruta.
-      onOk: (response) {
-        final jsonResponse = jsonDecode(response.body); // Decodifica la respuesta JSON.
-        if (jsonResponse['puntos'] != null && jsonResponse['puntos'].isNotEmpty) {
+    // Obtener los puntos desde la base de datos local
+    final pointsData = await db.routes.getPuntosByRutaId(widget.ruta['id'].toString());
+
+    setState(() {
+      for (var point in pointsData) {
+        final position = LatLng(point['latitud'], point['longitud']);
+
+        // Verificar si hay una descripción o una imagen para el punto de interés
+        if (point['interes_descripcion'] != null || point['interes_imagen'] != null) {
+          _interestPoints.add(buildInterestMarker(
+            position: position,
+            text: point['interes_descripcion'],
+            base64Image: point['interes_imagen'],
+            context: context,
+          ));
+          print('Punto de interés agregado en: $position');
+        } else {
+          print('Punto sin interés en: $position');
+        }
+      }
+    });
+  }
+
+  Future<void> _loadRoutePoints() async {
+    final List<LatLng> points = await _fetchRoutePoints();
+    setState(() {
+      routePoints = points;
+    });
+    _updateInterestPoints(); // Actualiza los puntos de interés
+  }
+
+  Future<List<LatLng>> _fetchRoutePoints() async {
+    final List<LatLng> points = [];
+    try {
+      await makeRequest(
+        method: GET,
+        url: ROUTE_DETAIL,
+        urlVars: {'id': widget.ruta['id']},
+        onOk: (response) async {
+          final jsonResponse = jsonDecode(response.body);
           points.addAll(
             jsonResponse['puntos'].map<LatLng>((punto) => LatLng(punto['latitud'], punto['longitud'])),
-          ); // Convierte cada punto en LatLng y lo agrega a la lista
-        }
-      },
-      onError: (response) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar los puntos de la ruta: ${response.body}')),
-        );
-      },
-      onConnectionError: (errorMessage) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error de conexión: $errorMessage')),
-        );
-      },
-    );
+          );
 
-    return points; // Retorna la lista de puntos
+          // Guarda la ruta en la base de datos local
+          await db.routes.createBackendRoute(jsonResponse);
+
+          // Cargar puntos de la base de datos local
+          final pointsData = await db.routes.getPuntosByRutaId(widget.ruta['id'].toString());
+          setState(() {
+            _interestPoints.clear();
+            pointsData.forEach((point) {
+              final position = LatLng(point['latitud'], point['longitud']);
+              if (point['interes_descripcion'] != null || point['interes_imagen'] != null) {
+                _interestPoints.add(buildInterestMarker(
+                  position: position,
+                  text: point['interes_descripcion'],
+                  base64Image: point['interes_imagen'],
+                  context: context,
+                ));
+              }
+            });
+          });
+        },
+        onError: (response) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error al cargar los puntos de la ruta: ${response.body}')),
+          );
+        },
+        onConnectionError: (errorMessage) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error de conexión: $errorMessage')),
+          );
+        },
+      );
+    } catch (e) {
+      print('Error al obtener los puntos de la ruta: $e');
+    }
+    return points;
   }
 
-  // Muestra el modal con la lista de usuarios para compartir la ruta.
   void _showUsuariosBottomSheet() {
     showModalBottomSheet(
       context: context,
@@ -147,7 +190,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                           controller: _searchController,
                           onChanged: (text) async {
                             await _fetchUsuarios();
-                            setModalState(() {}); // Actualiza el estado del modal.
+                            setModalState(() {});
                           },
                           decoration: InputDecoration(
                             labelText: 'Buscar usuario',
@@ -162,13 +205,13 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                         icon: Icon(Icons.search),
                         onPressed: () async {
                           await _fetchUsuarios();
-                          setModalState(() {}); // Actualiza el estado del modal.
+                          setModalState(() {});
                         },
                       ),
                     ],
                   ),
                 ),
-                if (errorMessage != null) // Muestra un mensaje de error.
+                if (errorMessage != null)
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Text(
@@ -189,8 +232,8 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                       return ListTile(
                         title: Text(usuario['username']),
                         onTap: () {
-                          Navigator.pop(context); // Cierra el modal.
-                          _compartirRutaConUsuario(usuario['id']); // Comparte la ruta.
+                          Navigator.pop(context);
+                          _compartirRutaConUsuario(usuario['id']);
                         },
                       );
                     },
@@ -204,7 +247,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     );
   }
 
-  // Realiza la búsqueda de usuarios en el backend.
   Future<void> _fetchUsuarios() async {
     String query = _searchController.text.trim();
 
@@ -219,19 +261,19 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     await makeRequest(
       method: GET,
       url: SEARCH_USER,
-      urlVars: {'query': query}, // Envia la consulta al backend.
+      urlVars: {'query': query},
       onOk: (response) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
         setState(() {
           usuariosFiltrados = data;
-          errorMessage = null; // Limpia el mensaje de error si la búsqueda es exitosa.
+          errorMessage = null;
         });
       },
       onError: (response) {
         var errorData = jsonDecode(response.body);
         setState(() {
           errorMessage = errorData['error'];
-          usuariosFiltrados = null; // Limpia la lista si hay un error.
+          usuariosFiltrados = null;
         });
       },
       onConnectionError: (errorMessage) {
@@ -243,12 +285,11 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     );
   }
 
-  // Comparte la ruta con un usuario específico en el backend.
   Future<void> _compartirRutaConUsuario(int usuarioId) async {
     await makeRequest(
       method: POST,
       url: ROUTE_SHARE,
-      urlVars: {'id':widget.ruta['id'],'usuarioId': usuarioId}, // Comparte la ruta con el usuario.
+      urlVars: {'id': widget.ruta['id'], 'usuarioId': usuarioId},
       onOk: (response) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Ruta compartida exitosamente con el usuario $usuarioId')),
@@ -280,7 +321,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
         ),
         backgroundColor: const Color(0xFF50C9B5),
       ),
-      body: SingleChildScrollView( // Envolvemos el contenido con SingleChildScrollView
+      body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -290,104 +331,91 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                 controller: _nombreController,
                 decoration: const InputDecoration(labelText: 'Nombre de la Ruta'),
                 style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                enabled: _isEditing, // Campo solo editable en modo edición.
+                enabled: _isEditing,
               ),
               const SizedBox(height: 10),
               TextField(
                 controller: _descripcionController,
                 decoration: const InputDecoration(labelText: 'Descripción'),
                 style: const TextStyle(fontSize: 16),
-                enabled: _isEditing, // Campo solo editable en modo edición.
+                enabled: _isEditing,
               ),
               const SizedBox(height: 10),
-              Text(
-                'Dificultad: ${widget.ruta['dificultad']}',
-                style: const TextStyle(fontSize: 16),
-              ),
+              Text('Dificultad: ${widget.ruta['dificultad']}'),
               const SizedBox(height: 10),
-              Text(
-                'Distancia: ${widget.ruta['distancia_km']} km', // Distancia en km.
-                style: const TextStyle(fontSize: 16),
-              ),
+              Text('Distancia: ${widget.ruta['distancia_km']} km'),
               const SizedBox(height: 10),
-              Text(
-                'Tiempo estimado: ${widget.ruta['tiempo_estimado_horas']} horas', // Tiempo estimado.
-                style: const TextStyle(fontSize: 16),
-              ),
+              Text('Tiempo estimado: ${widget.ruta['tiempo_estimado_minutos']} horas'),
               const SizedBox(height: 20),
 
-              // Sección para mostrar el mapa en un cuadro.
+              // Mapa
               SizedBox(
-                height: 350, // Ajusta la altura para mejorar la visualización del mapa.
-                child: FutureBuilder<List<LatLng>>(
-                  future: _fetchRoutePoints(), // Obtiene los puntos de la ruta.
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator()); // Muestra un indicador de carga.
-                    } else if (snapshot.hasError) {
-                      return Center(child: Text('Error: ${snapshot.error}')); // Muestra un error si ocurre.
-                    } else {
-                      final routePoints = snapshot.data ?? []; // Obtiene los puntos de la ruta.
-                      final result = getCenterAndZoomForBounds(routePoints);
-                      final LatLng center = result['center'];
-                      final double zoom = result['zoom'];
-                      return buildMap(
-                        mapController: _mapController,
-                        initialPosition: center,
-                        initialZoom: zoom,
-                        routePolylines: [
-                          Polyline(
-                            pattern: StrokePattern.dashed(segments: [5, 6]),
-                            points: routePoints, // Genera la lista de puntos para la polilínea.
-                            color: Colors.orange, // Color de la ruta.
-                            borderStrokeWidth: 1.5,
-                            borderColor: Colors.red,
-                            strokeWidth: 3.0, // Grosor de la línea de la ruta.
-                          ),
-                        ],
-                        markers: [
-                          if (routePoints.isNotEmpty)
-                            Marker(
-                              point: routePoints.first,
-                              width: 80, // Añade un ancho al marcador.
-                              height: 80, // Añade una altura al marcador.
-                              child: const Icon(Icons.flag, color: Colors.green), // Icono verde para el inicio.
+                height: 350,
+                child: routePoints.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                    : buildMap(
+                  mapController: _mapController,
+                  initialPosition: getCenterAndZoomForBounds(routePoints)['center'],
+                  initialZoom: getCenterAndZoomForBounds(routePoints)['zoom'],
+                  routePolylines: [buildPreviousPloyline(routePoints)],
+                  markers: [
+                    if (routePoints.isNotEmpty)
+                      Marker(
+                        point: routePoints.first,
+                        width: 60,
+                        height: 60,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Icon(
+                              Icons.circle,
+                              size: 30,
+                              color: Colors.transparent,
+                              shadows: <Shadow>[Shadow(color: Colors.white, blurRadius: 20.0)],
                             ),
-                          if (routePoints.isNotEmpty)
-                            Marker(
-                              point: routePoints.last,
-                              width: 80, // Añade un ancho al marcador.
-                              height: 80, // Añade una altura al marcador.
-                              child: const Icon(Icons.flag, color: Colors.red), // Icono rojo para el final.
+                            Icon(
+                              Icons.emoji_events,
+                              color: Colors.green,
                             ),
-                        ],
-                      );
-                    }
-                  },
+                          ],
+                        ),
+                      ),
+                    if (routePoints.isNotEmpty)
+                      Marker(
+                        point: routePoints.last, // Punto final de tu ruta
+                        width: 60,
+                        height: 60,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Icon(
+                              Icons.circle,
+                              size: 30,
+                              color: Colors.transparent,
+                              shadows: <Shadow>[Shadow(color: Colors.white, blurRadius: 20.0)],
+                            ),
+                            Icon(
+                              Icons.directions_walk,
+                              color: Colors.blue,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ..._interestPoints,
+                  ],
                 ),
               ),
+
               const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF50C9B5),
                   minimumSize: const Size(double.infinity, 50),
                 ),
-                onPressed: () {
-                  if (_isEditing) {
-                    // Si estamos en modo edición, llamamos a updateRuta para guardar los cambios.
-                    updateRuta();
-                  } else {
-                    // Si no estamos en modo edición, activamos el modo edición.
-                    setState(() {
-                      _isEditing = true;
-                    });
-                  }
-                },
-                child: Text(
-                  _isEditing ? 'Guardar' : 'Editar', // Cambiamos el texto del botón según el estado.
-                  style: const TextStyle(color: Colors.white, fontSize: 16.0),
-                ),
+                onPressed: _isEditing ? updateRuta : () => setState(() => _isEditing = true),
+                child: Text(_isEditing ? 'Guardar' : 'Editar'),
               ),
+
               const SizedBox(height: 10),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -398,31 +426,22 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => RecorrerRutaScreen(
-                        ruta: widget.ruta,
-                      ),
+                      builder: (context) => RegistrarRuta(initialRouteId: widget.ruta['id'].toString()),
                     ),
                   );
                 },
-                child: const Text(
-                  'Recorrer Ruta',
-                  style: TextStyle(color: Colors.white, fontSize: 16.0),
-                ),
+                child: const Text('Recorrer Ruta'),
               ),
+
               const SizedBox(height: 10),
-              if (esPropietario) // Solo muestra el botón si el usuario es el propietario.
+              if (esPropietario)
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
                     minimumSize: const Size(double.infinity, 50),
                   ),
-                  onPressed: () {
-                    _showUsuariosBottomSheet(); // Muestra el modal para compartir.
-                  },
-                  child: const Text(
-                    'Compartir Ruta',
-                    style: TextStyle(color: Colors.white, fontSize: 16.0),
-                  ),
+                  onPressed: _showUsuariosBottomSheet,
+                  child: const Text('Compartir Ruta'),
                 ),
             ],
           ),
