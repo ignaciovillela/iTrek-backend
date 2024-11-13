@@ -69,46 +69,42 @@ class _RecuperarContrasenaScreenState extends State<RecuperarContrasenaScreen>
                 ),
                 const SizedBox(height: 20), // Espacio entre el campo y el botón
 
-                // Botón para recuperar la cuenta
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF50C9B5), // Color del botón
-                    minimumSize:
-                    const Size(double.infinity, 50), // Botón ancho
-                  ),
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      // Lógica para enviar el correo de recuperación
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Solicitud de recuperación enviada'),
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text('Recuperar Cuenta'),
+              // Botón para recuperar la cuenta
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF50C9B5),
+                  minimumSize: const Size(double.infinity, 50), // Botón ancho
                 ),
-                const SizedBox(height: 20), // Espacio entre los botones
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    // Lógica para enviar el correo de recuperación
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Solicitud de recuperación enviada'),
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Recuperar Cuenta'),
+              ),
+              const SizedBox(height: 20), // Espacio entre los botones
 
-                // Botón para cancelar
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                    const Color(0xFFC95052), // Color rojo del botón de cancelar
-                    minimumSize:
-                    const Size(double.infinity, 50), // Botón ancho
-                  ),
-                  onPressed: () {
-                    // Regresar a la pantalla de inicio de sesión (LoginScreen)
-                    Navigator.pop(context); // Volver atrás
-                  },
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(color: Colors.white), // Texto en blanco
-                  ),
+              // Botón para cancelar
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFC95052),
+                  minimumSize: const Size(double.infinity, 50), // Botón ancho
                 ),
-              ],
-            ),
+                onPressed: () {
+                  // Regresar a la pantalla de inicio de sesión (LoginScreen)
+                  Navigator.pop(context); // Volver atrás
+                },
+                child: const Text(
+                  'Cancelar',
+                  style: TextStyle(color: Colors.white), // Texto en blanco
+                ),
+              ),
+            ],
           ),
         ),
       ),
