@@ -34,77 +34,81 @@ class _RecuperarContrasenaScreenState extends State<RecuperarContrasenaScreen>
           ],
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment:
-                MainAxisAlignment.center, // Centrar contenido verticalmente
-            children: [
-              const SizedBox(height: 40), // Espacio debajo del título
+      body: SingleChildScrollView( // Funcion de Scroll
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment:
+              MainAxisAlignment.center, // Centrar contenido verticalmente
+              children: [
+                const SizedBox(height: 40), // Espacio debajo del título
 
-              // Imagen logo debajo del título
-              logoWhite,
-              const SizedBox(
-                  height: 160), // Espacio entre la imagen y el campo de texto
+                // Imagen logo debajo del título
+                logoWhite,
+                const SizedBox(
+                    height: 160), // Espacio entre la imagen y el campo de texto
 
-              // Campo para ingresar el correo
-              TextFormField(
-                controller: _correoController,
-                decoration: const InputDecoration(
-                  labelText: 'Correo Electrónico',
-                  border: OutlineInputBorder(),
+                // Campo para ingresar el correo
+                TextFormField(
+                  controller: _correoController,
+                  decoration: const InputDecoration(
+                    labelText: 'Correo Electrónico',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor, ingrese su correo electrónico';
+                    } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                      return 'Por favor, ingrese un correo válido';
+                    }
+                    return null;
+                  },
                 ),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese su correo electrónico';
-                  } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                    return 'Por favor, ingrese un correo válido';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20), // Espacio entre el campo y el botón
+                const SizedBox(height: 20), // Espacio entre el campo y el botón
 
-              // Botón para recuperar la cuenta
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF50C9B5), // Color del botón
-                  minimumSize: const Size(double.infinity, 50), // Botón ancho
+                // Botón para recuperar la cuenta
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF50C9B5), // Color del botón
+                    minimumSize:
+                    const Size(double.infinity, 50), // Botón ancho
+                  ),
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      // Lógica para enviar el correo de recuperación
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Solicitud de recuperación enviada'),
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('Recuperar Cuenta'),
                 ),
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    // Lógica para enviar el correo de recuperación
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Solicitud de recuperación enviada'),
-                      ),
-                    );
-                  }
-                },
-                child: const Text('Recuperar Cuenta'),
-              ),
-              const SizedBox(height: 20), // Espacio entre los botones
+                const SizedBox(height: 20), // Espacio entre los botones
 
-              // Botón para cancelar
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(
-                      0xFFC95052), // Color rojo del botón de cancelar
-                  minimumSize: const Size(double.infinity, 50), // Botón ancho
+                // Botón para cancelar
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                    const Color(0xFFC95052), // Color rojo del botón de cancelar
+                    minimumSize:
+                    const Size(double.infinity, 50), // Botón ancho
+                  ),
+                  onPressed: () {
+                    // Regresar a la pantalla de inicio de sesión (LoginScreen)
+                    Navigator.pop(context); // Volver atrás
+                  },
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.white), // Texto en blanco
+                  ),
                 ),
-                onPressed: () {
-                  // Regresar a la pantalla de inicio de sesión (LoginScreen)
-                  Navigator.pop(context); // Volver atrás
-                },
-                child: const Text(
-                  'Cancelar',
-                  style: TextStyle(color: Colors.white), // Texto en blanco
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
