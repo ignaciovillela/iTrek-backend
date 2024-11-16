@@ -52,7 +52,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     final username = await db.values.get(db.values.username);
     setState(() {
       localUsername = username as String?;
-      esPropietario = localUsername == widget.ruta['usuario']['username'];
+      esPropietario = localUsername == (widget.ruta['usuario']?['username'] ?? '');
     });
   }
 
@@ -116,12 +116,25 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   }
 
   Future<void> _loadRoutePoints() async {
-    final List<LatLng> points = await _fetchRoutePoints();
-    setState(() {
-      routePoints = points;
-    });
-    _updateInterestPoints(); // Actualiza los puntos de interés
+    if (widget.ruta['local'] == 1) {
+      // Si la ruta es local, cargar los puntos de la base de datos local
+      final pointsData = await db.routes.getPuntosByRutaId(widget.ruta['id'].toString());
+      final List<LatLng> points = pointsData.map((point) => LatLng(point['latitud'], point['longitud'])).toList();
+
+      setState(() {
+        routePoints = points;
+      });
+      _updateInterestPoints(); // Actualiza los puntos de interés
+    } else {
+      // Si la ruta no es local, realizar la solicitud a la API
+      final List<LatLng> points = await _fetchRoutePoints();
+      setState(() {
+        routePoints = points;
+      });
+      _updateInterestPoints(); // Actualiza los puntos de interés
+    }
   }
+
 
   Future<List<LatLng>> _fetchRoutePoints() async {
     final List<LatLng> points = [];
@@ -284,6 +297,43 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       },
     );
   }
+  Future<void> guardarRutaEnBackend() async {
+    // Obtener los datos de la ruta y los puntos desde la base de datos local
+    final routeData = await db.routes.getRouteById(widget.ruta['id']);
+    final pointsData = await db.routes.getPuntosByRutaId(widget.ruta['id'].toString());
+
+    if (routeData != null) {
+      final rutaData = {
+        ...routeData,
+        'puntos': pointsData,
+      };
+
+      // Enviar la ruta al backend
+      await makeRequest(
+        method: POST,
+        url: ROUTES,
+        body: rutaData,
+        onOk: (response) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Ruta guardada en el backend exitosamente')),
+          );
+          setState(() {
+            widget.ruta['local'] = 0; // Cambiar el estado de la ruta a no local
+          });
+        },
+        onError: (response) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error al guardar la ruta en el backend')),
+          );
+        },
+        onConnectionError: (errorMessage) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error de conexión: $errorMessage')),
+          );
+        },
+      );
+    }
+  }
 
   Future<void> _compartirRutaConUsuario(int usuarioId) async {
     await makeRequest(
@@ -442,6 +492,16 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                   ),
                   onPressed: _showUsuariosBottomSheet,
                   child: const Text('Compartir Ruta'),
+                ),
+              // Agrega este botón en el método build, debajo de los demás botones
+              if (widget.ruta['local'] == 1)
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                  onPressed: guardarRutaEnBackend,
+                  child: const Text('Guardar en el Backend'),
                 ),
             ],
           ),
