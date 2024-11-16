@@ -501,7 +501,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                     minimumSize: const Size(double.infinity, 50),
                   ),
                   onPressed: guardarRutaEnBackend,
-                  child: const Text('Guardar ruta local'),
+                  child: const Text('Guardar en el Backend'),
                 ),
             ],
           ),
