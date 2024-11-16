@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:io'; // Para verificar la plataforma
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -11,12 +12,12 @@ import 'package:itrek/map.dart';
 import 'package:itrek/pages/route/route_register_form.dart';
 import 'package:itrek/request.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:permission_handler/permission_handler.dart'; // Importa permission_handler
+import 'package:flutter_local_notifications/flutter_local_notifications.dart'; // Importar el paquete de notificaciones
+import 'package:permission_handler/permission_handler.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
-/// Solicitar permisos necesarios, incluyendo notificaciones
-Future<void> requestPermissions() async {
-  // Solicitar permiso de ubicación
+/// Solicitar permisos de ubicación en primer plano y, si es necesario, en segundo plano
+Future<void> requestBackgroundPermission() async {
   LocationPermission permission = await Geolocator.checkPermission();
 
   if (permission == LocationPermission.denied) {
@@ -33,11 +34,6 @@ Future<void> requestPermissions() async {
       return Future.error('Se necesita permiso de ubicación en segundo plano.');
     }
   }
-
-  // Solicitar permiso de notificaciones
-  if (await Permission.notification.isDenied) {
-    await Permission.notification.request();
-  }
 }
 
 // Función para convertir una lista de coordenadas LatLng a un formato JSON
@@ -49,8 +45,10 @@ Future<Map<String, dynamic>> getPostRouteData(String routeId, int seconds, doubl
     'nombre': routeData?['nombre'],
     'descripcion': routeData?['descripcion'],
     'dificultad': routeData?['dificultad'],
+    //'creado_en': '',
     'distancia_km': distanceTraveled / 1000,
-    'tiempo_estimado_horas': seconds / 3600,
+    'tiempo_estimado_minutos': seconds ~/ 60,
+    //'publica': '',
     'puntos': getPointsData(pointsData),
   };
 }
@@ -58,6 +56,18 @@ Future<Map<String, dynamic>> getPostRouteData(String routeId, int seconds, doubl
 List<Map<String, dynamic>> getPointsData(List<Map<String, dynamic>> points) {
   return List<Map<String, dynamic>>.generate(points.length, (index) {
     final point = points[index];
+    '''
+      CREATE TABLE IF NOT EXISTS puntos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ruta_id TEXT NOT NULL,
+        latitud REAL NOT NULL,
+        longitud REAL NOT NULL,
+        orden INTEGER NOT NULL,
+        interes_descripcion TEXT,
+        interes_imagen TEXT,
+        FOREIGN KEY (ruta_id) REFERENCES rutas(id) ON DELETE CASCADE
+      )
+    ''';
     return {
       'latitud': point['latitud'],
       'longitud': point['longitud'],
@@ -149,23 +159,29 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   bool _isRecording = false;
   Timer? _timer;
   int _seconds = 0;
-  final double _distanceTraveled = 0.0;
+  double _distanceTraveled = 0.0;
   LatLng? _currentPosition;
   bool centerMap = false;
   StreamSubscription<Position>? _positionStreamSubscription;
-  MapController mapController = MapController();
+  MapController mapController = MapController(); // Definir el controlador del mapa
 
-  // Configuración de notificaciones
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  // Agregar variable para el plugin de notificaciones con un nombre simple
+  FlutterLocalNotificationsPlugin noti = FlutterLocalNotificationsPlugin();
+
+  // Variables para controlar el estado de la notificación
+  int notiId = 0;
+  bool notiActiva = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await requestPermissions(); // Solicitar permisos al iniciar
-      _getCurrentLocation();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _getCurrentLocation(); // Llamar después de que el widget esté completamente renderizado
     });
     _iniciarSeguimientoUbicacionSinRegistro(); // Iniciar seguimiento de ubicación al inicio sin grabar
+
+    // Inicializar notificaciones
+    _initNotifications();
 
     if (widget.initialRouteId != null) {
       db.routes.getPuntosByRutaId(widget.initialRouteId!).then((pointsData) {
@@ -200,7 +216,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   Future<void> _getCurrentLocation() async {
     await requestBackgroundPermission();
     Position position = await Geolocator.getCurrentPosition(
-      locationSettings: AndroidSettings(),
+      locationSettings: const LocationSettings(),
     );
     if (mounted) {
       setState(() {
@@ -222,16 +238,20 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       _isRecording = true;
     });
 
-    _mostrarNotificacionPersistente(); // Mostrar la notificación
-
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         setState(() {
           _seconds++;
-          _mostrarNotificacionPersistente(); // Actualizar la notificación
+          // Actualizar la notificación si está activa
+          if (notiActiva) {
+            _actualizarNotificacion();
+          }
         });
       }
     });
+
+    // Iniciar notificación
+    _mostrarNotificacion();
 
     _iniciarSeguimientoUbicacion();
   }
@@ -265,7 +285,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
     _actualizarPosicion(_currentPosition!.latitude, _currentPosition!.longitude);
 
     _positionStreamSubscription = Geolocator.getPositionStream(
-      locationSettings: LocationSettings(distanceFilter: 10),
+        locationSettings: const LocationSettings(distanceFilter: 10)
     ).listen((Position position) {
       _actualizarPosicion(position.latitude, position.longitude);
     });
@@ -273,7 +293,8 @@ class RegistrarRutaState extends State<RegistrarRuta> {
 
   // Función para seguir la ubicación sin grabar la ruta
   void _iniciarSeguimientoUbicacionSinRegistro() {
-    _positionStreamSubscription = Geolocator.getPositionStream(locationSettings: LocationSettings(distanceFilter: 10)).listen((Position position) {
+    _positionStreamSubscription = Geolocator.getPositionStream(locationSettings: const LocationSettings(distanceFilter: 10))
+        .listen((Position position) {
       LatLng nuevaPosicion = LatLng(position.latitude, position.longitude);
 
       if (mounted) {
@@ -290,38 +311,51 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   }
 
   void _actualizarPosicion(double latitude, double longitude) async {
-    _lastPointId = await db.routes.createPunto(_routeId!, {
-      'latitud': latitude,
-      'longitud': longitude,
-      'orden': _routeCoords.length + 1, // Ajustar el orden
-    });
-
-    LatLng nuevaPosicion = LatLng(latitude, longitude);
-    _routeCoords.add(nuevaPosicion);
-
-    if (mounted) {
-      setState(() {
-        _currentPosition = nuevaPosicion;
-        _routePolyline = Polyline(
-          points: _routeCoords,
-          strokeWidth: 5,
-          color: Colors.blue,
-        );
-        _currentPositionMarker = buildLocationMarker(_currentPosition!);
+    if (_isRecording) {
+      _lastPointId = await db.routes.createPunto(_routeId!, {
+        'latitud': latitude,
+        'longitud': longitude,
+        'orden': _routeCoords.length + 1, // Ajustar el orden
       });
-    }
 
-    if (centerMap) {
-      mapController.move(nuevaPosicion, 18.0);
+      LatLng nuevaPosicion = LatLng(latitude, longitude);
+      if (_routeCoords.isNotEmpty) {
+        _distanceTraveled += Distance().as(
+            LengthUnit.Meter, _routeCoords.last, nuevaPosicion);
+      }
+      _routeCoords.add(nuevaPosicion);
+
+      if (mounted) {
+        setState(() {
+          _currentPosition = nuevaPosicion;
+          _routePolyline = Polyline(
+            points: _routeCoords,
+            strokeWidth: 5,
+            color: Colors.blue,
+          );
+          _currentPositionMarker = buildLocationMarker(_currentPosition!);
+        });
+      }
+
+      if (centerMap) {
+        mapController.move(nuevaPosicion, 18.0);
+      }
     }
   }
 
   void _borrarRegistro() async {
     _routeId = null;
     _routeCoords.clear();
+    _distanceTraveled = 0.0;
+    _seconds = 0;
 
     _timer?.cancel();
     _positionStreamSubscription?.cancel();
+
+    // Cancelar notificación si está activa
+    if (notiActiva) {
+      _cancelarNotificacion();
+    }
 
     if (mounted) {
       setState(() {
@@ -336,7 +370,6 @@ class RegistrarRutaState extends State<RegistrarRuta> {
     if (rutaId != null) {
       db.routes.deleteRoute(_routeId!);
       _borrarRegistro();
-      _cancelarNotificacion(); // Cancelar la notificación
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -415,72 +448,116 @@ class RegistrarRutaState extends State<RegistrarRuta> {
     );
   }
 
-  Future<void> inicializarNotificaciones() async {
+  // Métodos para notificaciones
+  Future<void> _initNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
     AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-    );
+    const InitializationSettings initializationSettings =
+    InitializationSettings(android: initializationSettingsAndroid);
 
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    await noti.initialize(initializationSettings);
 
-    // Crear el canal sin sonido
-    const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'canal_ruta',
-      'Ruta en progreso',
-      description: 'Notificación persistente de la ruta en progreso',
-      importance: Importance.max,
-      playSound: false, // Desactiva el sonido
-    );
-
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
+    // Solicitar permisos de notificación en Android 13 o superior
+    if (Platform.isAndroid && await _isAndroid13OrHigher()) {
+      await _solicitarPermisoNotificaciones();
+    }
   }
 
-  Future<void> _mostrarNotificacionPersistente() async {
+  Future<void> _solicitarPermisoNotificaciones() async {
+    var status = await Permission.notification.status;
+
+    if (status.isDenied || status.isPermanentlyDenied) {
+      // Mostrar diálogo indicando que es necesario
+      if (mounted) {
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Permiso necesario'),
+            content: const Text(
+                'Se requiere el permiso de notificaciones para mostrar el avance de su ruta.'),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  // Volver a solicitar el permiso
+                  status = await Permission.notification.request();
+                  if (status.isDenied || status.isPermanentlyDenied) {
+                    // El usuario sigue denegando el permiso
+                    await _solicitarPermisoNotificaciones();
+                  }
+                },
+                child: const Text('Conceder permiso'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
+  Future<bool> _isAndroid13OrHigher() async {
+    if (Platform.isAndroid) {
+      final androidInfo = await DeviceInfoPlugin().androidInfo;
+      return androidInfo.version.sdkInt >= 33;
+    }
+    return false;
+  }
+
+  Future<void> _mostrarNotificacion() async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
     AndroidNotificationDetails(
-      'canal_ruta', // ID del canal que creaste
-      'Ruta en progreso',
-      channelDescription: 'Notificación persistente de la ruta en progreso',
-      importance: Importance.max,
-      priority: Priority.high,
-      ongoing: true, // La notificación será persistente
-      autoCancel: false, // No se puede cancelar deslizando
-      playSound: false, // Desactiva el sonido
+      'itrek_channel', // id
+      'iTrek', // title
+      channelDescription: 'Notificación persistente para iTrek',
+      importance: Importance.low,
+      priority: Priority.low,
+      ongoing: true, // Hacer la notificación persistente
+    );
+    const NotificationDetails platformChannelSpecifics =
+    NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await noti.show(
+      notiId,
+      'Grabando ruta',
+      'Tiempo: ${_formatTime(_seconds)} - Distancia: ${_formatDistance(_distanceTraveled)}',
+      platformChannelSpecifics,
     );
 
-    const NotificationDetails platformChannelSpecifics = NotificationDetails(
-      android: androidPlatformChannelSpecifics,
-    );
+    notiActiva = true;
+  }
 
-    await flutterLocalNotificationsPlugin.show(
-      0, // ID de la notificación
-      'Ruta en progreso',
+  Future<void> _actualizarNotificacion() async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+    AndroidNotificationDetails(
+      'itrek_channel', // id
+      'iTrek', // title
+      channelDescription: 'Notificación persistente para iTrek',
+      importance: Importance.low,
+      priority: Priority.low,
+      ongoing: true, // Hacer la notificación persistente
+    );
+    const NotificationDetails platformChannelSpecifics =
+    NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await noti.show(
+      notiId,
+      'Grabando ruta',
       'Tiempo: ${_formatTime(_seconds)} - Distancia: ${_formatDistance(_distanceTraveled)}',
       platformChannelSpecifics,
     );
   }
 
   Future<void> _cancelarNotificacion() async {
-    await flutterLocalNotificationsPlugin.cancel(0);
-  }
-
-  /// Función que maneja el evento de movimiento del mapa
-  void _handleMapMovement(MapCamera camera, bool hasGesture) {
-    if (hasGesture) {
-      centerMap = false;
-    }
+    await noti.cancel(notiId);
+    notiActiva = false;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Registro de Ruta'),
+        title: const Text('Inicio de Ruta'),
         backgroundColor: Colors.green.shade700,
       ),
       body: _currentPosition == null
@@ -520,12 +597,16 @@ class RegistrarRutaState extends State<RegistrarRuta> {
                 Text(
                   'Tiempo: ${_formatTime(_seconds)}',
                   style: const TextStyle(
-                      color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
+                      color: Colors.black,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold),
                 ),
                 Text(
                   'Distancia: ${_formatDistance(_distanceTraveled)}',
                   style: const TextStyle(
-                      color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
+                      color: Colors.black,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -557,7 +638,9 @@ class RegistrarRutaState extends State<RegistrarRuta> {
                   _finalizarRegistro();
                 }
               },
-              child: Text(_isRecording ? 'Finalizar Ruta' : 'Iniciar Registro'),
+              child: Text(_isRecording
+                  ? 'Finalizar Ruta'
+                  : 'Iniciar Registro'),
             ),
           ),
         ],
