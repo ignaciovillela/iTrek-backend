@@ -24,6 +24,9 @@
         <meta-data
             android:name="flutter_deeplinking_enabled"
             android:value="false" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/notification_icon" />
 
         <!-- Configuración de la actividad principal con los filtros de intent -->
         <activity
