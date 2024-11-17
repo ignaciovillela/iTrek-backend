@@ -74,10 +74,8 @@ List<Map<String, dynamic>> getPointsData(List<Map<String, dynamic>> points) {
       'longitud': point['longitud'],
       'orden': point['orden'],
       'interes': {
-        if (point['interes_descripcion'] != null)
-          'descripcion': point['interes_descripcion'],
-        if (point['interes_imagen'] != null)
-          'imagen': point['interes_imagen'],
+        if (point['interes_descripcion'] != null) 'descripcion': point['interes_descripcion'],
+        if (point['interes_imagen'] != null) 'imagen': point['interes_imagen'],
       },
       'interes_descripcion': point['interes_descripcion'],
       'interes_imagen': point['interes_imagen'],
@@ -170,8 +168,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   MapController mapController = MapController();
 
   // Variable para el plugin de notificaciones renombrada a notification
-  FlutterLocalNotificationsPlugin notification =
-  FlutterLocalNotificationsPlugin();
+  FlutterLocalNotificationsPlugin notification = FlutterLocalNotificationsPlugin();
 
   // Variables para controlar el estado de la notificación
   int notiId = 0;
@@ -195,8 +192,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       db.routes.getPuntosByRutaId(widget.initialRouteId!).then((pointsData) {
         final List<LatLng> routeCoords = pointsData.map((point) {
           final position = LatLng(point['latitud'], point['longitud']);
-          if (point['interes_descripcion'] != null ||
-              point['interes_imagen'] != null) {
+          if (point['interes_descripcion'] != null || point['interes_imagen'] != null) {
             _interestPoints.add(buildInterestMarker(
               position: position,
               text: point['interes_descripcion'],
@@ -393,8 +389,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   }
 
   void _finalizarRegistro() async {
-    final routeData =
-    await getPostRouteData(_routeId!, _seconds, _distanceTraveled);
+    final routeData = await getPostRouteData(_routeId!, _seconds, _distanceTraveled);
     int? rutaId = await postRuta(routeData);
     if (rutaId != null) {
       db.routes.deleteRoute(_routeId!);
@@ -429,8 +424,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   }
 
   Future<void> _mostrarModalAgregarPuntoInteres() async {
-    final TextEditingController descripcionController =
-    TextEditingController();
+    final TextEditingController descripcionController = TextEditingController();
     Uint8List? imagen;
 
     await showModalBottomSheet(
@@ -451,8 +445,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
               ElevatedButton(
                 onPressed: () async {
                   final ImagePicker picker = ImagePicker();
-                  final XFile? imageFile =
-                  await picker.pickImage(source: ImageSource.camera);
+                  final XFile? imageFile = await picker.pickImage(source: ImageSource.camera);
                   if (imageFile != null) {
                     imagen = await imageFile.readAsBytes();
                     imagen = Uint8List.fromList(imagen!.toList());
@@ -482,8 +475,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
 
   // Métodos para notificaciones
   Future<void> _initNotifications() async {
-    const AndroidInitializationSettings initializationSettingsAndroid =
-    AndroidInitializationSettings('@mipmap/ic_launcher');
+    const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('notification_icon');
 
     const InitializationSettings initializationSettings =
     InitializationSettings(android: initializationSettingsAndroid);
@@ -639,8 +631,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
                   _finalizarRegistro();
                 }
               },
-              child: Text(
-                  _isRecording ? 'Finalizar Ruta' : 'Iniciar Registro'),
+              child: Text(_isRecording ? 'Finalizar Ruta' : 'Iniciar Registro'),
             ),
           ),
         ],
