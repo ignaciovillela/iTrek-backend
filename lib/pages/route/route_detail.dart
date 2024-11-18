@@ -51,7 +51,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   Future<void> _fetchLocalUsername() async {
     final username = await db.values.get(db.values.username);
     setState(() {
-      localUsername = username as String?;
+      localUsername = username;
       esPropietario = localUsername == widget.ruta['usuario']['username'];
     });
   }
@@ -88,7 +88,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     );
   }
 
-  void _updateInterestPoints() async {
+  Future<void> _updateInterestPoints() async {
     // Limpiar la lista actual de puntos de interés antes de agregar nuevos
     _interestPoints.clear();
 
@@ -107,9 +107,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
             base64Image: point['interes_imagen'],
             context: context,
           ));
-          print('Punto de interés agregado en: $position');
-        } else {
-          print('Punto sin interés en: $position');
         }
       }
     });
@@ -120,7 +117,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     setState(() {
       routePoints = points;
     });
-    _updateInterestPoints(); // Actualiza los puntos de interés
+    _updateInterestPoints();
   }
 
   Future<List<LatLng>> _fetchRoutePoints() async {
@@ -316,136 +313,154 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
           children: [
             logoWhite,
             const SizedBox(width: 10),
-            const Text("iTrek Editar Ruta"),
+            const Text("iTrek Detalles de Ruta"),
           ],
         ),
-        backgroundColor: const Color(0xFF50C9B5),
+        backgroundColor: const Color(0xFF4CAF50), // Verde agradable para trekking
+        elevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: _nombreController,
-                decoration: const InputDecoration(labelText: 'Nombre de la Ruta'),
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                enabled: _isEditing,
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _descripcionController,
-                decoration: const InputDecoration(labelText: 'Descripción'),
-                style: const TextStyle(fontSize: 16),
-                enabled: _isEditing,
-              ),
-              const SizedBox(height: 10),
-              Text('Dificultad: ${widget.ruta['dificultad']}'),
-              const SizedBox(height: 10),
-              Text('Distancia: ${widget.ruta['distancia_km']} km'),
-              const SizedBox(height: 10),
-              Text('Tiempo estimado: ${widget.ruta['tiempo_estimado_minutos']} horas'),
-              const SizedBox(height: 20),
-
-              // Mapa
-              SizedBox(
-                height: 350,
-                child: routePoints.isEmpty
-                    ? const Center(child: CircularProgressIndicator())
-                    : buildMap(
-                  mapController: _mapController,
-                  initialPosition: getCenterAndZoomForBounds(routePoints)['center'],
-                  initialZoom: getCenterAndZoomForBounds(routePoints)['zoom'],
-                  routePolylines: [buildPreviousPloyline(routePoints)],
-                  markers: [
-                    if (routePoints.isNotEmpty)
-                      Marker(
-                        point: routePoints.first,
-                        width: 60,
-                        height: 60,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Icon(
-                              Icons.circle,
-                              size: 30,
-                              color: Colors.transparent,
-                              shadows: <Shadow>[Shadow(color: Colors.white, blurRadius: 20.0)],
-                            ),
-                            Icon(
-                              Icons.emoji_events,
-                              color: Colors.green,
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (routePoints.isNotEmpty)
-                      Marker(
-                        point: routePoints.last, // Punto final de tu ruta
-                        width: 60,
-                        height: 60,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Icon(
-                              Icons.circle,
-                              size: 30,
-                              color: Colors.transparent,
-                              shadows: <Shadow>[Shadow(color: Colors.white, blurRadius: 20.0)],
-                            ),
-                            Icon(
-                              Icons.directions_walk,
-                              color: Colors.blue,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ..._interestPoints,
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF50C9B5),
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-                onPressed: _isEditing ? updateRuta : () => setState(() => _isEditing = true),
-                child: Text(_isEditing ? 'Guardar' : 'Editar'),
-              ),
-
-              const SizedBox(height: 10),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => RegistrarRuta(initialRouteId: widget.ruta['id'].toString()),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 80.0), // Deja espacio suficiente para los botones
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15.0),
                     ),
-                  );
-                },
-                child: const Text('Recorrer Ruta'),
-              ),
-
-              const SizedBox(height: 10),
-              if (esPropietario)
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    minimumSize: const Size(double.infinity, 50),
+                    elevation: 4,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextField(
+                            controller: _nombreController,
+                            decoration: const InputDecoration(
+                              labelText: 'Nombre de la Ruta',
+                              labelStyle: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            enabled: _isEditing,
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _descripcionController,
+                            decoration: const InputDecoration(labelText: 'Descripción'),
+                            style: const TextStyle(fontSize: 16),
+                            enabled: _isEditing,
+                            maxLines: 3,
+                          ),
+                          const SizedBox(height: 10),
+                          ListTile(
+                            leading: const Icon(Icons.timeline, color: Color(0xFF4CAF50)),
+                            title: Text('Dificultad: ${widget.ruta['dificultad']}'),
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.directions_walk, color: Color(0xFF4CAF50)),
+                            title: Text('Distancia: ${widget.ruta['distancia_km']} km'),
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.timer, color: Color(0xFF4CAF50)),
+                            title: Text('Tiempo estimado: ${widget.ruta['tiempo_estimado_minutos']} horas'),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  onPressed: _showUsuariosBottomSheet,
-                  child: const Text('Compartir Ruta'),
-                ),
-            ],
+                  const SizedBox(height: 20),
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15.0),
+                    ),
+                    elevation: 4,
+                    child: SizedBox(
+                      height: 350,
+                      child: routePoints.isEmpty
+                          ? const Center(child: CircularProgressIndicator())
+                          : buildMap(
+                        mapController: _mapController,
+                        initialPosition: getCenterAndZoomForBounds(routePoints)['center'],
+                        initialZoom: getCenterAndZoomForBounds(routePoints)['zoom'],
+                        routePolylines: [buildPreviousPloyline(routePoints)],
+                        markers: [
+                          if (routePoints.isNotEmpty)
+                            Marker(
+                              point: routePoints.first,
+                              width: 60,
+                              height: 60,
+                              child: Icon(Icons.location_on, color: Colors.green, size: 40),
+                            ),
+                          if (routePoints.isNotEmpty)
+                            Marker(
+                              point: routePoints.last,
+                              width: 60,
+                              height: 60,
+                              child: Icon(Icons.flag, color: Colors.red, size: 40),
+                            ),
+                          ..._interestPoints,
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              color: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      _isEditing ? Icons.save : Icons.edit,
+                      color: Colors.black,
+                      size: 30,
+                    ),
+                    onPressed: _isEditing ? updateRuta : () => setState(() => _isEditing = true),
+                    tooltip: _isEditing ? 'Guardar' : 'Editar',
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.directions_walk,
+                      color: Colors.black,
+                      size: 30,
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => RegistrarRuta(initialRouteId: widget.ruta['id'].toString()),
+                        ),
+                      );
+                    },
+                    tooltip: 'Recorrer Ruta',
+                  ),
+                  if (esPropietario)
+                    IconButton(
+                      icon: Icon(
+                        Icons.share,
+                        color: Colors.black,
+                        size: 30,
+                      ),
+                      onPressed: _showUsuariosBottomSheet,
+                      tooltip: 'Compartir Ruta',
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

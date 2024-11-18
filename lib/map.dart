@@ -172,10 +172,10 @@ void _showInfoDialog(BuildContext context, String? description, String? base64Im
 }
 
 Polyline buildPreviousPloyline (routePoints) => Polyline(
-  pattern: StrokePattern.dashed(segments: [10, 15]),
   points: routePoints,
-  color: Colors.orange,
-  strokeWidth: 2,
-  borderStrokeWidth: 8,
-  borderColor: Colors.red,
+  strokeWidth: 5,
+  color: Colors.green.withOpacity(0.8),
+  pattern: StrokePattern.dashed(segments: [12, 8]),
+  borderStrokeWidth: 4,
+  borderColor: Colors.white.withOpacity(0.6),
 );
