@@ -306,7 +306,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       };
 
       // Enviar la ruta al backend
-      await makeRequest(
+      makeRequest(
         method: POST,
         url: ROUTES,
         body: rutaData,
