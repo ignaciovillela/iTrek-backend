@@ -241,8 +241,8 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
         itemCount: rutasFiltradas!.length,
         itemBuilder: (context, index) {
           final ruta = rutasFiltradas![index]; // Obtiene la ruta actual.
-          final esLocal = ruta['local'] == true; // Verifica si la ruta es local
-          final color = esLocal ? Colors.red : Colors.green; // Define el color basado en el estado
+          final esLocal = ruta.containsKey('local') && ruta['local'] == 1;  // Verifica si la ruta es local
+          final cardColor = esLocal ? Colors.orange[50] : Colors.green[50]; // Define el color del Card basado en el estado // Define el color basado en el estado
 
           return Card(
             margin: const EdgeInsets.all(8.0),
@@ -250,10 +250,11 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
               borderRadius: BorderRadius.circular(10.0),
             ),
             elevation: 5,
+            color: cardColor,
             child: ListTile(
               title: Text(
                 ruta['nombre'],
-                style: TextStyle(fontWeight: FontWeight.bold, color: color),
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
