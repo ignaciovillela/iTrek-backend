@@ -11,9 +11,14 @@ import 'package:itrek/map.dart';
 import 'package:itrek/pages/route/route_register_form.dart';
 import 'package:itrek/request.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:image/image.dart' as img;
+import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
 
 /// Solicitar permisos de ubicación en primer plano y, si es necesario, en segundo plano
-Future<void> requestBackgroundPermission() async {
+Future<void> requestLocationPermission() async {
   LocationPermission permission = await Geolocator.checkPermission();
 
   if (permission == LocationPermission.denied) {
@@ -21,19 +26,36 @@ Future<void> requestBackgroundPermission() async {
   }
 
   if (permission == LocationPermission.deniedForever) {
-    return Future.error('Los permisos de ubicación están denegados permanentemente.');
+    throw 'Los permisos de ubicación están denegados permanentemente.';
   }
 
   if (permission == LocationPermission.whileInUse) {
     permission = await Geolocator.requestPermission();
     if (permission != LocationPermission.always) {
-      return Future.error('Se necesita permiso de ubicación en segundo plano.');
+      throw 'Se necesita permiso de ubicación en segundo plano.';
+    }
+  }
+
+  if (permission != LocationPermission.always) {
+    throw 'Se necesitan permisos de ubicación para continuar.';
+  }
+}
+
+/// Solicitar permiso de notificaciones
+Future<void> requestNotificationPermission() async {
+  var status = await Permission.notification.status;
+
+  if (status.isDenied || status.isPermanentlyDenied) {
+    status = await Permission.notification.request();
+    if (status.isDenied || status.isPermanentlyDenied) {
+      throw 'notificaciones_denegadas';
     }
   }
 }
 
 // Función para convertir una lista de coordenadas LatLng a un formato JSON
-Future<Map<String, dynamic>> getPostRouteData(String routeId, int seconds, double distanceTraveled) async {
+Future<Map<String, dynamic>> getPostRouteData(
+    String routeId, int seconds, double distanceTraveled) async {
   final routeData = await db.routes.getRouteById(routeId);
   final pointsData = await db.routes.getPuntosByRutaId(routeId);
 
@@ -41,10 +63,8 @@ Future<Map<String, dynamic>> getPostRouteData(String routeId, int seconds, doubl
     'nombre': routeData?['nombre'],
     'descripcion': routeData?['descripcion'],
     'dificultad': routeData?['dificultad'],
-    //'creado_en': '',
     'distancia_km': distanceTraveled / 1000,
     'tiempo_estimado_minutos': seconds ~/ 60,
-    //'publica': '',
     'puntos': getPointsData(pointsData),
   };
 }
@@ -52,18 +72,6 @@ Future<Map<String, dynamic>> getPostRouteData(String routeId, int seconds, doubl
 List<Map<String, dynamic>> getPointsData(List<Map<String, dynamic>> points) {
   return List<Map<String, dynamic>>.generate(points.length, (index) {
     final point = points[index];
-    '''
-      CREATE TABLE IF NOT EXISTS puntos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        ruta_id TEXT NOT NULL,
-        latitud REAL NOT NULL,
-        longitud REAL NOT NULL,
-        orden INTEGER NOT NULL,
-        interes_descripcion TEXT,
-        interes_imagen TEXT,
-        FOREIGN KEY (ruta_id) REFERENCES rutas(id) ON DELETE CASCADE
-      )
-    ''';
     return {
       'latitud': point['latitud'],
       'longitud': point['longitud'],
@@ -102,7 +110,8 @@ Future<int?> postRuta(Map<String, dynamic> rutaData) async {
 }
 
 // Función para actualizar la ruta con datos adicionales usando PATCH
-Future<void> _updateRuta(int id, String nombre, String descripcion, String dificultad, double distanciaKm, int tiempoEstimadoMinutos) async {
+Future<void> _updateRuta(int id, String nombre, String descripcion,
+    String dificultad, double distanciaKm, int tiempoEstimadoMinutos) async {
   await makeRequest(
     method: PATCH,
     url: ROUTE_DETAIL,
@@ -155,35 +164,44 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   bool _isRecording = false;
   Timer? _timer;
   int _seconds = 0;
-  final double _distanceTraveled = 0.0;
+  double _distanceTraveled = 0.0;
   LatLng? _currentPosition;
   bool centerMap = false;
   StreamSubscription<Position>? _positionStreamSubscription;
-  MapController mapController = MapController(); // Definir el controlador del mapa
+  MapController mapController = MapController();
+
+  // Variable para el plugin de notificaciones renombrada a notification
+  FlutterLocalNotificationsPlugin notification = FlutterLocalNotificationsPlugin();
+
+  // Variables para controlar el estado de la notificación
+  int notiId = 0;
+  bool notiActiva = false;
+
+  // Variable para controlar si se debe mostrar el mensaje de notificación denegada
+  bool _mostrarMensajeNotificacionDenegada = false;
 
   @override
   void initState() {
     super.initState();
+    _initNotifications();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _getCurrentLocation(); // Llamar después de que el widget esté completamente renderizado
+      _initializePermissionsAndLocation();
     });
-    _iniciarSeguimientoUbicacionSinRegistro(); // Iniciar seguimiento de ubicación al inicio sin grabar
+
+    _iniciarSeguimientoUbicacionSinRegistro();
 
     if (widget.initialRouteId != null) {
       db.routes.getPuntosByRutaId(widget.initialRouteId!).then((pointsData) {
         final List<LatLng> routeCoords = pointsData.map((point) {
           final position = LatLng(point['latitud'], point['longitud']);
-          print(point);
           if (point['interes_descripcion'] != null || point['interes_imagen'] != null) {
-            print('se agrega un punto de interés, con descripcion: ${point['interes_descripcion'] != null}, imagen: ${point['interes_imagen'] != null}');
             _interestPoints.add(buildInterestMarker(
               position: position,
               text: point['interes_descripcion'],
               base64Image: point['interes_imagen'],
               context: context,
             ));
-          } else {
-            print('Punto sin interes');
           }
           return position;
         }).toList();
@@ -199,10 +217,31 @@ class RegistrarRutaState extends State<RegistrarRuta> {
     super.dispose();
   }
 
+  Future<void> _initializePermissionsAndLocation() async {
+    try {
+      await requestLocationPermission();
+    } catch (e) {
+      // Manejar errores de permiso de ubicación
+      print(e);
+      return;
+    }
+
+    try {
+      await requestNotificationPermission();
+    } catch (e) {
+      if (e == 'notificaciones_denegadas') {
+        setState(() {
+          _mostrarMensajeNotificacionDenegada = true;
+        });
+      }
+    }
+
+    await _getCurrentLocation();
+  }
+
   Future<void> _getCurrentLocation() async {
-    await requestBackgroundPermission();
     Position position = await Geolocator.getCurrentPosition(
-      locationSettings: AndroidSettings(),
+      locationSettings: const LocationSettings(),
     );
     if (mounted) {
       setState(() {
@@ -228,9 +267,16 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       if (mounted) {
         setState(() {
           _seconds++;
+          // Actualizar la notificación si está activa
+          if (notiActiva) {
+            _actualizarNotificacion();
+          }
         });
       }
     });
+
+    // Iniciar notificación
+    _mostrarNotificacion();
 
     _iniciarSeguimientoUbicacion();
   }
@@ -261,18 +307,20 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       return;
     }
 
-    _actualizarPosicion(_currentPosition!.latitude, _currentPosition!.longitude);
+    _actualizarPosicion(
+        _currentPosition!.latitude, _currentPosition!.longitude);
 
     _positionStreamSubscription = Geolocator.getPositionStream(
-        locationSettings: LocationSettings(distanceFilter: 10)
-    ).listen((Position position) {
+        locationSettings: const LocationSettings(distanceFilter: 10))
+        .listen((Position position) {
       _actualizarPosicion(position.latitude, position.longitude);
     });
   }
 
   // Función para seguir la ubicación sin grabar la ruta
   void _iniciarSeguimientoUbicacionSinRegistro() {
-    _positionStreamSubscription = Geolocator.getPositionStream(locationSettings: LocationSettings(distanceFilter: 10))
+    _positionStreamSubscription = Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(distanceFilter: 10))
         .listen((Position position) {
       LatLng nuevaPosicion = LatLng(position.latitude, position.longitude);
 
@@ -290,38 +338,51 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   }
 
   void _actualizarPosicion(double latitude, double longitude) async {
-    _lastPointId = await db.routes.createPunto(_routeId!, {
-      'latitud': latitude,
-      'longitud': longitude,
-      'orden': _routeCoords.length + 1, // Ajustar el orden
-    });
-
-    LatLng nuevaPosicion = LatLng(latitude, longitude);
-    _routeCoords.add(nuevaPosicion);
-
-    if (mounted) {
-      setState(() {
-        _currentPosition = nuevaPosicion;
-        _routePolyline = Polyline(
-          points: _routeCoords,
-          strokeWidth: 5,
-          color: Colors.blue,
-        );
-        _currentPositionMarker = buildLocationMarker(_currentPosition!);
+    if (_isRecording) {
+      _lastPointId = await db.routes.createPunto(_routeId!, {
+        'latitud': latitude,
+        'longitud': longitude,
+        'orden': _routeCoords.length + 1, // Ajustar el orden
       });
-    }
 
-    if (centerMap) {
-      mapController.move(nuevaPosicion, 18.0);
+      LatLng nuevaPosicion = LatLng(latitude, longitude);
+      if (_routeCoords.isNotEmpty) {
+        _distanceTraveled +=
+            Distance().as(LengthUnit.Meter, _routeCoords.last, nuevaPosicion);
+      }
+      _routeCoords.add(nuevaPosicion);
+
+      if (mounted) {
+        setState(() {
+          _currentPosition = nuevaPosicion;
+          _routePolyline = Polyline(
+            points: _routeCoords,
+            strokeWidth: 5,
+            color: Colors.blue,
+          );
+          _currentPositionMarker = buildLocationMarker(_currentPosition!);
+        });
+      }
+
+      if (centerMap) {
+        mapController.move(nuevaPosicion, 18.0);
+      }
     }
   }
 
   void _borrarRegistro() async {
     _routeId = null;
     _routeCoords.clear();
+    _distanceTraveled = 0.0;
+    _seconds = 0;
 
     _timer?.cancel();
     _positionStreamSubscription?.cancel();
+
+    // Cancelar notificación si está activa
+    if (notiActiva) {
+      _cancelarNotificacion();
+    }
 
     if (mounted) {
       setState(() {
@@ -331,38 +392,65 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   }
 
   void _finalizarRegistro() async {
-    final routeData = await getPostRouteData(_routeId!, _seconds, _distanceTraveled);
-    int? rutaId = await postRuta(routeData);
-    if (rutaId != null) {
-      db.routes.deleteRoute(_routeId!);
-      _borrarRegistro();
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => RutaFormPage(
-            rutaId: rutaId,
-            distanceTraveled: _distanceTraveled,
-            secondsElapsed: _seconds,
-            onSave: (rutaData) {
-              _updateRuta(
-                rutaId,
-                rutaData['nombre'],
-                rutaData['descripcion'],
-                rutaData['dificultad'],
-                _distanceTraveled ~/ 100 / 10,
-                _seconds ~/ 60,
-              );
-              Navigator.of(context).pop();
-            },
-            onCancel: () {
-              Navigator.of(context).pop();
-            },
-          ),
-        ),
-      );
-    } else {
-      print('Error al enviar la ruta al backend');
+    // Mostrar un indicador de carga antes de realizar las operaciones
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
+
+    try {
+      final routeData = await getPostRouteData(_routeId!, _seconds, _distanceTraveled);
+      int? rutaId = await postRuta(routeData);
+
+      if (rutaId != null) {
+        await db.routes.deleteRoute(_routeId!);
+        _borrarRegistro();
+
+        // Cerrar el diálogo de carga antes de navegar al formulario
+        if (mounted) Navigator.pop(context);
+
+        // Navegar al formulario de edición
+        await _mostrarFormularioRuta(rutaId);
+      } else {
+        if (mounted) Navigator.pop(context);
+        print('Error al enviar la ruta al backend');
+      }
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      print('Error durante la finalización de la ruta: $e');
     }
+  }
+
+  Future<void> _mostrarFormularioRuta(int rutaId) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RutaFormPage(
+          rutaId: rutaId,
+          distanceTraveled: _distanceTraveled,
+          secondsElapsed: _seconds,
+          onSave: (rutaData) async {
+            await _updateRuta(
+              rutaId,
+              rutaData['nombre'],
+              rutaData['descripcion'],
+              rutaData['dificultad'],
+              _distanceTraveled / 1000,
+              _seconds ~/ 60,
+            );
+            Navigator.of(context).pop();
+          },
+          onCancel: () {
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> _mostrarModalAgregarPuntoInteres() async {
@@ -388,9 +476,11 @@ class RegistrarRutaState extends State<RegistrarRuta> {
                 onPressed: () async {
                   final ImagePicker picker = ImagePicker();
                   final XFile? imageFile = await picker.pickImage(source: ImageSource.camera);
+
                   if (imageFile != null) {
-                    imagen = await imageFile.readAsBytes();
-                    imagen = Uint8List.fromList(imagen!.toList());
+                    Uint8List originalImageBytes = await imageFile.readAsBytes();
+                    Uint8List resizedImageBytes = await _resizeImage(originalImageBytes, 800, 800);
+                    imagen = resizedImageBytes;
                   }
                 },
                 child: const Text('Seleccionar Imagen (Opcional)'),
@@ -414,17 +504,120 @@ class RegistrarRutaState extends State<RegistrarRuta> {
     );
   }
 
+  /// Función para redimensionar la imagen
+  Future<Uint8List> _resizeImage(Uint8List originalImage, int targetWidth, int targetHeight) async {
+    // Decodificar la imagen a un formato que podamos manipular
+    img.Image? decodedImage = img.decodeImage(originalImage);
+    if (decodedImage == null) return originalImage;
+
+    // Redimensionar la imagen
+    img.Image resizedImage = img.copyResize(
+      decodedImage,
+      width: targetWidth,
+      height: targetHeight,
+    );
+
+    // Convertir la imagen redimensionada a Uint8List para guardarla
+    return Uint8List.fromList(img.encodeJpg(resizedImage, quality: 85));
+  }
+
+  // Métodos para notificaciones
+  Future<void> _initNotifications() async {
+    const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('notification_icon');
+
+    const InitializationSettings initializationSettings =
+    InitializationSettings(android: initializationSettingsAndroid);
+
+    await notification.initialize(initializationSettings);
+  }
+
+  Future<void> _mostrarNotificacion() async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+    AndroidNotificationDetails(
+      'itrek_channel', // id
+      'iTrek', // title
+      channelDescription: 'Notificación persistente para iTrek',
+      importance: Importance.low,
+      priority: Priority.low,
+      ongoing: true, // Hacer la notificación persistente
+    );
+    const NotificationDetails platformChannelSpecifics =
+    NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await notification.show(
+      notiId,
+      'Grabando ruta',
+      'Tiempo: ${_formatTime(_seconds)} - Distancia: ${_formatDistance(_distanceTraveled)}',
+      platformChannelSpecifics,
+    );
+
+    notiActiva = true;
+  }
+
+  Future<void> _actualizarNotificacion() async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+    AndroidNotificationDetails(
+      'itrek_channel', // id
+      'iTrek', // title
+      channelDescription: 'Notificación persistente para iTrek',
+      importance: Importance.low,
+      priority: Priority.low,
+      ongoing: true, // Hacer la notificación persistente
+    );
+    const NotificationDetails platformChannelSpecifics =
+    NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await notification.show(
+      notiId,
+      'Grabando ruta',
+      'Tiempo: ${_formatTime(_seconds)} - Distancia: ${_formatDistance(_distanceTraveled)}',
+      platformChannelSpecifics,
+    );
+  }
+
+  Future<void> _cancelarNotificacion() async {
+    await notification.cancel(notiId);
+    notiActiva = false;
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_mostrarMensajeNotificacionDenegada) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Recuerda activar las notificaciones para ver el avance de tu ruta',
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.orangeAccent.shade700,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      });
+      _mostrarMensajeNotificacionDenegada = false;
+    }
+
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('Registro de Ruta'),
-        backgroundColor: Colors.green.shade700,
+        title: const Text(
+          'Inicio de Ruta',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+        ),
+        backgroundColor: Colors.green.shade800,
+        elevation: 0,
       ),
       body: _currentPosition == null
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+        child: CircularProgressIndicator(color: Colors.green),
+      )
           : Stack(
         children: [
+          // Mapa
           buildMap(
             mapController: mapController,
             initialPosition: _currentPosition,
@@ -432,76 +625,138 @@ class RegistrarRutaState extends State<RegistrarRuta> {
             onPositionChanged: _handleMapMovement,
             markers: [
               ..._markers,
-              if (_currentPositionMarker != null)
-                _currentPositionMarker!,
+              if (_currentPositionMarker != null) _currentPositionMarker!,
               ..._interestPoints,
             ],
           ),
-          Positioned(
-            bottom: 105,
-            right: 10,
-            child: FloatingActionButton(
-              onPressed: () {
-                centerMap = true;
-                if (_currentPosition != null) {
-                  mapController.move(_currentPosition!, 18.0);
-                }
-              },
-              child: const Icon(Icons.my_location),
-            ),
-          ),
+
+          // Indicadores de tiempo y distancia en la parte superior
           Positioned(
             top: 20,
             left: 20,
-            child: Column(
+            child: Container(
+              padding: const EdgeInsets.all(12.0),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Tiempo: ${_formatTime(_seconds)}',
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'Distancia: ${_formatDistance(_distanceTraveled)}',
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Botones alineados en la parte inferior
+          Positioned(
+            bottom: 20,
+            left: 20,
+            right: 20,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Tiempo: ${_formatTime(_seconds)}',
-                  style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold),
+                // Botón para iniciar/finalizar grabación (alineado a la izquierda)
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                    _isRecording ? Colors.red.shade600 : Colors.green.shade600,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
+                  ),
+                  icon: Icon(
+                    _isRecording ? Icons.stop : Icons.play_arrow,
+                    color: Colors.white,
+                  ),
+                  onPressed: () async {
+                    if (!_isRecording) {
+                      final routes = await db.routes.getAllRoutes();
+                      for (var route in routes) {
+                        db.routes.deleteRoute(route['id']);
+                      }
+                      _iniciarRegistro();
+                    } else {
+                      _finalizarRegistro();
+                    }
+                  },
+                  label: Text(
+                    _isRecording ? 'Finalizar' : 'Iniciar',
+                    style: const TextStyle(fontSize: 16, color: Colors.white),
+                  ),
                 ),
-                Text(
-                  'Distancia: ${_formatDistance(_distanceTraveled)}',
-                  style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold),
+
+                // Botones de íconos alineados a la derecha con fondo gris transparente
+                Row(
+                  children: [
+                    // Botón para agregar punto de interés (solo visible al grabar)
+                    if (_isRecording)
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.8),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.add_location_alt,
+                            color: Colors.blue,
+                            size: 28,
+                          ),
+                          onPressed: _mostrarModalAgregarPuntoInteres,
+                          tooltip: 'Agregar Punto de Interés',
+                        ),
+                      ),
+
+                    const SizedBox(width: 10),
+
+                    // Botón para enfocar la posición actual (siempre visible)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.8),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.my_location,
+                          color: Colors.green,
+                          size: 28,
+                        ),
+                        onPressed: () {
+                          centerMap = true;
+                          if (_currentPosition != null) {
+                            mapController.move(_currentPosition!, 18.0);
+                          }
+                        },
+                        tooltip: 'Enfocar',
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ),
-          Positioned(
-            left: 20,
-            right: 60,
-            bottom: 90,
-            child: ElevatedButton(
-              onPressed: () async {
-                _mostrarModalAgregarPuntoInteres();
-              },
-              child: const Text('Agregar Punto de Interés'),
-            ),
-          ),
-          Positioned(
-            left: 20,
-            right: 60,
-            bottom: 30,
-            child: ElevatedButton(
-              onPressed: () async {
-                if (!_isRecording) {
-                  final routes = await db.routes.getAllRoutes();
-                  for (var route in routes) {
-                    db.routes.deleteRoute(route['id']);
-                  }
-                  _iniciarRegistro();
-                } else {
-                  _finalizarRegistro();
-                }
-              },
-              child: Text(_isRecording
-                  ? 'Finalizar Ruta'
-                  : 'Iniciar Registro'),
             ),
           ),
         ],

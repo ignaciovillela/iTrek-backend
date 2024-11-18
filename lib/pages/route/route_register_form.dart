@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class RutaFormPage extends StatefulWidget {
-  final int rutaId; // ID de la ruta
+  final int rutaId;
   final double distanceTraveled;
   final int secondsElapsed;
   final Function(Map<String, dynamic>) onSave;
@@ -24,88 +24,195 @@ class _RutaFormPageState extends State<RutaFormPage> {
   final _formKey = GlobalKey<FormState>();
   String _nombre = '';
   String _descripcion = '';
-  String _dificultad = 'facil'; // Valor predeterminado para la dificultad
+  String _dificultad = 'facil';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Agregar Detalles de la Ruta'),
+        title: const Text('Detalles de la Ruta'),
+        backgroundColor: Colors.teal.shade700,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Nombre'),
-                onSaved: (value) {
-                  _nombre = value ?? '';
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor ingresa un nombre';
-                  }
-                  return null;
-                },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Indicador de progreso
+            Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
               ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Descripción'),
-                onSaved: (value) {
-                  _descripcion = value ?? '';
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor ingresa una descripción';
-                  }
-                  return null;
-                },
+              color: Colors.teal.shade50,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildInfoItem(
+                      icon: Icons.directions_walk,
+                      label: 'Distancia',
+                      value: '${widget.distanceTraveled.toStringAsFixed(2)} km',
+                    ),
+                    _buildInfoItem(
+                      icon: Icons.timer,
+                      label: 'Tiempo',
+                      value: _formatTime(widget.secondsElapsed),
+                    ),
+                  ],
+                ),
               ),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: 'Dificultad'),
-                value: _dificultad,
-                items: const [
-                  DropdownMenuItem(value: 'facil', child: Text('Fácil')),
-                  DropdownMenuItem(value: 'moderada', child: Text('Moderada')),
-                  DropdownMenuItem(value: 'dificil', child: Text('Difícil')),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _dificultad = value!;
-                  });
-                },
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState?.validate() ?? false) {
-                        _formKey.currentState?.save();
-                        Map<String, dynamic> rutaData = {
-                          "nombre": _nombre,
-                          "descripcion": _descripcion,
-                          "dificultad": _dificultad,
-                        };
+            ),
+            const SizedBox(height: 20),
 
-                        widget.onSave(rutaData); // Enviar los datos al backend
-                      }
-                    },
-                    child: const Text('Guardar Ruta'),
-                  ),
-                  ElevatedButton(
-                    onPressed: widget.onCancel,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                    child: const Text('Cancelar'),
-                  ),
-                ],
+            // Formulario dentro de una tarjeta
+            Card(
+              elevation: 5,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
               ),
-            ],
-          ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Detalles de la Ruta',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        decoration: InputDecoration(
+                          labelText: 'Nombre',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onSaved: (value) {
+                          _nombre = value ?? '';
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Por favor ingresa un nombre';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        decoration: InputDecoration(
+                          labelText: 'Descripción',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onSaved: (value) {
+                          _descripcion = value ?? '';
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Por favor ingresa una descripción';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      DropdownButtonFormField<String>(
+                        decoration: InputDecoration(
+                          labelText: 'Dificultad',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        value: _dificultad,
+                        items: const [
+                          DropdownMenuItem(
+                              value: 'facil', child: Text('Fácil')),
+                          DropdownMenuItem(
+                              value: 'moderada', child: Text('Moderada')),
+                          DropdownMenuItem(
+                              value: 'dificil', child: Text('Difícil')),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _dificultad = value!;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 30),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              if (_formKey.currentState?.validate() ?? false) {
+                                _formKey.currentState?.save();
+                                Map<String, dynamic> rutaData = {
+                                  "nombre": _nombre,
+                                  "descripcion": _descripcion,
+                                  "dificultad": _dificultad,
+                                };
+                                widget.onSave(rutaData);
+                              }
+                            },
+                            icon: const Icon(Icons.save, color: Colors.white),
+                            label: const Text('Guardar', style: TextStyle(color: Colors.white)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.teal.shade700,
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: widget.onCancel,
+                            icon: const Icon(Icons.cancel, color: Colors.white),
+                            label: const Text('Cancelar', style: TextStyle(color: Colors.white)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.redAccent,
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Widget _buildInfoItem(
+      {required IconData icon, required String label, required String value}) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.teal.shade700, size: 30),
+        const SizedBox(height: 8),
+        Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontSize: 16)),
+      ],
+    );
+  }
+
+  String _formatTime(int seconds) {
+    int hours = seconds ~/ 3600;
+    int minutes = (seconds % 3600) ~/ 60;
+    int remainingSeconds = seconds % 60;
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 }
