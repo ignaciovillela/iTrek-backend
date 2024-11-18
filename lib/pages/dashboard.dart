@@ -6,6 +6,7 @@ import 'package:itrek/pages/comunity.dart';
 import 'package:itrek/pages/route/route_list.dart';
 import 'package:itrek/pages/route/route_register.dart';
 import 'package:itrek/pages/user/user_profile.dart';
+import 'package:itrek/helpers/widgets.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -22,6 +23,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return FutureBuilder<bool>(
       future: _checkToken(),
       builder: (context, snapshot) {
@@ -32,7 +35,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (snapshot.hasData && snapshot.data == true) {
           return Scaffold(
             appBar: AppBar(
-              backgroundColor: const Color(0xFF50C9B5),
+              backgroundColor: colorScheme.primary,
               title: Row(
                 children: [
                   logoWhite,
@@ -48,202 +51,143 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ),
-            body: SingleChildScrollView( // Funcion de Scroll
-              child: Column(
-                children: [
-                  const SizedBox(height: 40),
-                  FutureBuilder<String?>(
-                    future: db.values.get(db.values.first_name),
-                    builder: (BuildContext context, AsyncSnapshot<String?> snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const CircularProgressIndicator();
-                      } else if (snapshot.hasError) {
-                        return Text('Error: ${snapshot.error}');
-                      } else if (!snapshot.hasData || snapshot.data == null) {
-                        return const Text(
-                          'No data available',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+            body: LayoutBuilder(
+              builder: (context, constraints) {
+                final screenWidth = constraints.maxWidth;
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FutureBuilder<String?>(
+                        future: db.values.get(db.values.first_name),
+                        builder: (context, snapshot) {
+                          String userName = snapshot.data ?? 'Admin';
+                          return Text(
+                            'Hola, $userName',
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: screenWidth * 0.3,
+                            child: Image.asset(
+                              'assets/images/trek.png',
+                              fit: BoxFit.contain,
+                            ),
                           ),
-                        );
-                      } else {
-                        final first_name = snapshot.data.toString();
-                        return Text(
-                          'Hola, $first_name',
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: const [
+                                Text(
+                                  'Nivel: Avanzado',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Trekking realizados: 25',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Próxima ruta: Torres del Paine',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        );
-                      }
-                    },
+                        ],
+                      ),
+                      const SizedBox(height: 40),
+                      GridView.count(
+                        shrinkWrap: true,
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 15.0,
+                        mainAxisSpacing: 15.0,
+                        children: [
+                          DashboardCircleButton(
+                            label: 'Iniciar Ruta',
+                            icon: Icons.directions_walk,
+                            iconColor: Colors.green,
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const RegistrarRuta(),
+                                ),
+                              );
+                            },
+                          ),
+                          DashboardCircleButton(
+                            label: 'Perfil',
+                            icon: Icons.person,
+                            iconColor: Colors.blue,
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                  const PerfilUsuarioScreen(),
+                                ),
+                              );
+                              setState(() {});
+                            },
+                          ),
+                          DashboardCircleButton(
+                            label: 'Listado de Rutas',
+                            icon: Icons.map,
+                            iconColor: Colors.orange,
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                  const ListadoRutasScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                          DashboardCircleButton(
+                            label: 'Comunidad',
+                            icon: Icons.people,
+                            iconColor: Colors.purple,
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                  const RutasCompartidasScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 40),
+                    ],
                   ),
-                  const SizedBox(height: 20),
-                  Center(
-                    child: Image.asset(
-                      'assets/images/trek.png',
-                      height: 118,
-                    ),
-                  ),
-                  const SizedBox(height: 50),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: GridView.count(
-                      shrinkWrap: true,
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 15.0,
-                      mainAxisSpacing: 15.0,
-                      children: [
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF50C9B5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding: const EdgeInsets.all(10),
-                          ),
-                          onPressed: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const RegistrarRuta(),
-                              ),
-                            );
-                          },
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text(
-                                'Iniciar Ruta',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Image.asset(
-                                'assets/images/maps-green.png',
-                                height: 80,
-                              ),
-                            ],
-                          ),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF50C9B5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding: const EdgeInsets.all(10),
-                          ),
-                          onPressed: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const PerfilUsuarioScreen(),
-                              ),
-                            );
-                            setState(() {});
-                          },
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text(
-                                'Perfil',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Image.asset(
-                                'assets/images/perfil.png',
-                                height: 80,
-                              ),
-                            ],
-                          ),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF50C9B5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding: const EdgeInsets.all(10),
-                          ),
-                          onPressed: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const ListadoRutasScreen(),
-                              ),
-                            );
-                          },
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text(
-                                'Listado de Rutas',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Image.asset(
-                                'assets/images/listado.png',
-                                height: 80,
-                              ),
-                            ],
-                          ),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF50C9B5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding: const EdgeInsets.all(10),
-                          ),
-                          onPressed: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const RutasCompartidasScreen(),
-                              ),
-                            );
-                          },
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text(
-                                'Comunidad',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Image.asset(
-                                'assets/images/com.png',
-                                height: 80,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                ],
-              ),
+                );
+              },
             ),
           );
         } else {

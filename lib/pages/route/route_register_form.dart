@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:itrek/helpers/widgets.dart';
 
 class RutaFormPage extends StatefulWidget {
   final int rutaId;
@@ -29,10 +30,7 @@ class _RutaFormPageState extends State<RutaFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detalles de la Ruta'),
-        backgroundColor: Colors.teal.shade700,
-      ),
+      appBar: CustomAppBar(title: 'Detalles de la Ruta'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(

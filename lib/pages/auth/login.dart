@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:itrek/db.dart';
+import 'package:itrek/helpers/widgets.dart';
 import 'package:itrek/img.dart';
 import 'package:itrek/pages/auth/login_recover.dart';
 import 'package:itrek/pages/auth/login_register.dart';
@@ -128,19 +129,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF50C2C9),
-        title: Row(
-          children: [
-            logoWhite,
-            const SizedBox(width: 10),
-            const Text(
-              'iTrek',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-          ],
-        ),
-      ),
+      appBar: CustomAppBar(title: 'iTrek'),
       body: SingleChildScrollView( // Envuelve el contenido en un SingleChildScrollView
         child: Padding(
           padding: const EdgeInsets.all(16.0),

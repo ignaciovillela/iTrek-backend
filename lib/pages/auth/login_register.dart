@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:itrek/helpers/widgets.dart';
 import 'package:itrek/request.dart'; // Importa 'makeRequest'
 
 import 'login.dart';
@@ -150,10 +151,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Registro de Usuario'),
-        backgroundColor: const Color(0xFF50C9B5), // Color del AppBar
-      ),
+      appBar: CustomAppBar(title: 'Registro de Usuario'),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
