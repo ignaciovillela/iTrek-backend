@@ -58,13 +58,17 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
           ? 'defaultUsername' // Valor predeterminado temporal
           : widget.ruta['usuario_username']);
     });
+
+    // Mostrar un mensaje si no hay conexión y los datos son incompletos
+    if (widget.ruta['usuario_username']?.isEmpty ?? true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: Sin conexión al servidor. Los datos no se pudieron cargar.')),
+      );
+    }
   }
-
-
 
   Future<void> _loadRoutePoints() async {
     if (widget.ruta['local'] == 1) {
-      print('Ruta local: ${widget.ruta}');
       // Si la ruta es local, cargar los puntos de la base de datos local
       final pointsData = await db.routes.getPuntosByRutaId(widget.ruta['id'].toString());
       final List<LatLng> points = pointsData.map((point) => LatLng(point['latitud'], point['longitud'])).toList();
@@ -378,11 +382,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print('Local username: $localUsername');
-    print('Ruta usuario_username: ${widget.ruta['usuario_username']}');
-    print('Es propietario: $esPropietario');
-    print('Ruta local: ${widget.ruta['local']}');
-
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -466,13 +465,11 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
           // Footer fijo con botones flotantes
           FixedFooter(
             children: [
-              // Botón de editar o guardar
               CircleIconButton(
                 icon: _isEditing ? Icons.save : Icons.edit,
                 color: _isEditing ? Colors.green : colorScheme.primary,
                 onPressed: _isEditing ? updateRuta : () => setState(() => _isEditing = true),
               ),
-              // Botón de recorrer la ruta
               CircleIconButton(
                 icon: Icons.directions_walk,
                 color: Colors.blue,
@@ -485,7 +482,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                   );
                 },
               ),
-              // Botón de compartir, se muestra solo si el usuario es el propietario
               if (esPropietario)
                 CircleIconButton(
                   icon: Icons.share,
@@ -501,6 +497,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                 ),
             ],
           ),
+
         ],
       ),
     );
