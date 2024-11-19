@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:itrek/img.dart';
+import 'package:itrek/helpers/img.dart';
 
 class RecuperarContrasenaScreen extends StatefulWidget {
   const RecuperarContrasenaScreen({super.key});

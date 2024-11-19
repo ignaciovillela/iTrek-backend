@@ -1,9 +1,9 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'dart:convert';
 
 Map<String, dynamic> getCenterAndZoomForBounds(List<LatLng> points, {double padding = -0.3}) {
   if (points.isEmpty) return {'center': LatLng(0, 0), 'zoom': 15.0}; // Retorna un valor por defecto si no hay puntos

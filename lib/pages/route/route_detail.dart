@@ -1,11 +1,12 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:itrek/db.dart';
-import 'package:itrek/map.dart';
-import 'package:itrek/pages/route/route_register.dart';
-import 'package:itrek/request.dart';
+import 'package:itrek/helpers/db.dart';
+import 'package:itrek/helpers/map.dart';
+import 'package:itrek/helpers/request.dart';
 import 'package:itrek/helpers/widgets.dart';
+import 'package:itrek/pages/route/route_register.dart';
 import 'package:latlong2/latlong.dart';
 
 class DetalleRutaScreen extends StatefulWidget {

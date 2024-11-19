@@ -1,6 +1,7 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:itrek/img.dart';
+import 'package:itrek/helpers/img.dart';
 
 /// Un widget reutilizable para crear botones circulares con un ícono.
 class CircleIconButton extends StatelessWidget {

@@ -4,9 +4,9 @@ import 'dart:convert';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:itrek/db.dart';
+import 'package:itrek/helpers/db.dart';
+import 'package:itrek/helpers/request.dart';
 import 'package:itrek/pages/dashboard.dart';
-import 'package:itrek/request.dart';
 
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
