@@ -456,7 +456,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                 ),
             ],
           ),
-        ),),
         ],
       ),
     );

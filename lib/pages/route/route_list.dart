@@ -239,7 +239,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
         itemBuilder: (context, index) {
           final ruta = rutasFiltradas![index]; // Obtiene la ruta actual.
           final esLocal = ruta.containsKey('local') && ruta['local'] == 1;  // Verifica si la ruta es local
-          final cardColor = esLocal ? Colors.orange[50] : Colors.green[50]; // Define el color del Card basado en el estado // Define el color basado en el estado
+          final cardColor = esLocal ? Colors.green.shade50 : null; // Define el color del Card basado en el estado // Define el color basado en el estado
 
           return Card(
             margin: const EdgeInsets.all(8.0),
