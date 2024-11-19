@@ -52,13 +52,18 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   Future<void> _fetchLocalUsername() async {
     final username = await db.values.get(db.values.username);
     setState(() {
-      localUsername = username;
-      esPropietario = localUsername == widget.ruta['usuario']['username'];
+      esPropietario = username == widget.ruta['usuario']['username'] || widget.ruta['local'] == 1;
     });
   }
 
   Future<void> _loadRoutePoints() async {
-    final points = await _fetchRoutePoints();
+    late List<LatLng> points;
+    if (widget.ruta['local'] == 1) {
+      final pointsData = await db.routes.getPuntosByRutaId(widget.ruta['id'].toString());
+      points = pointsData.map((point) => LatLng(point['latitud'], point['longitud'])).toList();
+    } else {
+      points = await _fetchRoutePoints();
+    }
     setState(() {
       routePoints = points;
     });
@@ -264,6 +269,71 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       },
     );
   }
+  Future<void> guardarRutaEnBackend() async {
+    final routeId = widget.ruta['id'].toString();
+    final routeData = await db.routes.getRouteById(routeId);
+    final pointsData = await db.routes.getPuntosByRutaId(routeId);
+
+    if (routeData != null) {
+      final rutaData = {
+        ...routeData,
+        'puntos': pointsData,
+      };
+
+      // Enviar la ruta al backend
+      makeRequest(
+        method: POST,
+        url: ROUTES, // Asegúrate de que esta URL esté correctamente configurada
+        body: rutaData,
+        onOk: (response) {
+          db.routes.deleteRoute(routeId);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Ruta guardada en el servidor exitosamente')),
+          );
+        },
+        onError: (response) {
+          print('Error al guardar la ruta: ${response.statusCode} - ${response.body}');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error al guardar la ruta en el servidor')),
+          );
+        },
+        onConnectionError: (errorMessage) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error de conexión: $errorMessage')),
+          );
+        },
+      );
+    }
+  }
+
+  // Función para mostrar el modal
+  void _mostrarGuardarRuta() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Guardar Ruta'),
+          content: const Text('Esta es una ruta local. Se guardará en el servidor.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                guardarRutaEnBackend();
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   Future<void> _compartirRutaConUsuario(int usuarioId) async {
     await makeRequest(
@@ -395,6 +465,13 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                   icon: Icons.share,
                   color: Colors.purple,
                   onPressed: _showUsuariosBottomSheet,
+                ),
+              // Botón de guardar en el backend, se muestra si la ruta es local
+              if (widget.ruta['local'] == 1)
+                CircleIconButton(
+                  icon: Icons.cloud_upload,
+                  color: Colors.orange,
+                  onPressed: _mostrarGuardarRuta,
                 ),
             ],
           ),

@@ -240,6 +240,7 @@ class RoutesHelper extends DatabaseHelper {
         return null;
       }
     } catch (e) {
+      print(e);
       return null;
     }
   }
@@ -346,13 +347,13 @@ class RoutesHelper extends DatabaseHelper {
   // Método para obtener las rutas locales (con UUID como 'id')
   Future<List<Map<String, dynamic>>> getLocalRoutes() async {
     final db = await database;
-    return await db.query('rutas', where: 'local = ?', whereArgs: [true]);
+    return await db.query('rutas', where: 'local = ?', whereArgs: [1]);
   }
 
   // Método para obtener las rutas sincronizadas (con ID del backend)
   Future<List<Map<String, dynamic>>> getBackendRoutes() async {
     final db = await database;
-    return await db.query('rutas', where: 'local = ?', whereArgs: [false]);
+    return await db.query('rutas', where: 'local = ?', whereArgs: [0]);
   }
 
   // Método para obtener todas las rutas (locales y sincronizadas)

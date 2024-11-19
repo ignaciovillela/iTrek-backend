@@ -89,15 +89,18 @@ List<Map<String, dynamic>> getPointsData(List<Map<String, dynamic>> points) {
 Future<int?> postRuta(Map<String, dynamic> rutaData) async {
   int? rutaId;
 
+  print('rutaData: $rutaData');
   await makeRequest(
     method: POST,
     url: ROUTES,
     body: rutaData,
     onOk: (response) {
       final responseData = jsonDecode(response.body);
+      print('responseData: $responseData');
       rutaId = responseData['id'];
     },
     onError: (response) {
+      print(response.body);
       print('Error al crear la ruta: ${response.statusCode}');
     },
     onConnectionError: (errorMessage) {
@@ -282,7 +285,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
 
   void _iniciarSeguimientoUbicacion() async {
     _routeId = await db.routes.createLocalRoute({
-      'nombre': '',
+      'nombre': 'Ruta local',
       'descripcion': '',
       'dificultad': '',
       'creado_en': '',
