@@ -5,7 +5,7 @@ import 'package:itrek/helpers/request.dart'; // Importa funciones para realizar 
 import 'package:itrek/helpers/widgets.dart';
 import 'package:itrek/pages/route/route_detail.dart';
 import 'package:latlong2/latlong.dart'; // Importa el paquete para trabajar con coordenadas geográficas.
-import 'package:itrek/db.dart'; // Importa RoutesHelper para gestionar la base de datos.
+import 'package:itrek/helpers/db.dart'; // Importa RoutesHelper para gestionar la base de datos.
 
 // Pantalla principal que muestra el listado de rutas guardadas.
 class ListadoRutasScreen extends StatefulWidget {
