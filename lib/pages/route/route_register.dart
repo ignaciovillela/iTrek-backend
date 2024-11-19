@@ -52,6 +52,7 @@ Future<void> requestNotificationPermission() async {
   }
 }
 
+
 // Función para convertir una lista de coordenadas LatLng a un formato JSON
 Future<Map<String, dynamic>> getPostRouteData(
     String routeId, int seconds, double distanceTraveled) async {
@@ -63,7 +64,7 @@ Future<Map<String, dynamic>> getPostRouteData(
     'descripcion': routeData?['descripcion'],
     'dificultad': routeData?['dificultad'],
     'distancia_km': distanceTraveled / 1000,
-    'tiempo_estimado_minutos': seconds ~/ 60,
+    'tiempo_estimado_minutos': (seconds < 60) ? 1 : (seconds ~/ 60),
     'puntos': getPointsData(pointsData),
   };
 }
@@ -266,6 +267,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       if (mounted) {
         setState(() {
           _seconds++;
+          print('Tiempo transcurrido: $_seconds segundos');
           // Actualizar la notificación si está activa
           if (notiActiva) {
             _actualizarNotificacion();
@@ -310,7 +312,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
         _currentPosition!.latitude, _currentPosition!.longitude);
 
     _positionStreamSubscription = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(distanceFilter: 10))
+        locationSettings: const LocationSettings(distanceFilter: 1))
         .listen((Position position) {
       _actualizarPosicion(position.latitude, position.longitude);
     });
@@ -343,11 +345,13 @@ class RegistrarRutaState extends State<RegistrarRuta> {
         'longitud': longitude,
         'orden': _routeCoords.length + 1, // Ajustar el orden
       });
-
+      print('Nueva posición: $latitude, $longitude');
       LatLng nuevaPosicion = LatLng(latitude, longitude);
       if (_routeCoords.isNotEmpty) {
+        print('Última posición registrada: ${_routeCoords.last.latitude}, ${_routeCoords.last.longitude}');
         _distanceTraveled +=
             Distance().as(LengthUnit.Meter, _routeCoords.last, nuevaPosicion);
+        print('Distancia acumulada: $_distanceTraveled metros');
       }
       _routeCoords.add(nuevaPosicion);
 
@@ -403,12 +407,15 @@ class RegistrarRutaState extends State<RegistrarRuta> {
     );
 
     try {
+      print('Distancia acumulada antes del POST2: $_distanceTraveled metros');
+      print('Tiempo transcurrido antes del POST2: $_seconds segundos');
       final routeData = await getPostRouteData(_routeId!, _seconds, _distanceTraveled);
+      print('Datos de la ruta antes del POST: $routeData');
+
       int? rutaId = await postRuta(routeData);
 
       if (rutaId != null) {
-        await db.routes.deleteRoute(_routeId!);
-        _borrarRegistro();
+        // No llamar a _borrarRegistro() aquí
 
         // Cerrar el diálogo de carga antes de navegar al formulario
         if (mounted) Navigator.pop(context);
@@ -417,7 +424,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
         await _mostrarFormularioRuta(rutaId);
       } else {
         if (mounted) Navigator.pop(context);
-        print('Error al enviar la ruta al backend');
+        print('Error al enviar la ruta al servidor');
       }
     } catch (e) {
       if (mounted) Navigator.pop(context);
@@ -425,7 +432,11 @@ class RegistrarRutaState extends State<RegistrarRuta> {
     }
   }
 
+
   Future<void> _mostrarFormularioRuta(int rutaId) async {
+    print('Distancia recorrida: $_distanceTraveled');
+    print('Tiempo transcurrido: $_seconds');
+
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -442,6 +453,8 @@ class RegistrarRutaState extends State<RegistrarRuta> {
               _distanceTraveled / 1000,
               _seconds ~/ 60,
             );
+            // Llamar a _borrarRegistro después de guardar los datos
+            _borrarRegistro();
             Navigator.of(context).pop();
           },
           onCancel: () {
@@ -451,6 +464,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       ),
     );
   }
+
 
   Future<void> _mostrarModalAgregarPuntoInteres() async {
     final TextEditingController descripcionController = TextEditingController();
