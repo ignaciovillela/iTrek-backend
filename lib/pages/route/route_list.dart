@@ -1,6 +1,7 @@
 import 'dart:convert'; // Importa la biblioteca para trabajar con JSON.
+
 import 'package:flutter/material.dart'; // Importa el paquete de Flutter para crear interfaces de usuario.
-import 'package:itrek/img.dart'; // Importa recursos de imagen.
+import 'package:itrek/helpers/widgets.dart';
 import 'package:itrek/pages/route/route_detail.dart';
 import 'package:itrek/request.dart'; // Importa funciones para realizar solicitudes HTTP.
 import 'package:latlong2/latlong.dart'; // Importa el paquete para trabajar con coordenadas geográficas.
@@ -211,9 +212,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   Widget build(BuildContext context) {
     Widget bodyContent;
 
-    // Muestra el contenido dependiendo del estado de rutasFiltradas.
     if (rutasFiltradas == null) {
-      // Pantalla de carga.
       bodyContent = const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -228,7 +227,6 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
         ),
       );
     } else if (rutasFiltradas!.isEmpty) {
-      // Mensaje cuando no hay rutas.
       bodyContent = const Center(
         child: Text(
           "No hay rutas para mostrar",
@@ -236,7 +234,6 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
         ),
       );
     } else {
-      // Lista de rutas cargadas.
       bodyContent = ListView.builder(
         itemCount: rutasFiltradas!.length,
         itemBuilder: (context, index) {
@@ -261,18 +258,22 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                 children: [
                   Text(ruta['descripcion']),
                   const SizedBox(height: 5),
-                  Text('Dificultad: ${ruta['dificultad']}'), // Muestra la dificultad de la ruta.
+                  Text('Dificultad: ${ruta['dificultad']}'),
                 ],
               ),
-              leading: const Icon(Icons.map, color: Color(0xFF50C9B5)), // Icono de la ruta.
-              trailing: IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red), // Icono para eliminar la ruta.
+              leading: const Icon(Icons.map, color: Color(0xFF50C9B5)),
+              trailing: CircleIconButton(
+                icon: Icons.delete,
+                color: Colors.red.shade100,
+                iconColor: Colors.red.shade800,
                 onPressed: () {
-                  _confirmDelete(context, ruta['id']); // Confirma eliminación de la ruta.
+                  _confirmDelete(context, ruta['id']);
                 },
+                size: 40,
+                iconSize: 20,
+                opacity: 0.8,
               ),
               onTap: () async {
-                // Navega a DetalleRutaScreen y actualiza las rutas tras regresar.
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -288,19 +289,10 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF50C9B5), // Color de fondo de la AppBar.
-        title: Row(
-          children: [
-            logoWhite, // Logo de la aplicación.
-            const SizedBox(width: 10),
-            const Text('Listado de Rutas'), // Título de la pantalla.
-          ],
-        ),
-      ),
+      appBar: CustomAppBar(title: 'Listado de Rutas'),
       body: Column(
         children: [
-          _buildFiltros(), // Espacio para los filtros debajo del AppBar.
+          _buildFiltros(),
           Expanded(child: bodyContent),
         ],
       ),

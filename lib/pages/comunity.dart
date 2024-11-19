@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:itrek/helpers/widgets.dart';
 
 class RutasCompartidasScreen extends StatefulWidget {
   const RutasCompartidasScreen({super.key});
@@ -52,9 +53,7 @@ class _RutasCompartidasScreenState extends State<RutasCompartidasScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Rutas de Otras Personas'),
-      ),
+      appBar: CustomAppBar(title: 'Rutas de Otras Personas'),
       body: ListView.builder(
         itemCount: rutas.length,
         itemBuilder: (context, index) {

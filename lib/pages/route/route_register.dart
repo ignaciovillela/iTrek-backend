@@ -7,6 +7,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:itrek/db.dart';
+import 'package:itrek/helpers/widgets.dart';
 import 'package:itrek/map.dart';
 import 'package:itrek/pages/route/route_register_form.dart';
 import 'package:itrek/request.dart';
@@ -603,14 +604,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text(
-          'Inicio de Ruta',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-        ),
-        backgroundColor: Colors.green.shade800,
-        elevation: 0,
-      ),
+      appBar: CustomAppBar(title: 'Inicio de Ruta'),
       body: _currentPosition == null
           ? const Center(
         child: CircularProgressIndicator(color: Colors.green),

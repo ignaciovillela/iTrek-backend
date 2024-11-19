@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:itrek/helpers/widgets.dart';
 
 // Esta es la nueva página que mostrará los valores de tiempo y kilómetros
 class ResumenRutaPage extends StatelessWidget {
@@ -23,10 +24,7 @@ class ResumenRutaPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Resumen de la Ruta'),
-        backgroundColor: Colors.green[700],
-      ),
+      appBar: CustomAppBar(title: 'Resumen de la Ruta'),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
