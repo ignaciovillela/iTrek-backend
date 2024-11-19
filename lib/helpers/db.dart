@@ -1,4 +1,4 @@
-import 'package:itrek/img.dart';
+import 'package:itrek/helpers/img.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';

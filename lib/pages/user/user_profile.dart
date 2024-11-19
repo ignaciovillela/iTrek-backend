@@ -1,11 +1,12 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:itrek/config.dart';
-import 'package:itrek/db.dart';
-import 'package:itrek/pages/auth/login.dart';
-import 'package:itrek/request.dart';
+import 'package:itrek/helpers/config.dart';
+import 'package:itrek/helpers/db.dart';
+import 'package:itrek/helpers/request.dart';
 import 'package:itrek/helpers/widgets.dart';
+import 'package:itrek/pages/auth/login.dart';
 
 class PerfilUsuarioScreen extends StatefulWidget {
   const PerfilUsuarioScreen({super.key});

@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:itrek/config.dart';
-import 'package:itrek/db.dart';
+import 'package:itrek/helpers/config.dart';
+import 'package:itrek/helpers/db.dart';
 
 const GET = 'GET';
 const POST = 'POST';

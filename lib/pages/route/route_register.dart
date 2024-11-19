@@ -3,20 +3,18 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:itrek/db.dart';
-import 'package:itrek/helpers/widgets.dart';
-import 'package:itrek/map.dart';
-import 'package:itrek/pages/route/route_register_form.dart';
-import 'package:itrek/request.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:image/image.dart' as img;
-import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
+import 'package:itrek/helpers/db.dart';
+import 'package:itrek/helpers/map.dart';
+import 'package:itrek/helpers/request.dart';
+import 'package:itrek/helpers/widgets.dart';
+import 'package:itrek/pages/route/route_register_form.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 /// Solicitar permisos de ubicación en primer plano y, si es necesario, en segundo plano
 Future<void> requestLocationPermission() async {

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:itrek/db.dart';
-import 'package:itrek/img.dart';
+import 'package:itrek/helpers/db.dart';
+import 'package:itrek/helpers/img.dart';
+import 'package:itrek/helpers/widgets.dart';
 import 'package:itrek/pages/auth/login.dart';
 import 'package:itrek/pages/comunity.dart';
 import 'package:itrek/pages/route/route_list.dart';
 import 'package:itrek/pages/route/route_register.dart';
 import 'package:itrek/pages/user/user_profile.dart';
-import 'package:itrek/helpers/widgets.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
