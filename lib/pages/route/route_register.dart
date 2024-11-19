@@ -282,18 +282,18 @@ class RegistrarRutaState extends State<RegistrarRuta> {
 
   void _iniciarSeguimientoUbicacion() async {
     _routeId = await db.routes.createLocalRoute({
-      'nombre': '',
-      'descripcion': '',
-      'dificultad': '',
-      'creado_en': '',
+      'nombre': 'Ruta sin nombre',
+      'descripcion': 'Descripción pendiente',
+      'dificultad': 'moderada',
+      'creado_en': 'DateTime.now().toString()',
       'distancia_km': 0,
       'tiempo_estimado_minutos': 0,
-      'usuario_username': '',
-      'usuario_email': '',
-      'usuario_first_name': '',
-      'usuario_last_name': '',
-      'usuario_biografia': '',
-      'usuario_imagen_perfil': '',
+      'usuario_username': 'Desconocido',
+      'usuario_email': 'correo@desconocido.com',
+      'usuario_first_name': 'Usuario',
+      'usuario_last_name': 'Desconocido',
+      'usuario_biografia': 'Biografía no disponible',
+      'usuario_imagen_perfil': 'null',
       'publica': 0,
     });
 
