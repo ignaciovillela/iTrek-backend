@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:itrek/helpers/db.dart';
 import 'package:itrek/helpers/request.dart';
@@ -7,7 +6,6 @@ import 'package:itrek/helpers/widgets.dart';
 import 'package:itrek/pages/auth/login_recover.dart';
 import 'package:itrek/pages/auth/login_register.dart';
 import 'package:itrek/pages/dashboard.dart';
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -22,8 +20,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _hasUsername = false; // Para controlar si ya existe un username guardado
-  String? _savedUsername; // Variable para almacenar el username guardado
+
+  bool _hasUsername = false;
+  String? _savedUsername;
+
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -38,7 +39,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     );
     _controller.forward();
 
-    _checkForSavedUsername(); // Verificar si ya existe un username guardado
+    _checkForSavedUsername();
   }
 
   @override
@@ -49,37 +50,38 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     super.dispose();
   }
 
-  // Método para verificar si ya existe un username guardado en la DB
   Future<void> _checkForSavedUsername() async {
-    final username = await db.values.get(db.values.username); // Obtener el username de la DB
+    final username = await db.values.get(db.values.username);
     if (username != null) {
       setState(() {
         _hasUsername = true;
-        _savedUsername = username.toString(); // Guardar el username si existe
+        _savedUsername = username.toString();
       });
     }
   }
 
-  // Método para borrar el username guardado
   Future<void> _deleteSavedUsername() async {
-    await db.values.delete(db.values.username); // Borrar el username de la DB
+    await db.values.delete(db.values.username);
     setState(() {
-      _hasUsername = false; // Volver a mostrar el campo de username
-      _savedUsername = null; // Limpiar el username guardado
+      _hasUsername = false;
+      _savedUsername = null;
     });
   }
 
-  // Función que maneja el proceso de login
   Future<void> _login() async {
-    final String username = _hasUsername ? _savedUsername! : _usernameController.text;
-    final String password = _passwordController.text;
+    final String username = _hasUsername ? _savedUsername! : _usernameController.text.trim();
+    final String password = _passwordController.text.trim();
 
-    if (password.isEmpty || username.isEmpty) {
+    if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('El nombre de usuario y la contraseña no pueden estar vacíos')),
       );
       return;
     }
+
+    setState(() {
+      _isLoading = true;
+    });
 
     await makeRequest(
       method: POST,
@@ -107,18 +109,20 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         );
       },
     );
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
-  // Función para manejar la navegación a la página de registro
-  Future<void> _loginRegistrar() async {
+  void _navigateToRegister() {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const RegistroScreen()),
     );
   }
 
-  // Función para manejar la navegación a la página de Recuperar Cuenta
-  Future<void> _loginCuentaRecuperar() async {
+  void _navigateToRecoverPassword() {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const RecuperarContrasenaScreen()),
@@ -127,13 +131,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      appBar: CustomAppBar(title: 'iTrek'),
-      body: SingleChildScrollView( // Envuelve el contenido en un SingleChildScrollView
+      appBar: CustomAppBar(title: 'iTrek', withLogo: true),
+      body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               FadeTransition(
                 opacity: _animation,
@@ -146,86 +152,85 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               Center(
                 child: Image.asset('assets/images/maps-green.png', height: 200),
               ),
-              const SizedBox(height: 60),
+              const SizedBox(height: 40),
               if (!_hasUsername)
-                TextFormField(
+                CustomTextField(
                   controller: _usernameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nombre de Usuario',
-                    border: OutlineInputBorder(),
-                  ),
+                  label: 'Nombre de Usuario',
+                  icon: Icons.person,
                 ),
               if (_hasUsername)
-                Text(
-                  'Hola, $_savedUsername! Nos alegra verte de nuevo.\n'
-                      'Por favor, ingresa tu clave para continuar.',
-                  style: const TextStyle(fontSize: 15, color: Color(0xFF999999), fontWeight: FontWeight.bold),
-                ),
-              const SizedBox(height: 20),
-              TextFormField(
+                Column(
+                  children: [
+                    Text(
+                      'Hola, $_savedUsername! Nos alegra verte de nuevo.\nPor favor, ingresa tu contraseña para continuar.',
+                      style: const TextStyle(fontSize: 16, color: Colors.black54),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                )
+              else
+                SizedBox(height: 10),
+              CustomTextField(
                 controller: _passwordController,
+                label: 'Contraseña',
+                icon: Icons.lock,
                 obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Contraseña',
-                  border: OutlineInputBorder(),
-                ),
               ),
               const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF50C2C9),
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    textStyle: const TextStyle(fontSize: 18),
+              if (_isLoading)
+                const CircularProgressIndicator()
+              else
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      textStyle: const TextStyle(fontSize: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: _login,
+                    icon: const Icon(Icons.login, color: Colors.white),
+                    label: const Text('Ingresar', style: TextStyle(color: Colors.white)),
                   ),
-                  onPressed: _login,
-                  child: const Text('Ingresar'),
                 ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: _navigateToRecoverPassword,
+                child: const Text('¿Olvidaste tu contraseña?'),
               ),
               const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF7F7F),
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    textStyle: const TextStyle(fontSize: 18),
-                  ),
-                  onPressed: _loginCuentaRecuperar,
-                  child: const Text('Recuperar Cuenta'),
-                ),
-              ),
-              if (!_hasUsername) const SizedBox(height: 20),
               if (!_hasUsername)
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFA500),
+                  child: OutlinedButton.icon(
+                    icon: Icon(Icons.person_add, color: colorScheme.primary),
+                    label: Text(
+                      'Registrarse',
+                      style: TextStyle(color: colorScheme.primary),
+                    ),
+                    style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 15),
                       textStyle: const TextStyle(fontSize: 18),
+                      side: BorderSide(color: colorScheme.primary, width: 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
-                    onPressed: _loginRegistrar,
-                    child: const Text('Registrarse'),
+                    onPressed: _navigateToRegister,
                   ),
                 ),
               if (_hasUsername)
                 TextButton(
                   onPressed: _deleteSavedUsername,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '¿No eres $_savedUsername? Haz clic aquí para cambiar de cuenta.',
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                      const SizedBox(height: 2),
-                      Container(
-                        height: 1,
-                        color: const Color(0xFFCCCCCC),
-                      ),
-                    ],
+                  child: Text(
+                    '¿No eres $_savedUsername? Haz clic aquí para cambiar de cuenta.',
+                    style: const TextStyle(color: Colors.grey),
+                    textAlign: TextAlign.center,
                   ),
                 ),
             ],

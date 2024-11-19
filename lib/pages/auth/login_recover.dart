@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:itrek/helpers/widgets.dart';
 import 'package:itrek/helpers/img.dart';
 
 class RecuperarContrasenaScreen extends StatefulWidget {
@@ -9,54 +10,63 @@ class RecuperarContrasenaScreen extends StatefulWidget {
       _RecuperarContrasenaScreenState();
 }
 
-class _RecuperarContrasenaScreenState extends State<RecuperarContrasenaScreen>
-    with SingleTickerProviderStateMixin {
+class _RecuperarContrasenaScreenState extends State<RecuperarContrasenaScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _correoController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _correoController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _recuperarCuenta() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Solicitud de recuperación enviada'),
+      ),
+    );
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  void _cancelar() {
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF50C9B5), // Color de fondo del AppBar
-        title: Row(
-          children: [
-            logoWhite,
-            const SizedBox(width: 10), // Espacio entre el logo y el texto
-            const Text(
-              'Recuperar Cuenta',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: SingleChildScrollView( // Funcion de Scroll
+      appBar: CustomAppBar(title: 'Recuperar Cuenta'),
+      body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Form(
             key: _formKey,
             child: Column(
-              mainAxisAlignment:
-              MainAxisAlignment.center, // Centrar contenido verticalmente
               children: [
-                const SizedBox(height: 40), // Espacio debajo del título
-
-                // Imagen logo debajo del título
+                const SizedBox(height: 40),
                 logoWhite,
-                const SizedBox(
-                    height: 160), // Espacio entre la imagen y el campo de texto
-
-                // Campo para ingresar el correo
-                TextFormField(
+                const SizedBox(height: 40),
+                CustomTextField(
                   controller: _correoController,
-                  decoration: const InputDecoration(
-                    labelText: 'Correo Electrónico',
-                    border: OutlineInputBorder(),
-                  ),
+                  label: 'Correo Electrónico',
+                  icon: Icons.email,
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -67,42 +77,51 @@ class _RecuperarContrasenaScreenState extends State<RecuperarContrasenaScreen>
                     return null;
                   },
                 ),
-                const SizedBox(height: 20), // Espacio entre el campo y el botón
-
-                // Botón para recuperar la cuenta
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF50C9B5),
-                    minimumSize: const Size(double.infinity, 50), // Botón ancho
-                  ),
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      // Lógica para enviar el correo de recuperación
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Solicitud de recuperación enviada'),
+                const SizedBox(height: 30),
+                _isLoading
+                    ? const CircularProgressIndicator()
+                    : Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          textStyle: const TextStyle(fontSize: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                      );
-                    }
-                  },
-                  child: const Text('Recuperar Cuenta'),
-                ),
-                const SizedBox(height: 20), // Espacio entre los botones
-
-                // Botón para cancelar
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFC95052),
-                    minimumSize: const Size(double.infinity, 50), // Botón ancho
-                  ),
-                  onPressed: () {
-                    // Regresar a la pantalla de inicio de sesión (LoginScreen)
-                    Navigator.pop(context); // Volver atrás
-                  },
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(color: Colors.white), // Texto en blanco
-                  ),
+                        onPressed: _recuperarCuenta,
+                        icon: const Icon(Icons.lock_reset, color: Colors.white),
+                        label: const Text(
+                          'Recuperar Cuenta',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          textStyle: const TextStyle(fontSize: 18),
+                          side: BorderSide(color: Colors.red, width: 2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: _cancelar,
+                        icon: const Icon(Icons.cancel, color: Colors.red),
+                        label: const Text(
+                          'Cancelar',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
