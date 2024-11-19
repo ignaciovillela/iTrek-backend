@@ -240,6 +240,7 @@ class RoutesHelper extends DatabaseHelper {
         return null;
       }
     } catch (e) {
+      print(e);
       return null;
     }
   }

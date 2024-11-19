@@ -20,7 +20,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   List<dynamic>? rutasGuardadas; // Lista de rutas obtenidas desde la API.
   List<dynamic>? rutasFiltradas; // Lista de rutas después de aplicar el filtro.
   List<dynamic>? rutasLocales; // Lista de rutas locales obtenidas de SQLite.
-  bool mostrarRutasLocales = true; // Indica si se deben mostrar solo rutas locales.
+  bool mostrarRutasLocales = false;
 
 
   @override
@@ -32,8 +32,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   // Función para obtener las rutas desde la API.
   Future<void> _fetchRutas() async {
     // Cargar rutas locales desde la base de datos.
-    final routesHelper = RoutesHelper.instance;
-    rutasLocales = await routesHelper.getLocalRoutes();
+    rutasLocales = await db.routes.getLocalRoutes();
 
     // Cargar rutas desde la API.
     await makeRequest(
@@ -66,14 +65,9 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   // Función para aplicar el filtro de rutas.
   void _aplicarFiltro() {
     if (mostrarRutasLocales) {
-      // Mostrar solo las rutas locales almacenadas en el dispositivo.
-      rutasFiltradas = rutasLocales;
+      rutasFiltradas = rutasGuardadas?.where((ruta) => ruta['local'] == true).toList();
     } else {
-      // Muestra todas las rutas (locales y del backend).
-      rutasFiltradas = [
-        ...?rutasGuardadas, // Incluye rutas del backend.
-        ...?rutasLocales // Incluye rutas locales.
-      ];
+      rutasFiltradas = rutasGuardadas;
     }
     setState(() {});
   }
@@ -237,9 +231,8 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
       bodyContent = ListView.builder(
         itemCount: rutasFiltradas!.length,
         itemBuilder: (context, index) {
-          final ruta = rutasFiltradas![index]; // Obtiene la ruta actual.
-          final esLocal = ruta.containsKey('local') && ruta['local'] == 1;  // Verifica si la ruta es local
-          final cardColor = esLocal ? Colors.green.shade100 : null; // Define el color del Card basado en el estado // Define el color basado en el estado
+          final ruta = rutasFiltradas![index];
+          final bool esLocal = ruta['local'] == 1;
 
           return Card(
             margin: const EdgeInsets.all(8.0),
@@ -247,7 +240,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
               borderRadius: BorderRadius.circular(10.0),
             ),
             elevation: 5,
-            color: cardColor,
+            color: esLocal ? Colors.green.shade50 : null,
             child: ListTile(
               title: Text(
                 ruta['nombre'],

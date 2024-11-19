@@ -89,15 +89,18 @@ List<Map<String, dynamic>> getPointsData(List<Map<String, dynamic>> points) {
 Future<int?> postRuta(Map<String, dynamic> rutaData) async {
   int? rutaId;
 
+  print('rutaData: $rutaData');
   await makeRequest(
     method: POST,
     url: ROUTES,
     body: rutaData,
     onOk: (response) {
       final responseData = jsonDecode(response.body);
+      print('responseData: $responseData');
       rutaId = responseData['id'];
     },
     onError: (response) {
+      print(response.body);
       print('Error al crear la ruta: ${response.statusCode}');
     },
     onConnectionError: (errorMessage) {
@@ -282,18 +285,18 @@ class RegistrarRutaState extends State<RegistrarRuta> {
 
   void _iniciarSeguimientoUbicacion() async {
     _routeId = await db.routes.createLocalRoute({
-      'nombre': 'Ruta sin nombre',
-      'descripcion': 'Descripción pendiente',
-      'dificultad': 'moderada',
-      'creado_en': 'DateTime.now().toString()',
+      'nombre': 'Ruta local',
+      'descripcion': '',
+      'dificultad': '',
+      'creado_en': '',
       'distancia_km': 0,
       'tiempo_estimado_minutos': 0,
-      'usuario_username': 'Desconocido',
-      'usuario_email': 'correo@desconocido.com',
-      'usuario_first_name': 'Usuario',
-      'usuario_last_name': 'Desconocido',
-      'usuario_biografia': 'Biografía no disponible',
-      'usuario_imagen_perfil': 'null',
+      'usuario_username': '',
+      'usuario_email': '',
+      'usuario_first_name': '',
+      'usuario_last_name': '',
+      'usuario_biografia': '',
+      'usuario_imagen_perfil': '',
       'publica': 0,
     });
 

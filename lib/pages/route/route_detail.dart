@@ -52,41 +52,23 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   Future<void> _fetchLocalUsername() async {
     final username = await db.values.get(db.values.username);
     setState(() {
-      localUsername = username;
-      // Usar un valor predeterminado si usuario_username está vacío
-      esPropietario = localUsername == (widget.ruta['usuario_username']?.isEmpty ?? true
-          ? 'defaultUsername' // Valor predeterminado temporal
-          : widget.ruta['usuario_username']);
+      esPropietario = username == widget.ruta['usuario']['username'] || widget.ruta['local'] == 1;
     });
-
-    // Mostrar un mensaje si no hay conexión y los datos son incompletos
-    if (widget.ruta['usuario_username']?.isEmpty ?? true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error: Sin conexión al servidor. Los datos no se pudieron cargar.')),
-      );
-    }
   }
 
   Future<void> _loadRoutePoints() async {
+    late List<LatLng> points;
     if (widget.ruta['local'] == 1) {
-      // Si la ruta es local, cargar los puntos de la base de datos local
       final pointsData = await db.routes.getPuntosByRutaId(widget.ruta['id'].toString());
-      final List<LatLng> points = pointsData.map((point) => LatLng(point['latitud'], point['longitud'])).toList();
-
-      setState(() {
-        routePoints = points;
-      });
-      _updateInterestPoints(); // Actualiza los puntos de interés
+      points = pointsData.map((point) => LatLng(point['latitud'], point['longitud'])).toList();
     } else {
-      // Si la ruta no es local, realizar la solicitud a la API
-      final points = await _fetchRoutePoints();
-      setState(() {
-        routePoints = points;
-      });
-      _updateInterestPoints(); // Actualiza los puntos de interés
+      points = await _fetchRoutePoints();
     }
+    setState(() {
+      routePoints = points;
+    });
+    _updateInterestPoints();
   }
-
 
   Future<List<LatLng>> _fetchRoutePoints() async {
     final List<LatLng> points = [];
@@ -288,9 +270,9 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     );
   }
   Future<void> guardarRutaEnBackend() async {
-    // Obtener los datos de la ruta y los puntos desde la base de datos local
-    final routeData = await db.routes.getRouteById(widget.ruta['id']);
-    final pointsData = await db.routes.getPuntosByRutaId(widget.ruta['id'].toString());
+    final routeId = widget.ruta['id'].toString();
+    final routeData = await db.routes.getRouteById(routeId);
+    final pointsData = await db.routes.getPuntosByRutaId(routeId);
 
     if (routeData != null) {
       final rutaData = {
@@ -304,12 +286,10 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
         url: ROUTES, // Asegúrate de que esta URL esté correctamente configurada
         body: rutaData,
         onOk: (response) {
+          db.routes.deleteRoute(routeId);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Ruta guardada en el servidor exitosamente')),
           );
-          setState(() {
-            widget.ruta['local'] = 0; // Cambiar el estado de la ruta a no local
-          });
         },
         onError: (response) {
           print('Error al guardar la ruta: ${response.statusCode} - ${response.body}');
@@ -328,32 +308,30 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
 
   // Función para mostrar el modal
   void _mostrarGuardarRuta() {
-    if (widget.ruta['local'] == 1) {
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: const Text('Guardar Ruta'),
-            content: const Text('Esta es una ruta local. Se guardará en el servidor.'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: const Text('Cancelar'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Cierra el modal
-                  guardarRutaEnBackend(); // Llama a la función para guardar la ruta
-                },
-                child: const Text('Guardar'),
-              ),
-            ],
-          );
-        },
-      );
-    }
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Guardar Ruta'),
+          content: const Text('Esta es una ruta local. Se guardará en el servidor.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                guardarRutaEnBackend();
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
 
@@ -497,7 +475,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                 ),
             ],
           ),
-
         ],
       ),
     );
