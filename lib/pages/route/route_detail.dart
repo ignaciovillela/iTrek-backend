@@ -433,6 +433,20 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                           Text('Tiempo estimado: ${widget.ruta['tiempo_estimado_minutos']} horas'),
                         ],
                       ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Icon(
+                            widget.ruta['publica'] == true ? Icons.public : Icons.lock,
+                            color: widget.ruta['publica'] == true ? Colors.green : Colors.red,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            widget.ruta['publica'] == true ? 'Pública' : 'Privada',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ],
+                      )
                     ],
                   ),
                 ),
