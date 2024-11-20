@@ -301,3 +301,48 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }
+
+/// A reusable custom text field widget for forms.
+/// A reusable custom text field widget for forms.
+class CustomTextField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final IconData? icon;
+  final bool obscureText;
+  final bool enabled;
+  final int maxLines;
+  final TextInputType keyboardType;
+  final String? errorText;
+  final String? Function(String?)? validator;
+
+  const CustomTextField({
+    Key? key,
+    required this.controller,
+    required this.label,
+    this.icon,
+    this.obscureText = false,
+    this.enabled = true,
+    this.maxLines = 1,
+    this.keyboardType = TextInputType.text,
+    this.errorText,
+    this.validator,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      enabled: enabled,
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      validator: validator,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+        prefixIcon: icon != null ? Icon(icon) : null,
+        errorText: errorText,
+      ),
+    );
+  }
+}
