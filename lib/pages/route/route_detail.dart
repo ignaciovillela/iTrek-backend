@@ -58,9 +58,17 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
 
   Future<void> _loadRoutePoints() async {
     late List<LatLng> points;
+    double distanciaKm = 0.0;
     if (widget.ruta['local'] == 1) {
       final pointsData = await db.routes.getPuntosByRutaId(widget.ruta['id'].toString());
       points = pointsData.map((point) => LatLng(point['latitud'], point['longitud'])).toList();
+      for (int i = 0; i < points.length - 1; i++) {
+        distanciaKm += Distance().as(LengthUnit.Kilometer, points[i], points[i + 1]);
+      }
+      const velocidadPromedioKmH = 5.0;
+      final tiempoEstimado = (distanciaKm / velocidadPromedioKmH * 60).round();
+      widget.ruta['tiempo_estimado_minutos'] = tiempoEstimado;
+      widget.ruta['distancia_km'] = distanciaKm.toStringAsFixed(2); // Actualizar distancia
     } else {
       points = await _fetchRoutePoints();
     }
@@ -82,8 +90,8 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
           points.addAll(
             jsonResponse['puntos'].map<LatLng>((punto) => LatLng(punto['latitud'], punto['longitud'])),
           );
-
-          await db.routes.createBackendRoute(jsonResponse);
+          widget.ruta['tiempo_estimado_horas'] = jsonResponse['tiempo_estimado_horas'] ?? 0.0;
+          widget.ruta['tiempo_estimado_minutos'] = (widget.ruta['tiempo_estimado_horas'] * 60).round();
         },
         onError: (response) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -100,6 +108,14 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       print('Error al obtener los puntos de la ruta: $e');
     }
     return points;
+  }
+  String _formatHoras(dynamic tiempoEnMinutos) {
+    if (tiempoEnMinutos == null) return '0 horas';
+    final horas = tiempoEnMinutos ~/ 60;
+    final minutos = tiempoEnMinutos % 60;
+    return minutos == 0
+        ? '$horas horas'
+        : '$horas horas y $minutos minutos';
   }
 
   Future<void> _updateInterestPoints() async {
@@ -430,7 +446,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                         children: [
                           Icon(Icons.timer, color: colorScheme.primary),
                           const SizedBox(width: 10),
-                          Text('Tiempo estimado: ${widget.ruta['tiempo_estimado_minutos']} horas'),
+                          Text('Tiempo estimado: ${_formatHoras(widget.ruta['tiempo_estimado_minutos'])}'),
                         ],
                       ),
                     ],
