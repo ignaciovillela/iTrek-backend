@@ -168,7 +168,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   int _seconds = 0;
   double _distanceTraveled = 0.0;
   LatLng? _currentPosition;
-  bool centerMap = false;
+  bool centerMap = true;
   StreamSubscription<Position>? _positionStreamSubscription;
   MapController mapController = MapController();
 
@@ -256,7 +256,9 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   /// Función que maneja el evento de movimiento del mapa
   void _handleMapMovement(MapCamera camera, bool hasGesture) {
     if (hasGesture) {
-      centerMap = false;
+      setState(() {
+        centerMap = false;
+      });
     }
   }
 
@@ -833,13 +835,15 @@ class RegistrarRutaState extends State<RegistrarRuta> {
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.my_location,
-                          color: Colors.green,
+                          color: centerMap ? Colors.green.shade600: Colors.grey.shade400,
                           size: 28,
                         ),
                         onPressed: () {
-                          centerMap = true;
+                          setState(() {
+                            centerMap = true;
+                          });
                           if (_currentPosition != null) {
                             mapController.move(_currentPosition!, 18.0);
                           }
