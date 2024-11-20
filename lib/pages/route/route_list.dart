@@ -5,6 +5,7 @@ import 'package:itrek/helpers/request.dart'; // Importa funciones para realizar 
 import 'package:itrek/helpers/widgets.dart';
 import 'package:itrek/pages/route/route_detail.dart';
 import 'package:latlong2/latlong.dart'; // Importa el paquete para trabajar con coordenadas geográficas.
+import 'package:itrek/helpers/db.dart'; // Importa RoutesHelper para gestionar la base de datos.
 
 // Pantalla principal que muestra el listado de rutas guardadas.
 class ListadoRutasScreen extends StatefulWidget {
@@ -18,7 +19,9 @@ class ListadoRutasScreen extends StatefulWidget {
 class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   List<dynamic>? rutasGuardadas; // Lista de rutas obtenidas desde la API.
   List<dynamic>? rutasFiltradas; // Lista de rutas después de aplicar el filtro.
-  bool mostrarRutasLocales = false; // Indica si se deben mostrar solo rutas locales.
+  List<dynamic>? rutasLocales; // Lista de rutas locales obtenidas de SQLite.
+  bool mostrarRutasLocales = false;
+
 
   @override
   void initState() {
@@ -28,6 +31,10 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
 
   // Función para obtener las rutas desde la API.
   Future<void> _fetchRutas() async {
+    // Cargar rutas locales desde la base de datos.
+    rutasLocales = await db.routes.getLocalRoutes();
+
+    // Cargar rutas desde la API.
     await makeRequest(
       method: GET,
       url: ROUTES, // URL de la API para obtener rutas.
@@ -38,19 +45,16 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
         });
       },
       onError: (response) {
-        // Muestra un mensaje de error en caso de fallo de la solicitud.
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error al cargar las rutas')),
         );
       },
       onDefault: (response) {
-        // Muestra un mensaje para errores inesperados con el código de error.
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error inesperado: ${response.statusCode}')),
         );
       },
       onConnectionError: (errorMessage) {
-        // Manejo de error de conexión.
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMessage)),
         );
@@ -61,14 +65,13 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   // Función para aplicar el filtro de rutas.
   void _aplicarFiltro() {
     if (mostrarRutasLocales) {
-      // Filtra solo las rutas locales almacenadas en el dispositivo.
       rutasFiltradas = rutasGuardadas?.where((ruta) => ruta['local'] == true).toList();
     } else {
-      // Muestra todas las rutas (locales y del backend).
       rutasFiltradas = rutasGuardadas;
     }
     setState(() {});
   }
+
 
   // Widget para mostrar los botones de filtro.
   Widget _buildFiltros() {
@@ -229,6 +232,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
         itemCount: rutasFiltradas!.length,
         itemBuilder: (context, index) {
           final ruta = rutasFiltradas![index];
+          final bool esLocal = ruta['local'] == 1;
 
           return Card(
             margin: const EdgeInsets.all(8.0),
@@ -236,10 +240,11 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
               borderRadius: BorderRadius.circular(10.0),
             ),
             elevation: 5,
+            color: esLocal ? Colors.green.shade50 : null,
             child: ListTile(
               title: Text(
                 ruta['nombre'],
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
