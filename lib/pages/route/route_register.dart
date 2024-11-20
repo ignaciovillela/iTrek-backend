@@ -12,6 +12,7 @@ import 'package:itrek/helpers/db.dart';
 import 'package:itrek/helpers/map.dart';
 import 'package:itrek/helpers/request.dart';
 import 'package:itrek/helpers/widgets.dart';
+import 'package:itrek/pages/route/route_list.dart';
 import 'package:itrek/pages/route/route_register_form.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -89,16 +90,19 @@ List<Map<String, dynamic>> getPointsData(List<Map<String, dynamic>> points) {
 // Función para enviar una ruta al backend mediante una solicitud HTTP POST
 Future<int?> postRuta(Map<String, dynamic> rutaData) async {
   int? rutaId;
+  print('rutaData: $rutaData');
   await makeRequest(
     method: POST,
     url: ROUTES,
     body: rutaData,
     onOk: (response) {
       final responseData = jsonDecode(response.body);
+      print('responseData: $responseData');
       rutaId = responseData['id'];
     },
     onError: (response) {
       print('Error al crear la ruta: ${response.statusCode}');
+      print('Mensaje de error: ${response.body}');
     },
     onConnectionError: (errorMessage) {
       print('Error en la solicitud: $errorMessage');
@@ -297,6 +301,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
     });
 
     if (_routeId == null) {
+      print('No se pudo crear la ruta en la base de datos');
       setState(() {
         _isRecording = false;
       });
@@ -436,6 +441,16 @@ class RegistrarRutaState extends State<RegistrarRuta> {
             );
             _borrarRegistro();
             Navigator.of(context).pop();
+
+            if (mounted) {
+              Navigator.of(context).pop(); // Cierra el formulario
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>  ListadoRutasScreen()
+                ),
+              );
+            }
           },
           onCancel: () {
             Navigator.of(context).pop();
