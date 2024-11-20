@@ -1,10 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
+import 'dart:ui' as ui; // Para ui.Codec
 
+import 'package:flutter/foundation.dart'; // Para SynchronousFuture
 import 'package:flutter/material.dart';
+import 'package:flutter/painting.dart'; // Para DecoderCallback
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map/flutter_map.dart'; // Importación actualizada
 import 'package:geolocator/geolocator.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
@@ -52,7 +57,7 @@ Future<void> requestNotificationPermission() async {
   }
 }
 
-// Función para convertir una lista de coordenadas LatLng a un formato JSON
+/// Función para convertir una lista de coordenadas LatLng a un formato JSON
 Future<Map<String, dynamic>> getPostRouteData(
     String routeId, int seconds, double distanceTraveled) async {
   final routeData = await db.routes.getRouteById(routeId);
@@ -76,7 +81,8 @@ List<Map<String, dynamic>> getPointsData(List<Map<String, dynamic>> points) {
       'longitud': point['longitud'],
       'orden': point['orden'],
       'interes': {
-        if (point['interes_descripcion'] != null) 'descripcion': point['interes_descripcion'],
+        if (point['interes_descripcion'] != null)
+          'descripcion': point['interes_descripcion'],
         if (point['interes_imagen'] != null) 'imagen': point['interes_imagen'],
       },
       'interes_descripcion': point['interes_descripcion'],
@@ -85,7 +91,7 @@ List<Map<String, dynamic>> getPointsData(List<Map<String, dynamic>> points) {
   });
 }
 
-// Función para enviar una ruta al backend mediante una solicitud HTTP POST
+/// Función para enviar una ruta al backend mediante una solicitud HTTP POST
 Future<int?> postRuta(Map<String, dynamic> rutaData) async {
   int? rutaId;
 
@@ -108,9 +114,14 @@ Future<int?> postRuta(Map<String, dynamic> rutaData) async {
   return rutaId;
 }
 
-// Función para actualizar la ruta con datos adicionales usando PATCH
-Future<void> _updateRuta(int id, String nombre, String descripcion,
-    String dificultad, double distanciaKm, int tiempoEstimadoMinutos) async {
+/// Función para actualizar la ruta con datos adicionales usando PATCH
+Future<void> _updateRuta(
+    int id,
+    String nombre,
+    String descripcion,
+    String dificultad,
+    double distanciaKm,
+    int tiempoEstimadoMinutos) async {
   await makeRequest(
     method: PATCH,
     url: ROUTE_DETAIL,
@@ -134,7 +145,85 @@ Future<void> _updateRuta(int id, String nombre, String descripcion,
   );
 }
 
-// Página principal del mapa donde se graba la ruta usando flutter_map
+/// Clase para el TileProvider personalizado
+class CachedTileProvider extends TileProvider {
+  final CacheManager cacheManager;
+
+  CachedTileProvider({required this.cacheManager});
+
+  @override
+  ImageProvider getImage(TileCoordinates coordinates, TileLayer layer) {
+    final url = _getTileUrl(coordinates, layer);
+    return ImageFromCacheProvider(url, cacheManager: cacheManager);
+  }
+
+  String _getTileUrl(TileCoordinates coords, TileLayer layer) {
+    final String? urlTemplate = layer.urlTemplate;
+    if (urlTemplate == null) {
+      throw Exception('urlTemplate es nulo');
+    }
+    String url = urlTemplate;
+    final Map<String, String> params = {
+      's': layer.subdomains[coords.x % layer.subdomains.length],
+      'z': '${coords.z}',
+      'x': '${coords.x}',
+      'y': '${coords.y}',
+      'r': '@2x',
+    };
+    params.forEach((key, value) {
+      url = url.replaceAll('{$key}', value);
+    });
+    return url;
+  }
+}
+
+class ImageFromCacheProvider extends ImageProvider<ImageFromCacheProvider> {
+  final String url;
+  final CacheManager cacheManager;
+
+  ImageFromCacheProvider(this.url, {required this.cacheManager});
+
+  @override
+  Future<ImageFromCacheProvider> obtainKey(ImageConfiguration configuration) {
+    return SynchronousFuture<ImageFromCacheProvider>(this);
+  }
+
+  @override
+  ImageStreamCompleter loadImage(
+      ImageFromCacheProvider key, DecoderCallback decode) {
+    return MultiFrameImageStreamCompleter(
+      codec: _loadAsync(decode),
+      scale: 1.0,
+    );
+  }
+
+  Future<ui.Codec> _loadAsync(DecoderCallback decode) async {
+    try {
+      final fileInfo = await cacheManager.getFileFromCache(url);
+      Uint8List bytes;
+
+      if (fileInfo != null && fileInfo.file.existsSync()) {
+        // Si el archivo está en caché
+        bytes = await fileInfo.file.readAsBytes();
+      } else {
+        // Descarga y almacena el archivo en caché
+        final file = await cacheManager.downloadFile(url);
+        bytes = await file.file.readAsBytes();
+      }
+
+      if (bytes.isEmpty) {
+        throw Exception('No se pudieron cargar los datos de la imagen.');
+      }
+
+      // Utiliza decode directamente con bytes
+      return await decode(bytes);
+    } catch (e) {
+      throw Exception('Error al cargar la imagen: $e');
+    }
+  }
+}
+
+/// Página principal del mapa donde se graba la ruta usando flutter_map
 class RegistrarRuta extends StatefulWidget {
   final String? initialRouteId;
   const RegistrarRuta({super.key, this.initialRouteId});
@@ -144,6 +233,7 @@ class RegistrarRuta extends StatefulWidget {
 }
 
 class RegistrarRutaState extends State<RegistrarRuta> {
+  // Variables existentes...
   Marker? _currentPositionMarker;
   String? _routeId;
   int? _lastPointId;
@@ -167,10 +257,11 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   LatLng? _currentPosition;
   bool centerMap = false;
   StreamSubscription<Position>? _positionStreamSubscription;
-  MapController mapController = MapController();
+  MapController mapController = MapController(); // Implementado como en el original
 
-  // Variable para el plugin de notificaciones renombrada a notification
-  FlutterLocalNotificationsPlugin notification = FlutterLocalNotificationsPlugin();
+  // Variable para el plugin de notificaciones
+  FlutterLocalNotificationsPlugin notification =
+  FlutterLocalNotificationsPlugin();
 
   // Variables para controlar el estado de la notificación
   int notiId = 0;
@@ -179,10 +270,22 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   // Variable para controlar si se debe mostrar el mensaje de notificación denegada
   bool _mostrarMensajeNotificacionDenegada = false;
 
+  // Añadido para el CacheManager
+  late final CacheManager cacheManager;
+
+  // Añadido para el TileProvider
+  late final CachedTileProvider cachedTileProvider;
+
   @override
   void initState() {
     super.initState();
     _initNotifications();
+
+    // Inicializar el CacheManager
+    cacheManager = CacheManager(Config('mapTileCache'));
+
+    // Inicializar el TileProvider
+    cachedTileProvider = CachedTileProvider(cacheManager: cacheManager);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializePermissionsAndLocation();
@@ -194,7 +297,8 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       db.routes.getPuntosByRutaId(widget.initialRouteId!).then((pointsData) {
         final List<LatLng> routeCoords = pointsData.map((point) {
           final position = LatLng(point['latitud'], point['longitud']);
-          if (point['interes_descripcion'] != null || point['interes_imagen'] != null) {
+          if (point['interes_descripcion'] != null ||
+              point['interes_imagen'] != null) {
             _interestPoints.add(buildInterestMarker(
               position: position,
               text: point['interes_descripcion'],
@@ -251,8 +355,9 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   }
 
   /// Función que maneja el evento de movimiento del mapa
-  void _handleMapMovement(MapCamera camera, bool hasGesture) {
-    if (hasGesture) {
+  void _handleMapMovement(MapEvent mapEvent) {
+    if (mapEvent is MapEventMove &&
+        mapEvent.source == MapEventSource.onDrag) {
       centerMap = false;
     }
   }
@@ -331,7 +436,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       }
 
       if (centerMap) {
-        mapController.move(nuevaPosicion, 18.0);
+        mapController.move(_currentPosition!, 18.0);
       }
     });
   }
@@ -341,7 +446,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       _lastPointId = await db.routes.createPunto(_routeId!, {
         'latitud': latitude,
         'longitud': longitude,
-        'orden': _routeCoords.length + 1, // Ajustar el orden
+        'orden': _routeCoords.length + 1,
       });
 
       LatLng nuevaPosicion = LatLng(latitude, longitude);
@@ -364,7 +469,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       }
 
       if (centerMap) {
-        mapController.move(nuevaPosicion, 18.0);
+        mapController.move(_currentPosition!, 18.0);
       }
     }
   }
@@ -403,7 +508,8 @@ class RegistrarRutaState extends State<RegistrarRuta> {
     );
 
     try {
-      final routeData = await getPostRouteData(_routeId!, _seconds, _distanceTraveled);
+      final routeData =
+      await getPostRouteData(_routeId!, _seconds, _distanceTraveled);
       int? rutaId = await postRuta(routeData);
 
       if (rutaId != null) {
@@ -474,12 +580,16 @@ class RegistrarRutaState extends State<RegistrarRuta> {
               ElevatedButton(
                 onPressed: () async {
                   final ImagePicker picker = ImagePicker();
-                  final XFile? imageFile = await picker.pickImage(source: ImageSource.camera);
+                  final XFile? imageFile =
+                  await picker.pickImage(source: ImageSource.camera);
 
                   if (imageFile != null) {
-                    Uint8List originalImageBytes = await imageFile.readAsBytes();
-                    Uint8List resizedImageBytes = await _resizeImage(originalImageBytes, 800, 800);
+                    Uint8List originalImageBytes =
+                    await imageFile.readAsBytes();
+                    Uint8List resizedImageBytes =
+                    await _resizeImage(originalImageBytes, 800, 800);
                     imagen = resizedImageBytes;
+                    setState(() {}); // Actualizar la UI si es necesario
                   }
                 },
                 child: const Text('Seleccionar Imagen (Opcional)'),
@@ -489,7 +599,8 @@ class RegistrarRutaState extends State<RegistrarRuta> {
                 onPressed: () {
                   final data = {
                     'interes_descripcion': descripcionController.text,
-                    'interes_imagen': imagen != null ? base64Encode(imagen!) : null,
+                    'interes_imagen':
+                    imagen != null ? base64Encode(imagen!) : null,
                   };
                   db.routes.updatePunto(_lastPointId!, data);
                   Navigator.pop(context);
@@ -504,7 +615,8 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   }
 
   /// Función para redimensionar la imagen
-  Future<Uint8List> _resizeImage(Uint8List originalImage, int targetWidth, int targetHeight) async {
+  Future<Uint8List> _resizeImage(
+      Uint8List originalImage, int targetWidth, int targetHeight) async {
     // Decodificar la imagen a un formato que podamos manipular
     img.Image? decodedImage = img.decodeImage(originalImage);
     if (decodedImage == null) return originalImage;
@@ -522,7 +634,8 @@ class RegistrarRutaState extends State<RegistrarRuta> {
 
   // Métodos para notificaciones
   Future<void> _initNotifications() async {
-    const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('notification_icon');
+    const AndroidInitializationSettings initializationSettingsAndroid =
+    AndroidInitializationSettings('notification_icon');
 
     const InitializationSettings initializationSettings =
     InitializationSettings(android: initializationSettingsAndroid);
@@ -579,6 +692,71 @@ class RegistrarRutaState extends State<RegistrarRuta> {
     notiActiva = false;
   }
 
+  // Funciones para descargar los mosaicos del mapa
+  Future<void> _downloadMapArea(
+      LatLngBounds bounds, int minZoom, int maxZoom) async {
+    int totalTiles = 0;
+    int downloadedTiles = 0;
+
+    // Calcula el número total de mosaicos a descargar
+    for (var zoom = minZoom; zoom <= maxZoom; zoom++) {
+      final tileBounds = _getTileBounds(bounds, zoom);
+      totalTiles += (tileBounds['maxX']! - tileBounds['minX']! + 1) *
+          (tileBounds['maxY']! - tileBounds['minY']! + 1);
+    }
+
+    // Inicia la descarga y actualiza el progreso
+    for (var zoom = minZoom; zoom <= maxZoom; zoom++) {
+      final tileBounds = _getTileBounds(bounds, zoom);
+
+      for (var x = tileBounds['minX']!; x <= tileBounds['maxX']!; x++) {
+        for (var y = tileBounds['minY']!; y <= tileBounds['maxY']!; y++) {
+          final url = 'https://a.tile.openstreetmap.org/$zoom/$x/$y.png';
+          await cacheManager.downloadFile(url);
+          downloadedTiles++;
+
+          // Opcional: Actualizar progreso
+          double progress = downloadedTiles / totalTiles;
+          print('Progreso: ${(progress * 100).toStringAsFixed(2)}%');
+        }
+      }
+    }
+  }
+
+  Map<String, int> _getTileBounds(LatLngBounds bounds, int zoom) {
+    final minX = _long2tile(bounds.west, zoom);
+    final maxX = _long2tile(bounds.east, zoom);
+    final minY = _lat2tile(bounds.north, zoom);
+    final maxY = _lat2tile(bounds.south, zoom);
+
+    return {
+      'minX': minX,
+      'maxX': maxX,
+      'minY': minY,
+      'maxY': maxY,
+    };
+  }
+
+  int _long2tile(double lon, int zoom) {
+    return ((lon + 180) / 360 * (1 << zoom)).floor();
+  }
+
+  int _lat2tile(double lat, int zoom) {
+    final radLat = lat * pi / 180;
+    return ((1 - log(tan(radLat) + 1 / cos(radLat)) / pi) /
+        2 *
+        (1 << zoom))
+        .floor();
+  }
+
+  // Función para limpiar la caché de mapas
+  void _clearCache() async {
+    await cacheManager.emptyCache();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Caché de mapas limpiada')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_mostrarMensajeNotificacionDenegada) {
@@ -602,7 +780,30 @@ class RegistrarRutaState extends State<RegistrarRuta> {
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: CustomAppBar(title: 'Inicio de Ruta'),
+      appBar: AppBar(
+        title: Text('Inicio de Ruta'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.download),
+            onPressed: () async {
+              final bounds = LatLngBounds(
+                LatLng(40.7128, -74.0060), // Coordenada inferior izquierda
+                LatLng(40.7736, -73.9566), // Coordenada superior derecha
+              );
+              final minZoom = 12;
+              final maxZoom = 16;
+              await _downloadMapArea(bounds, minZoom, maxZoom);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Descarga completada')),
+              );
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.delete),
+            onPressed: _clearCache,
+          ),
+        ],
+      ),
       body: _currentPosition == null
           ? const Center(
         child: CircularProgressIndicator(color: Colors.green),
@@ -610,15 +811,31 @@ class RegistrarRutaState extends State<RegistrarRuta> {
           : Stack(
         children: [
           // Mapa
-          buildMap(
+          FlutterMap(
             mapController: mapController,
-            initialPosition: _currentPosition,
-            routePolylines: [_previousRoutePolyline, _routePolyline],
-            onPositionChanged: _handleMapMovement,
-            markers: [
-              ..._markers,
-              if (_currentPositionMarker != null) _currentPositionMarker!,
-              ..._interestPoints,
+            options: MapOptions(
+              center: _currentPosition!, // Reemplazado por 'center'
+              zoom: 13.0, // Reemplazado por 'zoom'
+              onMapEvent: _handleMapMovement,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate:
+                'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c'],
+                tileProvider: cachedTileProvider,
+              ),
+              PolylineLayer(
+                polylines: [_previousRoutePolyline, _routePolyline],
+              ),
+              MarkerLayer(
+                markers: [
+                  ..._markers,
+                  if (_currentPositionMarker != null)
+                    _currentPositionMarker!,
+                  ..._interestPoints,
+                ],
+              ),
             ],
           ),
 
@@ -670,11 +887,12 @@ class RegistrarRutaState extends State<RegistrarRuta> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Botón para iniciar/finalizar grabación (alineado a la izquierda)
+                // Botón para iniciar/finalizar grabación
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                    _isRecording ? Colors.red.shade600 : Colors.green.shade600,
+                    backgroundColor: _isRecording
+                        ? Colors.red.shade600
+                        : Colors.green.shade600,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -698,14 +916,15 @@ class RegistrarRutaState extends State<RegistrarRuta> {
                   },
                   label: Text(
                     _isRecording ? 'Finalizar' : 'Iniciar',
-                    style: const TextStyle(fontSize: 16, color: Colors.white),
+                    style:
+                    const TextStyle(fontSize: 16, color: Colors.white),
                   ),
                 ),
 
-                // Botones de íconos alineados a la derecha con fondo gris transparente
+                // Botones de íconos
                 Row(
                   children: [
-                    // Botón para agregar punto de interés (solo visible al grabar)
+                    // Botón para agregar punto de interés
                     if (_isRecording)
                       Container(
                         decoration: BoxDecoration(
@@ -725,7 +944,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
 
                     const SizedBox(width: 10),
 
-                    // Botón para enfocar la posición actual (siempre visible)
+                    // Botón para enfocar la posición actual
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.8),
@@ -760,7 +979,9 @@ class RegistrarRutaState extends State<RegistrarRuta> {
     int hours = seconds ~/ 3600;
     int minutes = (seconds % 3600) ~/ 60;
     int remainingSeconds = seconds % 60;
-    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+    return '${hours.toString().padLeft(2, '0')}:'
+        '${minutes.toString().padLeft(2, '0')}:'
+        '${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
   String _formatDistance(double distance) {
@@ -770,4 +991,3 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       return '${(distance / 1000).toStringAsFixed(2)} km';
     }
   }
-}
