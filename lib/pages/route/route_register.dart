@@ -65,7 +65,7 @@ Future<Map<String, dynamic>> getPostRouteData(
     'descripcion': routeData?['descripcion'],
     'dificultad': routeData?['dificultad'],
     'distancia_km': distanceTraveled / 1000,
-    'tiempo_estimado_minutos': (seconds < 60) ? 1 : (seconds ~/ 60),
+    'tiempo_estimado_minutos': seconds ~/ 60,
     'puntos': getPointsData(pointsData),
   };
 }
@@ -393,7 +393,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   }
 
   void _finalizarRegistro() async {
-    // Mostrar un indicador de carga antes de realizar las operaciones
+    print('Tiempo en segundos: $_seconds');
     showDialog(
       context: context,
       barrierDismissible: false,
