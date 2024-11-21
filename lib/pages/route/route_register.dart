@@ -168,7 +168,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   int _seconds = 0;
   double _distanceTraveled = 0.0;
   LatLng? _currentPosition;
-  bool centerMap = false;
+  bool centerMap = true;
   StreamSubscription<Position>? _positionStreamSubscription;
   MapController mapController = MapController();
 
@@ -256,7 +256,9 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   /// Función que maneja el evento de movimiento del mapa
   void _handleMapMovement(MapCamera camera, bool hasGesture) {
     if (hasGesture) {
-      centerMap = false;
+      setState(() {
+        centerMap = false;
+      });
     }
   }
 
@@ -459,48 +461,146 @@ class RegistrarRutaState extends State<RegistrarRuta> {
     final TextEditingController descripcionController = TextEditingController();
     Uint8List? imagen;
 
-    await showModalBottomSheet(
+    await showDialog(
       context: context,
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: descripcionController,
-                decoration: const InputDecoration(
-                  labelText: 'Descripción',
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Text(
+                'Agregar Punto de Interés',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Descripción:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 5),
+                    TextField(
+                      controller: descripcionController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: 'Ingrese una descripción',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    if (imagen != null)
+                      Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.memory(
+                              imagen!,
+                              height: 300,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Positioned(
+                            top: 10,
+                            right: 10,
+                            child: CircleIconButton(
+                              icon: Icons.delete,
+                              size: 40,
+                              iconSize: 20,
+                              color: Colors.white,
+                              iconColor: Colors.red,
+                              onPressed: () {
+                                setModalState(() {
+                                  imagen = null;
+                                });
+                              },
+                              opacity: 0.7,
+                            ),
+                          ),
+                        ],
+                      ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Agregar Imagen:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: imagen != null ? Colors.grey : null,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: imagen != null
+                              ? null
+                              : () async {
+                            final ImagePicker picker = ImagePicker();
+                            final XFile? imageFile = await picker.pickImage(source: ImageSource.camera);
+
+                            if (imageFile != null) {
+                              Uint8List originalImageBytes = await imageFile.readAsBytes();
+                              Uint8List resizedImageBytes = await _resizeImage(originalImageBytes, 800, 800);
+                              setModalState(() {
+                                imagen = resizedImageBytes;
+                              });
+                            }
+                          },
+                          icon: Icon(Icons.camera_alt),
+                          label: Text('Cámara'),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: imagen != null
+                              ? null
+                              : () async {
+                            final ImagePicker picker = ImagePicker();
+                            final XFile? imageFile = await picker.pickImage(source: ImageSource.gallery);
+
+                            if (imageFile != null) {
+                              Uint8List originalImageBytes = await imageFile.readAsBytes();
+                              Uint8List resizedImageBytes = await _resizeImage(originalImageBytes, 800, 800);
+                              setModalState(() {
+                                imagen = resizedImageBytes;
+                              });
+                            }
+                          },
+                          icon: Icon(Icons.photo_library),
+                          label: Text('Galería'),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () async {
-                  final ImagePicker picker = ImagePicker();
-                  final XFile? imageFile = await picker.pickImage(source: ImageSource.camera);
-
-                  if (imageFile != null) {
-                    Uint8List originalImageBytes = await imageFile.readAsBytes();
-                    Uint8List resizedImageBytes = await _resizeImage(originalImageBytes, 800, 800);
-                    imagen = resizedImageBytes;
-                  }
-                },
-                child: const Text('Seleccionar Imagen (Opcional)'),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  final data = {
-                    'interes_descripcion': descripcionController.text,
-                    'interes_imagen': imagen != null ? base64Encode(imagen!) : null,
-                  };
-                  db.routes.updatePunto(_lastPointId!, data);
-                  Navigator.pop(context);
-                },
-                child: const Text('Guardar Punto de Interés'),
-              ),
-            ],
-          ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (descripcionController.text.trim().isEmpty && imagen == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Debe ingresar una descripción o seleccionar una imagen')),
+                      );
+                      return;
+                    }
+                    final data = {
+                      'interes_descripcion': descripcionController.text.trim().isNotEmpty ? descripcionController.text.trim() : null,
+                      'interes_imagen': imagen != null ? base64Encode(imagen!) : null,
+                    };
+                    db.routes.updatePunto(_lastPointId!, data);
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('Guardar'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -735,13 +835,15 @@ class RegistrarRutaState extends State<RegistrarRuta> {
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.my_location,
-                          color: Colors.green,
+                          color: centerMap ? Colors.green.shade600: Colors.grey.shade400,
                           size: 28,
                         ),
                         onPressed: () {
-                          centerMap = true;
+                          setState(() {
+                            centerMap = true;
+                          });
                           if (_currentPosition != null) {
                             mapController.move(_currentPosition!, 18.0);
                           }

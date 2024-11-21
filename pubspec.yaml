@@ -41,6 +41,8 @@ dependencies:
   permission_handler: ^11.3.1
   flutter_local_notifications: ^18.0.1
   diacritic: ^0.1.6
+  share_plus: ^10.1.2
+  get: ^4.6.6
 
   http: ^1.2.2
   json_serializable: ^6.8.0

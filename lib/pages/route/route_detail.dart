@@ -5,9 +5,11 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:itrek/helpers/db.dart';
 import 'package:itrek/helpers/map.dart';
 import 'package:itrek/helpers/request.dart';
+import 'package:itrek/helpers/text.dart';
 import 'package:itrek/helpers/widgets.dart';
 import 'package:itrek/pages/route/route_register.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:share_plus/share_plus.dart';
 
 class DetalleRutaScreen extends StatefulWidget {
   final Map<String, dynamic> ruta;
@@ -72,32 +74,40 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
 
   Future<List<LatLng>> _fetchRoutePoints() async {
     final List<LatLng> points = [];
-    try {
-      await makeRequest(
-        method: GET,
-        url: ROUTE_DETAIL,
-        urlVars: {'id': widget.ruta['id']},
-        onOk: (response) async {
-          final jsonResponse = jsonDecode(response.body);
-          points.addAll(
-            jsonResponse['puntos'].map<LatLng>((punto) => LatLng(punto['latitud'], punto['longitud'])),
-          );
-
-          await db.routes.createBackendRoute(jsonResponse);
-        },
-        onError: (response) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error al cargar la ruta: ${response.body}')),
-          );
-        },
-        onConnectionError: (errorMessage) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error de conexión: $errorMessage')),
-          );
-        },
+    print('la ruta ${widget.ruta.containsKey('puntos') ? '' : 'no '}tiene puntos, y todo esto ${widget.ruta}');
+    if (widget.ruta.containsKey('puntos')) {
+      points.addAll(
+          widget.ruta['puntos'].map<LatLng>((punto) => LatLng(punto['latitud'], punto['longitud']))
       );
-    } catch (e) {
-      print('Error al obtener los puntos de la ruta: $e');
+      await db.routes.createBackendRoute(widget.ruta);
+    } else {
+      try {
+        await makeRequest(
+          method: GET,
+          url: ROUTE_DETAIL,
+          urlVars: {'id': widget.ruta['id']},
+          onOk: (response) async {
+            final jsonResponse = jsonDecode(response.body);
+            points.addAll(
+              jsonResponse['puntos'].map<LatLng>((punto) => LatLng(punto['latitud'], punto['longitud'])),
+            );
+
+            await db.routes.createBackendRoute(jsonResponse);
+          },
+          onError: (response) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error al cargar la ruta: ${response.body}')),
+            );
+          },
+          onConnectionError: (errorMessage) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error de conexión: $errorMessage')),
+            );
+          },
+        );
+      } catch (e) {
+        print('Error al obtener los puntos de la ruta: $e');
+      }
     }
     return points;
   }
@@ -158,7 +168,12 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     );
   }
 
-  void _showUsuariosBottomSheet() {
+  void _showUsuariosBottomSheet(routeId) {
+    final String textToShare = shareRoute(routeId);
+
+    // Llama al método para compartir
+    Share.share(textToShare);
+    return;
     showModalBottomSheet(
       context: context,
       builder: (context) {
@@ -460,12 +475,11 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                   );
                 },
               ),
-              if (esPropietario)
-                CircleIconButton(
-                  icon: Icons.share,
-                  color: Colors.purple,
-                  onPressed: _showUsuariosBottomSheet,
-                ),
+              CircleIconButton(
+                icon: Icons.share,
+                color: Colors.purple,
+                onPressed: () => _showUsuariosBottomSheet(widget.ruta['id'].toString()),
+              ),
               // Botón de guardar en el backend, se muestra si la ruta es local
               if (widget.ruta['local'] == 1)
                 CircleIconButton(
