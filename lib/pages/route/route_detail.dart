@@ -437,8 +437,8 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                       Row(
                         children: [
                           Icon(
-                            widget.ruta['publica'] == true ? Icons.public : Icons.lock,
-                            color: widget.ruta['publica'] == true ? Colors.green : Colors.red,
+                            widget.ruta['publica'] ? Icons.public : Icons.lock,
+                            color: widget.ruta['publica'] ? Colors.green : Colors.red,
                           ),
                           const SizedBox(width: 10),
                           Text(
