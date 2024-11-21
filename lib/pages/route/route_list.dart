@@ -482,8 +482,16 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
       appBar: CustomAppBar(title: 'Listado de Rutas'),
       body: Column(
         children: [
-          _buildFiltrosPrincipales(), // Filtros "Todas" y "Locales"
-          _buildFiltrosAdicionales(), // Filtros de Dificultad, Nombre y Estrellas
+          // Envolvemos los filtros en SingleChildScrollView para permitir el desplazamiento vertical
+          SingleChildScrollView(
+            child: Column(
+              children: [
+                _buildFiltrosPrincipales(), // Filtros "Todas" y "Locales"
+                _buildFiltrosAdicionales(), // Filtros de Dificultad, Nombre y Estrellas
+              ],
+            ),
+          ),
+          // Contenido principal que se expande
           Expanded(child: bodyContent),
         ],
       ),
