@@ -101,61 +101,64 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
 
   // Widget para los filtros "Todas" y "Locales"
   Widget _buildFiltrosPrincipales() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Filtro "Todas"
-        SizedBox(
-          height: 40, // Asegura que el SizedBox tenga un tamaño uniforme
-          child: TextButton(
-            onPressed: () {
-              setState(() {
-                mostrarRutasLocales = false;
-                _aplicarFiltro();
-                print('Seleccionado: Todas');
-              });
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: !mostrarRutasLocales ? Colors.blue : Colors.black,
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              minimumSize: const Size(80, 40),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              'Todas',
-              style: TextStyle(
-                fontWeight: !mostrarRutasLocales ? FontWeight.bold : FontWeight.normal,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Filtro "Todas"
+          SizedBox(
+            height: 40, // Asegura que el SizedBox tenga un tamaño uniforme
+            child: TextButton(
+              onPressed: () {
+                setState(() {
+                  mostrarRutasLocales = false;
+                  _aplicarFiltro();
+                  print('Seleccionado: Todas');
+                });
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: !mostrarRutasLocales ? Colors.blue : Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                minimumSize: const Size(80, 40),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Todas',
+                style: TextStyle(
+                  fontWeight: !mostrarRutasLocales ? FontWeight.bold : FontWeight.normal,
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 8),
-        // Filtro "Locales"
-        SizedBox(
-          height: 40, // Asegura que el SizedBox tenga un tamaño uniforme
-          child: TextButton(
-            onPressed: () {
-              setState(() {
-                mostrarRutasLocales = true;
-                _aplicarFiltro();
-                print('Seleccionado: Locales');
-              });
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: mostrarRutasLocales ? Colors.blue : Colors.black,
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              minimumSize: const Size(80, 40),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              'Locales',
-              style: TextStyle(
-                fontWeight: mostrarRutasLocales ? FontWeight.bold : FontWeight.normal,
+          const SizedBox(width: 8),
+          // Filtro "Locales"
+          SizedBox(
+            height: 40, // Asegura que el SizedBox tenga un tamaño uniforme
+            child: TextButton(
+              onPressed: () {
+                setState(() {
+                  mostrarRutasLocales = true;
+                  _aplicarFiltro();
+                  print('Seleccionado: Locales');
+                });
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: mostrarRutasLocales ? Colors.blue : Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                minimumSize: const Size(80, 40),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Locales',
+                style: TextStyle(
+                  fontWeight: mostrarRutasLocales ? FontWeight.bold : FontWeight.normal,
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -166,44 +169,45 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
       child: Column(
         children: [
           // Filtro de Dificultad con Icono de Lupa
-          Row(
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               const Text('Dificultad: '),
-              Expanded(
-                child: Row(
-                  children: _dificultades.map((dificultad) {
-                    bool isSelected = _filtroDificultad == dificultad;
-                    return SizedBox(
-                      height: 40, // Igual al tamaño de los filtros principales
-                      child: TextButton(
-                        onPressed: () {
-                          setState(() {
-                            if (isSelected) {
-                              _filtroDificultad = null; // Deseleccionar si ya está seleccionado
-                              print('Deseleccionando dificultad: $dificultad');
-                            } else {
-                              _filtroDificultad = dificultad; // Seleccionar nueva dificultad
-                              print('Seleccionando dificultad: $dificultad');
-                            }
-                            _aplicarFiltro();
-                          });
-                        },
-                        style: TextButton.styleFrom(
-                          foregroundColor: isSelected ? Colors.blue : Colors.black,
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          minimumSize: const Size(80, 40),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: Text(
-                          dificultad,
-                          style: TextStyle(
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          ),
+              // Filtro de Dificultad
+              Wrap(
+                spacing: 8.0,
+                children: _dificultades.map((dificultad) {
+                  bool isSelected = _filtroDificultad == dificultad;
+                  return SizedBox(
+                    height: 40, // Igual al tamaño de los filtros principales
+                    child: TextButton(
+                      onPressed: () {
+                        setState(() {
+                          if (isSelected) {
+                            _filtroDificultad = null; // Deseleccionar si ya está seleccionado
+                            print('Deseleccionando dificultad: $dificultad');
+                          } else {
+                            _filtroDificultad = dificultad; // Seleccionar nueva dificultad
+                            print('Seleccionando dificultad: $dificultad');
+                          }
+                          _aplicarFiltro();
+                        });
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: isSelected ? Colors.blue : Colors.black,
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        minimumSize: const Size(80, 40),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        dificultad,
+                        style: TextStyle(
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
-                    );
-                  }).toList(),
-                ),
+                    ),
+                  );
+                }).toList(),
               ),
               // Icono de Lupa del Filtro de Dificultad
               IconButton(
@@ -483,12 +487,15 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
       body: Column(
         children: [
           // Envolvemos los filtros en SingleChildScrollView para permitir el desplazamiento vertical
-          SingleChildScrollView(
-            child: Column(
-              children: [
-                _buildFiltrosPrincipales(), // Filtros "Todas" y "Locales"
-                _buildFiltrosAdicionales(), // Filtros de Dificultad, Nombre y Estrellas
-              ],
+          Expanded(
+            flex: 0,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildFiltrosPrincipales(), // Filtros "Todas" y "Locales"
+                  _buildFiltrosAdicionales(), // Filtros de Dificultad, Nombre y Estrellas
+                ],
+              ),
             ),
           ),
           // Contenido principal que se expande
