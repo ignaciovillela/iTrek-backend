@@ -865,17 +865,24 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   }
 
   String _formatTime(int seconds) {
-    int hours = seconds ~/ 3600;
-    int minutes = (seconds % 3600) ~/ 60;
-    int remainingSeconds = seconds % 60;
-    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+    if (seconds < 60) {
+      // Menos de 1 minuto: Mostrar solo segundos
+      return '${seconds}s';
+    } else if (seconds < 3600) {
+      // Menos de 1 hora: Mostrar minutos y segundos
+      int minutes = seconds ~/ 60;
+      int remainingSeconds = seconds % 60;
+      return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+    } else {
+      // Más de 1 hora: Mostrar horas, minutos y segundos
+      int hours = seconds ~/ 3600;
+      int minutes = (seconds % 3600) ~/ 60;
+      int remainingSeconds = seconds % 60;
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+    }
   }
 
-  String _formatDistance(double distance) {
-    if (distance < 1000) {
-      return '${distance.toStringAsFixed(2)} m';
-    } else {
-      return '${(distance / 1000).toStringAsFixed(2)} km';
-    }
+  String _formatDistance(double distanceInMeters) {
+    return '${(distanceInMeters / 1000).toStringAsFixed(1)} km';
   }
 }
