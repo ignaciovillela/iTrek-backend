@@ -130,6 +130,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     final Map<String, dynamic> updatedData = {
       'nombre': _nombreController.text.trim(),
       'descripcion': _descripcionController.text.trim(),
+      'publica': widget.ruta['publica'], // Incluye el atributo pública
     };
 
     await makeRequest(
@@ -435,18 +436,33 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                       ),
                       const SizedBox(height: 10),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Icon(
-                            widget.ruta['publica'] ? Icons.public : Icons.lock,
-                            color: widget.ruta['publica'] ? Colors.green : Colors.red,
+                          Row(
+                            children: [
+                              Icon(
+                                widget.ruta['publica'] ? Icons.public : Icons.lock,
+                                color: widget.ruta['publica'] ? Colors.green : Colors.red,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                widget.ruta['publica'] ? 'Pública' : 'Privada',
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 10),
-                          Text(
-                            widget.ruta['publica'] ? 'Pública' : 'Privada',
-                            style: const TextStyle(fontSize: 16),
-                          ),
+                          if (_isEditing) // Mostrar el interruptor solo en modo edición
+                            Switch(
+                              value: widget.ruta['publica'],
+                              onChanged: (value) {
+                                setState(() {
+                                  widget.ruta['publica'] = value;
+                                });
+                              },
+                            ),
                         ],
-                      )
+                      ),
+
                     ],
                   ),
                 ),
