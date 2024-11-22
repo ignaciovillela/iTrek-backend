@@ -55,8 +55,7 @@ Future<void> requestNotificationPermission() async {
 
 
 // Función para convertir una lista de coordenadas LatLng a un formato JSON
-Future<Map<String, dynamic>> getPostRouteData(
-    String routeId, int seconds, double distanceTraveled) async {
+Future<Map<String, dynamic>> getPostRouteData(String routeId, int seconds, double distanceTraveled) async {
   final routeData = await db.routes.getRouteById(routeId);
   final pointsData = await db.routes.getPuntosByRutaId(routeId);
 
@@ -113,8 +112,7 @@ Future<int?> postRuta(Map<String, dynamic> rutaData) async {
 }
 
 // Función para actualizar la ruta con datos adicionales usando PATCH
-Future<void> _updateRuta(int id, String nombre, String descripcion,
-    String dificultad, double distanciaKm, int tiempoEstimadoMinutos, bool publica) async {
+Future<void> _updateRuta(int id, String nombre, String descripcion, String dificultad, double distanciaKm, int tiempoEstimadoMinutos, bool publica) async {
   await makeRequest(
     method: PATCH,
     url: ROUTE_DETAIL,
@@ -173,6 +171,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   bool centerMap = true;
   StreamSubscription<Position>? _positionStreamSubscription;
   MapController mapController = MapController();
+  bool _mapReady = false;
 
   // Variable para el plugin de notificaciones renombrada a notification
   FlutterLocalNotificationsPlugin notification = FlutterLocalNotificationsPlugin();
@@ -188,11 +187,9 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   void initState() {
     super.initState();
     _initNotifications();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializePermissionsAndLocation();
     });
-
     _iniciarSeguimientoUbicacionSinRegistro();
 
     if (widget.initialRouteId != null) {
@@ -322,9 +319,9 @@ class RegistrarRutaState extends State<RegistrarRuta> {
 
   // Función para seguir la ubicación sin grabar la ruta
   void _iniciarSeguimientoUbicacionSinRegistro() {
-    _positionStreamSubscription = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(distanceFilter: 10))
-        .listen((Position position) {
+    Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(distanceFilter: 10),
+    ).listen((Position position) {
       LatLng nuevaPosicion = LatLng(position.latitude, position.longitude);
 
       if (mounted) {
@@ -332,10 +329,11 @@ class RegistrarRutaState extends State<RegistrarRuta> {
           _currentPosition = nuevaPosicion;
           _currentPositionMarker = buildLocationMarker(_currentPosition!);
         });
-      }
 
-      if (centerMap) {
-        mapController.move(nuevaPosicion, 18.0);
+        // Mueve el mapa solo si está listo
+        if (_mapReady && centerMap) {
+          mapController.move(nuevaPosicion, 18.0);
+        }
       }
     });
   }
@@ -449,7 +447,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) =>  ListadoRutasScreen()
+                    builder: (context) =>  ListadoRutasScreen()
                 ),
               );
             }
@@ -474,7 +472,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               title: Text(
-                'Agregar Punto de Interés',
+                'Agregar Punto clave',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               content: SingleChildScrollView(
@@ -556,6 +554,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
                           icon: Icon(Icons.camera_alt),
                           label: Text('Cámara'),
                         ),
+                        const SizedBox(width: 10),
                         ElevatedButton.icon(
                           onPressed: imagen != null
                               ? null
@@ -723,6 +722,11 @@ class RegistrarRutaState extends State<RegistrarRuta> {
             initialPosition: _currentPosition,
             routePolylines: [_previousRoutePolyline, _routePolyline],
             onPositionChanged: _handleMapMovement,
+            onMapReady: () {
+              setState(() {
+                _mapReady = true;
+              });
+            },
             markers: [
               ..._markers,
               if (_currentPositionMarker != null) _currentPositionMarker!,

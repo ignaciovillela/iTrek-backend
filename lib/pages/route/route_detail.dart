@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
@@ -33,6 +34,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   List<dynamic>? usuariosFiltrados;
   TextEditingController _searchController = TextEditingController();
   String? errorMessage;
+  double? _rating;
 
   @override
   void initState() {
@@ -40,6 +42,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     _nombreController = TextEditingController(text: widget.ruta['nombre']);
     _descripcionController = TextEditingController(text: widget.ruta['descripcion']);
     _mapController = MapController();
+    _rating = (widget.ruta['puntaje'] as num?)?.toDouble();
     _fetchLocalUsername();
     _loadRoutePoints();
   }
@@ -63,31 +66,27 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     List<LatLng> points = [];
     double distanciaKm = 0.0;
 
-    try {
-      if (widget.ruta['local'] == 1) {
-        // Obtener puntos de la ruta local
-        final pointsData = await db.routes.getPuntosByRutaId(widget.ruta['id'].toString());
-        if (pointsData.isNotEmpty) {
-          points = pointsData.map((point) => LatLng(point['latitud'], point['longitud'])).toList();
+    if (widget.ruta['local'] == 1) {
+      // Obtener puntos de la ruta local
+      final pointsData = await db.routes.getPuntosByRutaId(widget.ruta['id'].toString());
+      if (pointsData.isNotEmpty) {
+        points = pointsData.map((point) => LatLng(point['latitud'], point['longitud'])).toList();
 
-          // Calcular la distancia total entre los puntos
-          for (int i = 0; i < points.length - 1; i++) {
-            distanciaKm += Distance().as(LengthUnit.Kilometer, points[i], points[i + 1]);
-          }
-
-          // Mostrar el tiempo desde la base de datos local
-          final tiempoGrabadoMinutos = widget.ruta['tiempo_estimado_minutos'] ?? 0;
-
-          // Actualizar la información en el widget
-          widget.ruta['tiempo_estimado_minutos'] = tiempoGrabadoMinutos;
-          widget.ruta['distancia_km'] = distanciaKm.toStringAsFixed(2);
+        // Calcular la distancia total entre los puntos
+        for (int i = 0; i < points.length - 1; i++) {
+          distanciaKm += Distance().as(LengthUnit.Kilometer, points[i], points[i + 1]);
         }
-      } else {
-        // Cargar puntos desde un origen remoto
-        points = await _fetchRoutePoints();
+
+        // Mostrar el tiempo desde la base de datos local
+        final tiempoGrabadoMinutos = widget.ruta['tiempo_estimado_minutos'] ?? 0;
+
+        // Actualizar la información en el widget
+        widget.ruta['tiempo_estimado_minutos'] = tiempoGrabadoMinutos;
+        widget.ruta['distancia_km'] = distanciaKm.toStringAsFixed(2);
       }
-    } catch (error) {
-      print('Error al cargar los puntos de la ruta: $error');
+    } else {
+      // Cargar puntos desde un origen remoto
+      points = await _fetchRoutePoints();
     }
 
     // Actualizar el estado con los puntos cargados
@@ -95,7 +94,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       routePoints = points;
     });
 
-    // Actualizar puntos de interés (si corresponde)
+    // Actualizar puntos clave (si corresponde)
     _updateInterestPoints();
   }
 
@@ -103,23 +102,16 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   Future<List<LatLng>> _fetchRoutePoints() async {
     final List<LatLng> points = [];
     print('la ruta ${widget.ruta.containsKey('puntos') ? '' : 'no '}tiene puntos, y todo esto ${widget.ruta}');
-    if (widget.ruta.containsKey('puntos')) {
-      points.addAll(
-          widget.ruta['puntos'].map<LatLng>((punto) => LatLng(punto['latitud'], punto['longitud']))
-      );
-      await db.routes.createBackendRoute(widget.ruta);
-    } else {try {
+    if (!widget.ruta.containsKey('puntos')) {
       await makeRequest(
         method: GET,
         url: ROUTE_DETAIL,
         urlVars: {'id': widget.ruta['id']},
         onOk: (response) async {
           final jsonResponse = jsonDecode(response.body);
-          points.addAll(
-            jsonResponse['puntos'].map<LatLng>((punto) => LatLng(punto['latitud'], punto['longitud'])),
-          );
           widget.ruta['tiempo_estimado_horas'] = jsonResponse['tiempo_estimado_horas'] ?? 0.0;
           widget.ruta['tiempo_estimado_minutos'] = (widget.ruta['tiempo_estimado_horas'] * 60).round();
+          widget.ruta['puntos'] = jsonResponse['puntos'];
         },
         onError: (response) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -132,12 +124,13 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
           );
         },
       );
-    } catch (e) {
-      print('Error al obtener los puntos de la ruta: $e');
     }
-    }
+
+    points.addAll(widget.ruta['puntos'].map<LatLng>((punto) => LatLng(punto['latitud'], punto['longitud'])));
+    await db.routes.createBackendRoute(widget.ruta);
     return points;
   }
+
   String _formatHoras(dynamic tiempoEnMinutos) {
     if (tiempoEnMinutos == null) return '0 horas';
 
@@ -156,6 +149,53 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     }
   }
 
+  Future<void> _enviarValoracion(double rating) async {
+    if (rating <= 0.0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se puede enviar una calificación de 0')),
+      );
+      return;
+    }
+
+    await makeRequest(
+      method: POST,
+      url: ROUTE_RATING, // Asegúrate de que esta URL esté configurada correctamente
+      urlVars: {'id': widget.ruta['id']}, // Envía el ID de la ruta
+      body: {'puntaje': rating}, // El cuerpo envía el puntaje seleccionado
+      onOk: (response) {
+        // Intenta deserializar la respuesta
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+        // Extrae valores del backend
+        final nuevoPuntaje = (responseData['puntaje'] as num?)?.toDouble() ?? 0.0; // Puntaje promedio
+        final miPuntaje = (responseData['mi_puntaje'] as num?)?.toDouble() ?? 0.0; // Mi puntaje enviado
+        final mensaje = responseData['message'] as String? ?? '¡Gracias por tu valoración!';
+
+        // Actualiza los valores necesarios
+        setState(() {
+          widget.ruta['puntaje'] = nuevoPuntaje; // Actualiza el puntaje promedio
+          _rating = miPuntaje; // Actualiza mi calificación
+        });
+
+        // Muestra el mensaje del backend
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(mensaje)),
+        );
+      },
+      onError: (response) {
+        print('Error del backend: ${response.statusCode} - ${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al enviar valoración: ${response.body}')),
+        );
+      },
+      onConnectionError: (errorMessage) {
+        print('Error de conexión: $errorMessage');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error de conexión: $errorMessage')),
+        );
+      },
+    );
+  }
 
   Future<void> _updateInterestPoints() async {
     try {
@@ -176,7 +216,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cargar puntos de interés: $e')),
+        SnackBar(content: Text('Error al cargar puntos clave: $e')),
       );
     }
   }
@@ -543,17 +583,16 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                           Row(
                             children: [
                               Icon(
-                                widget.ruta['publica'] ? Icons.public : Icons.lock,
-                                color: widget.ruta['publica'] ? Colors.green : Colors.red,
+                                widget.ruta['publica'] ? Icons.public : Icons.public_off,
+                                color: colorScheme.primary,
                               ),
                               const SizedBox(width: 10),
                               Text(
                                 widget.ruta['publica'] ? 'Pública' : 'Privada',
-                                style: const TextStyle(fontSize: 16),
                               ),
                             ],
                           ),
-                          if (_isEditing) // Mostrar el interruptor solo en modo edición
+                          if (_isEditing)
                             Switch(
                               value: widget.ruta['publica'],
                               onChanged: (value) {
@@ -564,6 +603,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                             ),
                         ],
                       ),
+                      const SizedBox(height: 10),
                       Row(
                         children: [
                           Icon(Icons.calendar_today, color: colorScheme.primary),
@@ -572,6 +612,47 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                           ),
                         ],
                       ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const SizedBox(height: 20), // Espacio vertical antes del título
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                'Calificar esta ruta:',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 15),
+                          RatingBar.builder(
+                            initialRating: _rating ?? 0,
+                            minRating: 1,
+                            direction: Axis.horizontal,
+                            allowHalfRating: false,
+                            itemCount: 5,
+                            itemSize: 30.0,
+                            itemBuilder: (context, _) => const Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                            ),
+                            onRatingUpdate: (rating) {
+                              setState(() {
+                                _rating = _rating == rating ? null : rating;
+                              });
+                              if (_rating != null) {
+                                _enviarValoracion(_rating!);
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Se canceló la calificación')),
+                                );
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      )
                     ],
                   ),
                 ),
@@ -584,7 +665,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
             children: [
               CircleIconButton(
                 icon: _isEditing ? Icons.save : Icons.edit,
-                color: _isEditing ? Colors.green : colorScheme.primary,
+                color: colorScheme.primary,
                 onPressed: _isEditing ? updateRuta : () => setState(() => _isEditing = true),
               ),
               CircleIconButton(
