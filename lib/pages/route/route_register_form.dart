@@ -51,7 +51,7 @@ class _RutaFormPageState extends State<RutaFormPage> {
                     _buildInfoItem(
                       icon: Icons.directions_walk,
                       label: 'Distancia',
-                      value: '${widget.distanceTraveled.toStringAsFixed(2)} km',
+                      value: _formatDistance(widget.distanceTraveled),
                     ),
                     _buildInfoItem(
                       icon: Icons.timer,
@@ -208,9 +208,27 @@ class _RutaFormPageState extends State<RutaFormPage> {
   }
 
   String _formatTime(int seconds) {
-    int hours = seconds ~/ 3600;
-    int minutes = (seconds % 3600) ~/ 60;
-    int remainingSeconds = seconds % 60;
-    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+    if (seconds < 60) {
+      // Menos de 1 minuto: Mostrar solo segundos
+      return '${seconds}s';
+    } else if (seconds < 3600) {
+      // Menos de 1 hora: Mostrar minutos y segundos
+      int minutes = seconds ~/ 60;
+      int remainingSeconds = seconds % 60;
+      return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+    } else {
+      // Más de 1 hora: Mostrar horas, minutos y segundos
+      int hours = seconds ~/ 3600;
+      int minutes = (seconds % 3600) ~/ 60;
+      int remainingSeconds = seconds % 60;
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+    }
   }
+
+  String _formatDistance(double distanceInMeters) {
+    return '${(distanceInMeters / 1000).toStringAsFixed(1)} km';
+  }
+
+
 }
+
