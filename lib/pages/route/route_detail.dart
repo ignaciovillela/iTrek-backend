@@ -59,26 +59,45 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   }
 
   Future<void> _loadRoutePoints() async {
-    late List<LatLng> points;
+    List<LatLng> points = [];
     double distanciaKm = 0.0;
-    if (widget.ruta['local'] == 1) {
-      final pointsData = await db.routes.getPuntosByRutaId(widget.ruta['id'].toString());
-      points = pointsData.map((point) => LatLng(point['latitud'], point['longitud'])).toList();
-      for (int i = 0; i < points.length - 1; i++) {
-        distanciaKm += Distance().as(LengthUnit.Kilometer, points[i], points[i + 1]);
+
+    try {
+      if (widget.ruta['local'] == 1) {
+        // Obtener puntos de la ruta local
+        final pointsData = await db.routes.getPuntosByRutaId(widget.ruta['id'].toString());
+        if (pointsData.isNotEmpty) {
+          points = pointsData.map((point) => LatLng(point['latitud'], point['longitud'])).toList();
+
+          // Calcular la distancia total entre los puntos
+          for (int i = 0; i < points.length - 1; i++) {
+            distanciaKm += Distance().as(LengthUnit.Kilometer, points[i], points[i + 1]);
+          }
+
+          // Mostrar el tiempo desde la base de datos local
+          final tiempoGrabadoMinutos = widget.ruta['tiempo_estimado_minutos'] ?? 0;
+
+          // Actualizar la información en el widget
+          widget.ruta['tiempo_estimado_minutos'] = tiempoGrabadoMinutos;
+          widget.ruta['distancia_km'] = distanciaKm.toStringAsFixed(2);
+        }
+      } else {
+        // Cargar puntos desde un origen remoto
+        points = await _fetchRoutePoints();
       }
-      const velocidadPromedioKmH = 5.0;
-      final tiempoEstimado = (distanciaKm / velocidadPromedioKmH * 60).round();
-      widget.ruta['tiempo_estimado_minutos'] = tiempoEstimado;
-      widget.ruta['distancia_km'] = distanciaKm.toStringAsFixed(2); // Actualizar distancia
-    } else {
-      points = await _fetchRoutePoints();
+    } catch (error) {
+      print('Error al cargar los puntos de la ruta: $error');
     }
+
+    // Actualizar el estado con los puntos cargados
     setState(() {
       routePoints = points;
     });
+
+    // Actualizar puntos de interés (si corresponde)
     _updateInterestPoints();
   }
+
 
   Future<List<LatLng>> _fetchRoutePoints() async {
     final List<LatLng> points = [];
@@ -120,12 +139,22 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   }
   String _formatHoras(dynamic tiempoEnMinutos) {
     if (tiempoEnMinutos == null) return '0 horas';
+
     final horas = tiempoEnMinutos ~/ 60;
     final minutos = tiempoEnMinutos % 60;
-    return minutos == 0
-        ? '$horas horas'
-        : '$horas horas y $minutos minutos';
+
+    String horasTexto = horas == 1 ? '1 hora' : '$horas horas';
+    String minutosTexto = minutos == 1 ? '1 minuto' : '$minutos minutos';
+
+    if (horas == 0) {
+      return minutosTexto; // Solo minutos si no hay horas
+    } else if (minutos == 0) {
+      return horasTexto; // Solo horas si no hay minutos
+    } else {
+      return '$horasTexto y $minutosTexto'; // Horas y minutos
+    }
   }
+
 
   Future<void> _updateInterestPoints() async {
     try {
