@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:intl/intl.dart';
 import 'package:itrek/helpers/db.dart';
 import 'package:itrek/helpers/map.dart';
 import 'package:itrek/helpers/request.dart';
@@ -521,7 +522,15 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                             ),
                         ],
                       ),
-
+                      Row(
+                        children: [
+                          Icon(Icons.calendar_today, color: colorScheme.primary),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Fecha de creacion: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(widget.ruta['creado_en']))}',
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
