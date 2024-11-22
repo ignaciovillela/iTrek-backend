@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
@@ -33,6 +35,8 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   List<dynamic>? usuariosFiltrados;
   TextEditingController _searchController = TextEditingController();
   String? errorMessage;
+  double _rating = 0.0;
+
 
   @override
   void initState() {
@@ -502,7 +506,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                             children: [
                               Icon(
                                 widget.ruta['publica'] ? Icons.public : Icons.lock,
-                                color: widget.ruta['publica'] ? Colors.green : Colors.red,
+                                color: Colors.green,
                               ),
                               const SizedBox(width: 10),
                               Text(
@@ -531,6 +535,41 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                           ),
                         ],
                       ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const SizedBox(height: 20), // Espacio vertical antes del título
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                'Calificar esta ruta:',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 15),
+                          RatingBar.builder(
+                            initialRating: _rating,
+                            minRating: 1,
+                            direction: Axis.horizontal,
+                            allowHalfRating: false,
+                            itemCount: 5,
+                            itemSize: 30.0,
+                            itemBuilder: (context, _) => const Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                            ),
+                            onRatingUpdate: (rating) {
+                              setState(() {
+                                _rating = _rating == rating ? 0.0 : rating;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      )
+
                     ],
                   ),
                 ),
