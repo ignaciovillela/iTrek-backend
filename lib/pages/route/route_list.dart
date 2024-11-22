@@ -91,7 +91,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
     }
 
     if (_filtroEstrellas != null) {
-      rutas = rutas?.where((ruta) => ruta['estrellas'] >= _filtroEstrellas!).toList();
+      rutas = rutas?.where((ruta) => ruta['estrellas'] == _filtroEstrellas!).toList();
     }
 
     setState(() {
