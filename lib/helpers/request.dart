@@ -22,6 +22,7 @@ const ROUTES =          'api/routes/';
 const ROUTE_DETAIL =    'api/routes/{id}/';
 const ROUTE_SHARE =     'api/routes/{id}/share/{usuarioId}/';
 const ROUTE_RATING =    'api/routes/{id}/rate/';
+const ROUTE_COMMENT =   'api/routes/{id}/comment/';
 
 const SEARCH_USER =     'api/users/search?q={query}';
 const PASSWORD_CHANGE = 'api/users/change-password/';

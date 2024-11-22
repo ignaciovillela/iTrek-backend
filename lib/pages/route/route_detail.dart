@@ -32,9 +32,11 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   String? localUsername;
   bool esPropietario = false;
   List<dynamic>? usuariosFiltrados;
-  TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   String? errorMessage;
   double? _rating;
+  final TextEditingController _commentController = TextEditingController();
+  List<Map<String, dynamic>> _comments = [];
 
   @override
   void initState() {
@@ -45,6 +47,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     _rating = (widget.ruta['puntaje'] as num?)?.toDouble();
     _fetchLocalUsername();
     _loadRoutePoints();
+    _comments = List<Map<String, dynamic>>.from(widget.ruta['comentarios'] ?? []);
   }
 
   @override
@@ -53,6 +56,50 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     _descripcionController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submitComment() async {
+    final commentText = _commentController.text.trim();
+    if (commentText.isEmpty) return;
+
+    // Obtén el nombre del usuario actual (ajusta esto según tu implementación)
+    final username = await db.values.get(db.values.username);
+
+    // Prepara el nuevo comentario
+    final newComment = {
+      'usuario': username,
+      'contenido': commentText,
+    };
+
+    await makeRequest(
+      method: POST,
+      url: ROUTE_COMMENT,
+      urlVars: {'id': widget.ruta['id']},
+      body: {'comment': commentText},
+      onOk: (response) {
+        // Limpia el campo de texto y actualiza los comentarios
+        _commentController.clear();
+
+        final data = jsonDecode(response.body);
+        setState(() {
+          widget.ruta['comentarios'] = data['comentarios'];
+          _comments = List<Map<String, String>>.from(widget.ruta['comentarios']);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Comentario enviado exitosamente')),
+        );
+      },
+      onError: (response) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al enviar el comentario')),
+        );
+      },
+      onConnectionError: (errorMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error de conexión: $errorMessage')),
+        );
+      },
+    );
   }
 
   Future<void> _fetchLocalUsername() async {
@@ -112,6 +159,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
           widget.ruta['tiempo_estimado_horas'] = jsonResponse['tiempo_estimado_horas'] ?? 0.0;
           widget.ruta['tiempo_estimado_minutos'] = (widget.ruta['tiempo_estimado_horas'] * 60).round();
           widget.ruta['puntos'] = jsonResponse['puntos'];
+          widget.ruta['comentarios'] = jsonResponse['comentarios'];
         },
         onError: (response) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -528,131 +576,196 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                     ),
                   ],
                 ),
-
-                // Información de la ruta
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ProfileTextField(
-                        controller: _nombreController,
-                        label: 'Nombre de la Ruta',
-                        enabled: _isEditing,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ProfileTextField(
+                            controller: _nombreController,
+                            label: 'Nombre de la Ruta',
+                            enabled: _isEditing,
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _descripcionController,
+                            decoration: const InputDecoration(
+                              labelText: 'Descripción',
+                              border: OutlineInputBorder(),
+                            ),
+                            style: const TextStyle(fontSize: 16),
+                            enabled: _isEditing,
+                            maxLines: null,
+                            minLines: 3,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 4,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.timeline, color: colorScheme.primary),
+                                  const SizedBox(width: 10),
+                                  Text('Dificultad: ${widget.ruta['dificultad']}'),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Icon(Icons.directions_walk, color: colorScheme.primary),
+                                  const SizedBox(width: 10),
+                                  Text('Distancia: ${widget.ruta['distancia_km']} km'),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Icon(Icons.timer, color: colorScheme.primary),
+                                  const SizedBox(width: 10),
+                                  Text('Tiempo estimado: ${_formatHoras(widget.ruta['tiempo_estimado_minutos'])}'),
+                                ],
+                              ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        widget.ruta['publica'] ? Icons.public : Icons.public_off,
+                                        color: colorScheme.primary,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        widget.ruta['publica'] ? 'Pública' : 'Privada',
+                                      ),
+                                    ],
+                                  ),
+                                  if (_isEditing)
+                                    Switch(
+                                      value: widget.ruta['publica'],
+                                      onChanged: (value) {
+                                        setState(() {
+                                          widget.ruta['publica'] = value;
+                                        });
+                                      },
+                                    ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  Icon(Icons.calendar_today, color: colorScheme.primary),
+                                  const SizedBox(width: 10),
+                                  Text('Fecha de creación: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(widget.ruta['creado_en']))}',
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  Icon(Icons.person, color: colorScheme.primary),
+                                  const SizedBox(width: 10),
+                                  Text('Creador: ${widget.ruta['usuario']['username']}',
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Sección de calificación
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                const SizedBox(height: 20),
+                                const Text(
+                                  'Calificar esta ruta:',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 15),
+                                RatingBar.builder(
+                                  initialRating: _rating ?? 0,
+                                  minRating: 1,
+                                  direction: Axis.horizontal,
+                                  allowHalfRating: false,
+                                  itemCount: 5,
+                                  itemSize: 30.0,
+                                  itemBuilder: (context, _) => const Icon(
+                                    Icons.star,
+                                    color: Colors.amber,
+                                  ),
+                                  onRatingUpdate: (rating) {
+                                    setState(() {
+                                      _rating = _rating == rating ? null : rating;
+                                    });
+                                    if (_rating != null) {
+                                      _enviarValoracion(_rating!);
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Se canceló la calificación')),
+                                      );
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Línea divisoria
+                      const Divider(thickness: 2),
+                      // Sección de comentarios
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Comentarios:',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 10),
                       TextField(
-                        controller: _descripcionController,
+                        controller: _commentController,
                         decoration: const InputDecoration(
-                          labelText: 'Descripción',
+                          labelText: 'Escribe un comentario',
                           border: OutlineInputBorder(),
                         ),
-                        style: const TextStyle(fontSize: 16),
-                        enabled: _isEditing,
                         maxLines: null,
-                        minLines: 3,
                       ),
                       const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Icon(Icons.timeline, color: colorScheme.primary),
-                          const SizedBox(width: 10),
-                          Text('Dificultad: ${widget.ruta['dificultad']}'),
-                        ],
+                      ElevatedButton(
+                        onPressed: _submitComment,
+                        child: const Text('Enviar Comentario'),
                       ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Icon(Icons.directions_walk, color: colorScheme.primary),
-                          const SizedBox(width: 10),
-                          Text('Distancia: ${widget.ruta['distancia_km']} km'),
-                        ],
+                      const SizedBox(height: 20),
+                      _comments.isEmpty
+                          ? const Text('No hay comentarios aún.')
+                          : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _comments.length,
+                        itemBuilder: (context, index) {
+                          final comment = _comments[index];
+                          return ListTile(
+                            leading: const Icon(Icons.comment),
+                            title: Text(comment['usuario']['username']),
+                            subtitle: Text(comment['descripcion']),
+                          );
+                        },
                       ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Icon(Icons.timer, color: colorScheme.primary),
-                          const SizedBox(width: 10),
-                          Text('Tiempo estimado: ${_formatHoras(widget.ruta['tiempo_estimado_minutos'])}'),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                widget.ruta['publica'] ? Icons.public : Icons.public_off,
-                                color: colorScheme.primary,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                widget.ruta['publica'] ? 'Pública' : 'Privada',
-                              ),
-                            ],
-                          ),
-                          if (_isEditing)
-                            Switch(
-                              value: widget.ruta['publica'],
-                              onChanged: (value) {
-                                setState(() {
-                                  widget.ruta['publica'] = value;
-                                });
-                              },
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Icon(Icons.calendar_today, color: colorScheme.primary),
-                          const SizedBox(width: 10),
-                          Text('Fecha de creación: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(widget.ruta['creado_en']))}',
-                          ),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 20), // Espacio vertical antes del título
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text(
-                                'Calificar esta ruta:',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 15),
-                          RatingBar.builder(
-                            initialRating: _rating ?? 0,
-                            minRating: 1,
-                            direction: Axis.horizontal,
-                            allowHalfRating: false,
-                            itemCount: 5,
-                            itemSize: 30.0,
-                            itemBuilder: (context, _) => const Icon(
-                              Icons.star,
-                              color: Colors.amber,
-                            ),
-                            onRatingUpdate: (rating) {
-                              setState(() {
-                                _rating = _rating == rating ? null : rating;
-                              });
-                              if (_rating != null) {
-                                _enviarValoracion(_rating!);
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Se canceló la calificación')),
-                                );
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 20),
-                        ],
-                      )
                     ],
                   ),
                 ),

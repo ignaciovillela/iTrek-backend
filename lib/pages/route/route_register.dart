@@ -709,7 +709,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: CustomAppBar(title: 'Inicio de Ruta'),
+      appBar: CustomAppBar(title: 'Registrar Ruta'),
       body: _currentPosition == null
           ? const Center(
         child: CircularProgressIndicator(color: Colors.green),

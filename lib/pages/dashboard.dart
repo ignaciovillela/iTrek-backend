@@ -211,7 +211,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         mainAxisSpacing: 15.0,
                         children: [
                           DashboardCircleButton(
-                            label: 'Iniciar Ruta',
+                            label: 'Registrar Ruta',
                             icon: Icons.directions_walk,
                             iconColor: Colors.green,
                             onPressed: () async {
