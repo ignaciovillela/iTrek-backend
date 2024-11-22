@@ -89,9 +89,9 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
     }
     if (_filtroEstrellas != null) {
       rutas = rutas?.where((ruta) {
-        if (ruta['estrellas'] != null) {
-          double estrellasRuta = (ruta['estrellas'] as num).toDouble();
-          return estrellasRuta == _filtroEstrellas;
+        if (ruta['puntaje'] != null) {
+          final estrellasRuta = ruta['puntaje'];
+          return _filtroEstrellas! <= estrellasRuta && estrellasRuta < _filtroEstrellas!+1;
         }
         return false;
       }).toList();
@@ -431,6 +431,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
           final ruta = rutasFiltradas![index];
           final bool esLocal = ruta['local'] == 1;
           final double puntaje = (ruta['puntaje'] as num?)?.toDouble() ?? 0.0;
+          final String puntajeDisplay = puntaje > 0 ? puntaje.toString() : '---';
 
           return Card(
             margin: const EdgeInsets.all(8.0),
@@ -460,7 +461,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        puntaje.toStringAsFixed(1),
+                        puntajeDisplay,
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.grey,
@@ -469,7 +470,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                       const SizedBox(width: 2),
                       const Icon(
                         Icons.star,
-                        size: 14,
+                        size: 17,
                         color: Colors.amber,
                       ),
                     ],
