@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -37,7 +36,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   String? errorMessage;
   double _rating = 0.0;
 
-
   @override
   void initState() {
     super.initState();
@@ -48,7 +46,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     _fetchLocalUsername();
     _loadRoutePoints();
   }
-
 
   @override
   void dispose() {
