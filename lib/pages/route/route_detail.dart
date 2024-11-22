@@ -56,7 +56,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     _nombreController.dispose();
     _descripcionController.dispose();
     _searchController.dispose();
-    _commentController.dispose(); // Agregado para evitar fugas de memoria
+    _commentController.dispose();
     super.dispose();
   }
 
@@ -64,7 +64,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     final commentText = _commentController.text.trim();
     if (commentText.isEmpty) return;
 
-    // Obtén el nombre del usuario actual (ajusta esto según tu implementación)
     final username = await db.values.get(db.values.username);
 
     // Prepara el nuevo comentario
@@ -433,7 +432,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       // Enviar la ruta al backend
       makeRequest(
         method: POST,
-        url: ROUTES, // Asegúrate de que esta URL esté correctamente configurada
+        url: ROUTES,
         body: rutaData,
         onOk: (response) {
           db.routes.deleteRoute(routeId);
@@ -518,7 +517,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
           const SnackBar(content: Text('Ruta eliminada con éxito')),
         );
         // Navegar de regreso a la pantalla anterior después de eliminar
-        Navigator.of(context).pop(true); // Puedes pasar un valor para indicar que se eliminó
+        Navigator.of(context).pop(true);
       },
       onError: (response) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -544,14 +543,14 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Cerrar el diálogo
+                Navigator.of(context).pop();
               },
               child: const Text('Cancelar'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Cerrar el diálogo
-                _deleteRuta(id); // Llamar a la función de eliminación
+                Navigator.of(context).pop();
+                _deleteRuta(id);
               },
               child: const Text(
                 'Eliminar',
@@ -644,7 +643,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                           ProfileTextField(
                             controller: _nombreController,
                             label: 'Nombre de la Ruta',
-                            enabled: _isEditing && esPropietario, // Ajustado para verificar propiedad
+                            enabled: _isEditing,
                           ),
                           const SizedBox(height: 10),
                           TextField(
@@ -654,7 +653,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                               border: OutlineInputBorder(),
                             ),
                             style: const TextStyle(fontSize: 16),
-                            enabled: _isEditing && esPropietario, // Ajustado para verificar propiedad
+                            enabled: _isEditing,
                             maxLines: null,
                             minLines: 3,
                           ),
