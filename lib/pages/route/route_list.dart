@@ -312,6 +312,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
       ),
     );
   }
+
   // Función para eliminar una ruta a través de la API.
   Future<void> _deleteRuta(int id) async {
     await makeRequest(
