@@ -4,6 +4,7 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
+import 'package:itrek/helpers/config.dart';
 import 'package:itrek/helpers/db.dart';
 import 'package:itrek/helpers/map.dart';
 import 'package:itrek/helpers/request.dart';
@@ -77,13 +78,13 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       urlVars: {'id': widget.ruta['id']},
       body: {'comment': commentText},
       onOk: (response) {
-        // Limpia el campo de texto y actualiza los comentarios
         _commentController.clear();
 
         final data = jsonDecode(response.body);
         setState(() {
           widget.ruta['comentarios'] = data['comentarios'];
-          _comments = List<Map<String, String>>.from(widget.ruta['comentarios']);
+          _comments = List<Map<String, dynamic>>.from(widget.ruta['comentarios']);
+          print('los comentarios $_comments');
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Comentario enviado exitosamente')),
@@ -149,7 +150,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   Future<List<LatLng>> _fetchRoutePoints() async {
     final List<LatLng> points = [];
     print('la ruta ${widget.ruta.containsKey('puntos') ? '' : 'no '}tiene puntos, y todo esto ${widget.ruta}');
-    if (!widget.ruta.containsKey('puntos')) {
+    if (!widget.ruta.containsKey('puntos') || !widget.ruta.containsKey('comentarios')) {
       await makeRequest(
         method: GET,
         url: ROUTE_DETAIL,
@@ -160,6 +161,9 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
           widget.ruta['tiempo_estimado_minutos'] = (widget.ruta['tiempo_estimado_horas'] * 60).round();
           widget.ruta['puntos'] = jsonResponse['puntos'];
           widget.ruta['comentarios'] = jsonResponse['comentarios'];
+          setState(() {
+            _comments = List<Map<String, dynamic>>.from(widget.ruta['comentarios']);
+          });
         },
         onError: (response) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -207,25 +211,21 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
 
     await makeRequest(
       method: POST,
-      url: ROUTE_RATING, // Asegúrate de que esta URL esté configurada correctamente
-      urlVars: {'id': widget.ruta['id']}, // Envía el ID de la ruta
-      body: {'puntaje': rating}, // El cuerpo envía el puntaje seleccionado
+      url: ROUTE_RATING,
+      urlVars: {'id': widget.ruta['id']},
+      body: {'puntaje': rating},
       onOk: (response) {
-        // Intenta deserializar la respuesta
         final Map<String, dynamic> responseData = jsonDecode(response.body);
 
-        // Extrae valores del backend
-        final nuevoPuntaje = (responseData['puntaje'] as num?)?.toDouble() ?? 0.0; // Puntaje promedio
-        final miPuntaje = (responseData['mi_puntaje'] as num?)?.toDouble() ?? 0.0; // Mi puntaje enviado
+        final nuevoPuntaje = (responseData['puntaje'] as num?)?.toDouble() ?? 0.0;
+        final miPuntaje = (responseData['mi_puntaje'] as num?)?.toDouble() ?? 0.0;
         final mensaje = responseData['message'] as String? ?? '¡Gracias por tu valoración!';
 
-        // Actualiza los valores necesarios
         setState(() {
-          widget.ruta['puntaje'] = nuevoPuntaje; // Actualiza el puntaje promedio
-          _rating = miPuntaje; // Actualiza mi calificación
+          widget.ruta['puntaje'] = nuevoPuntaje;
+          _rating = miPuntaje;
         });
 
-        // Muestra el mensaje del backend
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(mensaje)),
         );
@@ -273,7 +273,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     final Map<String, dynamic> updatedData = {
       'nombre': _nombreController.text.trim(),
       'descripcion': _descripcionController.text.trim(),
-      'publica': widget.ruta['publica'], // Incluye el atributo pública
+      'publica': widget.ruta['publica'],
     };
 
     await makeRequest(
@@ -760,8 +760,28 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                         itemBuilder: (context, index) {
                           final comment = _comments[index];
                           return ListTile(
-                            leading: const Icon(Icons.comment),
-                            title: Text(comment['usuario']['username']),
+                            leading: CircleAvatar(
+                              backgroundImage: NetworkImage('$BASE_URL/${comment['usuario']['imagen_perfil']}'),
+                              radius: 20,
+                              backgroundColor: Colors.grey.shade200,
+                            ),
+                            title: Row(
+                              children: [
+                                Text(
+                                  comment['usuario']['username'],
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  comment['usuario']['nombre_nivel'],
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.blue,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            ),
                             subtitle: Text(comment['descripcion']),
                           );
                         },
