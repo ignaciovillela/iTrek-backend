@@ -13,14 +13,15 @@ const PUT = 'PUT';
 const LOGIN =           'api/auth/login/';
 const LOGIN_CHECK =     'api/auth/check-login/';
 const LOGOUT =          'api/auth/logout/';
-const ROUTES =          'api/routes/';
 
 const USER_CREATE =     'api/users/create/';
 const USER_UPDATE =     'api/users/update-profile/';
 const USER_DELETE =     'api/users/delete-account/';
 
+const ROUTES =          'api/routes/';
 const ROUTE_DETAIL =    'api/routes/{id}/';
 const ROUTE_SHARE =     'api/routes/{id}/share/{usuarioId}/';
+const ROUTE_RATING =    'api/routes/{id}/rate/';
 
 const SEARCH_USER =     'api/users/search?q={query}';
 const PASSWORD_CHANGE = 'api/users/change-password/';

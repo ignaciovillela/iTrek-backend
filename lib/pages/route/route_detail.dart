@@ -44,9 +44,11 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     _nombreController = TextEditingController(text: widget.ruta['nombre']);
     _descripcionController = TextEditingController(text: widget.ruta['descripcion']);
     _mapController = MapController();
+    _rating = (widget.ruta['puntaje'] as num?)?.toDouble() ?? 0.0; // Asigna un puntaje inicial válido
     _fetchLocalUsername();
     _loadRoutePoints();
   }
+
 
   @override
   void dispose() {
@@ -160,6 +162,48 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     }
   }
 
+  Future<void> _enviarValoracion(double rating) async {
+    if (rating <= 0.0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se puede enviar una calificación de 0')),
+      );
+      return;
+    }
+
+    try {
+      await makeRequest(
+        method: POST,
+        url: ROUTE_RATING, // Asegúrate de que esta URL esté configurada correctamente
+        urlVars: {'id': widget.ruta['id']}, // Envía el ID de la ruta
+        body: {'puntaje': rating}, // El cuerpo ahora utiliza "puntaje"
+        onOk: (response) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('¡Gracias por tu valoración!')),
+          );
+          setState(() {
+            widget.ruta['puntaje'] = rating; // Actualiza el puntaje localmente
+          });
+        },
+        onError: (response) {
+          print('Error del backend: ${response.statusCode} - ${response.body}');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error al enviar valoración: ${response.body}')),
+          );
+        },
+        onConnectionError: (errorMessage) {
+          print('Error de conexión: $errorMessage');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error de conexión: $errorMessage')),
+          );
+        },
+      );
+    } catch (e) {
+      print('Error al enviar valoración: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al enviar valoración: $e')),
+      );
+    }
+  }
 
   Future<void> _updateInterestPoints() async {
     try {
@@ -603,14 +647,20 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                             ),
                             onRatingUpdate: (rating) {
                               setState(() {
-                                _rating = _rating == rating ? 0.0 : rating;
+                                _rating = _rating == rating ? 0.0 : rating; // Alterna entre 0 y la calificación
                               });
+                              if (_rating > 0.0) {
+                                _enviarValoracion(_rating); // Envía solo si hay una calificación válida
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Se canceló la calificación')),
+                                );
+                              }
                             },
                           ),
                           const SizedBox(height: 20),
                         ],
                       )
-
                     ],
                   ),
                 ),
