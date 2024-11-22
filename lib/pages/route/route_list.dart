@@ -1,47 +1,53 @@
-import 'dart:convert'; // Importa la biblioteca para trabajar con JSON.
-
-import 'package:flutter/material.dart'; // Importa el paquete de Flutter para crear interfaces de usuario.
-import 'package:itrek/helpers/request.dart'; // Importa funciones para realizar solicitudes HTTP.
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:itrek/helpers/request.dart';
 import 'package:itrek/helpers/widgets.dart';
 import 'package:itrek/pages/route/route_detail.dart';
-import 'package:latlong2/latlong.dart'; // Importa el paquete para trabajar con coordenadas geográficas.
-import 'package:itrek/helpers/db.dart'; // Importa RoutesHelper para gestionar la base de datos.
+import 'package:latlong2/latlong.dart';
+import 'package:itrek/helpers/db.dart';
+import 'package:diacritic/diacritic.dart';
 
-// Pantalla principal que muestra el listado de rutas guardadas.
 class ListadoRutasScreen extends StatefulWidget {
-  const ListadoRutasScreen({super.key}); // Constructor del widget.
+  const ListadoRutasScreen({super.key});
 
   @override
-  _ListadoRutasScreenState createState() => _ListadoRutasScreenState(); // Crea el estado para este widget.
+  _ListadoRutasScreenState createState() => _ListadoRutasScreenState();
 }
 
-// Estado de la pantalla que gestiona la lógica y el estado de las rutas guardadas.
 class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
-  List<dynamic>? rutasGuardadas; // Lista de rutas obtenidas desde la API.
-  List<dynamic>? rutasFiltradas; // Lista de rutas después de aplicar el filtro.
-  List<dynamic>? rutasLocales; // Lista de rutas locales obtenidas de SQLite.
+  List<dynamic>? rutasGuardadas;
+  List<dynamic>? rutasFiltradas;
+  List<dynamic>? rutasLocales;
   bool mostrarRutasLocales = false;
 
+  // Variables para los filtros
+  String? _filtroDificultad;
+  String _filtroNombre = '';
+  int? _filtroEstrellas;
+
+  // Controla la visibilidad del campo de texto del filtro de nombre
+  bool _mostrarFiltroNombre = false;
+
+  // Opciones de dificultad
+  final List<String> _dificultades = ['Fácil', 'Moderada', 'Difícil'];
 
   @override
   void initState() {
     super.initState();
-    _fetchRutas(); // Llama a la función para obtener las rutas al inicializar el estado.
+    _fetchRutas();
   }
 
   // Función para obtener las rutas desde la API.
   Future<void> _fetchRutas() async {
-    // Cargar rutas locales desde la base de datos.
     rutasLocales = await db.routes.getLocalRoutes();
 
-    // Cargar rutas desde la API.
     await makeRequest(
       method: GET,
-      url: ROUTES, // URL de la API para obtener rutas.
+      url: ROUTES,
       onOk: (response) {
         setState(() {
-          rutasGuardadas = jsonDecode(response.body); // Decodifica y guarda las rutas en el estado.
-          _aplicarFiltro(); // Aplica el filtro inicial.
+          rutasGuardadas = jsonDecode(response.body);
+          _aplicarFiltro();
         });
       },
       onError: (response) {
@@ -64,51 +70,245 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
 
   // Función para aplicar el filtro de rutas.
   void _aplicarFiltro() {
+    List<dynamic>? rutas = rutasGuardadas;
+
     if (mostrarRutasLocales) {
-      rutasFiltradas = rutasGuardadas?.where((ruta) => ruta['local'] == true).toList();
-    } else {
-      rutasFiltradas = rutasGuardadas;
+      rutas = rutas?.where((ruta) => ruta['local'] == true).toList();
     }
-    setState(() {});
+
+    if (_filtroDificultad != null && _filtroDificultad!.isNotEmpty) {
+      String filtroNormalizado = removeDiacritics(_filtroDificultad!.toLowerCase().trim());
+      print('Filtrando por dificultad (normalizado): $filtroNormalizado');
+      rutas = rutas?.where((ruta) {
+        String rutaDificultad = removeDiacritics(ruta['dificultad'].toString().toLowerCase().trim());
+        print('Ruta dificultad (normalizado): $rutaDificultad');
+        return rutaDificultad == filtroNormalizado;
+      }).toList();
+    }
+
+    if (_filtroNombre.isNotEmpty) {
+      rutas = rutas?.where((ruta) => ruta['nombre'].toString().toLowerCase().contains(_filtroNombre.toLowerCase())).toList();
+    }
+
+    if (_filtroEstrellas != null) {
+      rutas = rutas?.where((ruta) => ruta['estrellas'] == _filtroEstrellas!).toList();
+    }
+
+    setState(() {
+      rutasFiltradas = rutas;
+    });
   }
 
+  // Widget para los filtros "Todas" y "Locales"
+  Widget _buildFiltrosPrincipales() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Filtro "Todas"
+          SizedBox(
+            height: 40, // Asegura que el SizedBox tenga un tamaño uniforme
+            child: TextButton(
+              onPressed: () {
+                setState(() {
+                  mostrarRutasLocales = false;
+                  _aplicarFiltro();
+                  print('Seleccionado: Todas');
+                });
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: !mostrarRutasLocales ? Colors.blue : Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                minimumSize: const Size(80, 40),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Todas',
+                style: TextStyle(
+                  fontWeight: !mostrarRutasLocales ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Filtro "Locales"
+          SizedBox(
+            height: 40, // Asegura que el SizedBox tenga un tamaño uniforme
+            child: TextButton(
+              onPressed: () {
+                setState(() {
+                  mostrarRutasLocales = true;
+                  _aplicarFiltro();
+                  print('Seleccionado: Locales');
+                });
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: mostrarRutasLocales ? Colors.blue : Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                minimumSize: const Size(80, 40),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Locales',
+                style: TextStyle(
+                  fontWeight: mostrarRutasLocales ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-  // Widget para mostrar los botones de filtro.
-  Widget _buildFiltros() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        TextButton(
-          onPressed: () {
-            setState(() {
-              mostrarRutasLocales = false; // Mostrar todas las rutas.
-              _aplicarFiltro();
-            });
-          },
-          child: Text(
-            'Todas',
-            style: TextStyle(
-              color: !mostrarRutasLocales ? Colors.blue : Colors.black,
-              fontWeight: !mostrarRutasLocales ? FontWeight.bold : FontWeight.normal,
-            ),
+  // Widget para los filtros adicionales: Dificultad, Nombre, Estrellas
+  Widget _buildFiltrosAdicionales() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      child: Column(
+        children: [
+          // Filtro de Dificultad con Icono de Lupa
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              const Text('Dificultad: '),
+              // Filtro de Dificultad
+              Wrap(
+                spacing: 8.0,
+                children: _dificultades.map((dificultad) {
+                  bool isSelected = _filtroDificultad == dificultad;
+                  return SizedBox(
+                    height: 40, // Igual al tamaño de los filtros principales
+                    child: TextButton(
+                      onPressed: () {
+                        setState(() {
+                          if (isSelected) {
+                            _filtroDificultad = null; // Deseleccionar si ya está seleccionado
+                            print('Deseleccionando dificultad: $dificultad');
+                          } else {
+                            _filtroDificultad = dificultad; // Seleccionar nueva dificultad
+                            print('Seleccionando dificultad: $dificultad');
+                          }
+                          _aplicarFiltro();
+                        });
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: isSelected ? Colors.blue : Colors.black,
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        minimumSize: const Size(80, 40),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        dificultad,
+                        style: TextStyle(
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              // Icono de Lupa del Filtro de Dificultad
+              IconButton(
+                icon: Icon(
+                  _mostrarFiltroNombre ? Icons.close : Icons.search,
+                  color: Colors.blue,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _mostrarFiltroNombre = !_mostrarFiltroNombre;
+                    if (!_mostrarFiltroNombre) {
+                      _filtroNombre = '';
+                      _aplicarFiltro();
+                      print('Ocultando campo de filtro por nombre');
+                    } else {
+                      print('Mostrando campo de filtro por nombre');
+                    }
+                  });
+                },
+              ),
+            ],
           ),
-        ),
-        TextButton(
-          onPressed: () {
-            setState(() {
-              mostrarRutasLocales = true; // Mostrar solo rutas locales.
-              _aplicarFiltro();
-            });
-          },
-          child: Text(
-            'Locales',
-            style: TextStyle(
-              color: mostrarRutasLocales ? Colors.blue : Colors.black,
-              fontWeight: mostrarRutasLocales ? FontWeight.bold : FontWeight.normal,
+          // Campo de Texto para Filtrar por Nombre
+          if (_mostrarFiltroNombre)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        labelText: 'Filtrar por Nombre',
+                        border: OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () {
+                            setState(() {
+                              _mostrarFiltroNombre = false;
+                              _filtroNombre = '';
+                              _aplicarFiltro();
+                              print('Limpiando y ocultando filtro por nombre');
+                            });
+                          },
+                        ),
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          _filtroNombre = value;
+                          _aplicarFiltro();
+                          print('Filtrando por nombre: $value');
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
+          const SizedBox(height: 8),
+          // Filtro de Estrellas
+          Row(
+            children: [
+              const Text('Estrellas: '),
+              Expanded(
+                child: Align(
+                  alignment: const Alignment(-0.2, 0), // Ajusta este valor para mover más a la izquierda
+                  child: SizedBox(
+                    height: 30, // Ajusta la altura según sea necesario
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(5, (index) {
+                        int estrella = index + 1;
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              if (_filtroEstrellas == estrella) {
+                                // Si se hace clic en la misma estrella, se quita el filtro
+                                _filtroEstrellas = null;
+                                print('Deseleccionando estrellas: $estrella');
+                              } else {
+                                // Se establece el filtro al número de estrellas seleccionado
+                                _filtroEstrellas = estrella;
+                                print('Seleccionando estrellas: $estrella');
+                              }
+                              _aplicarFiltro();
+                            });
+                          },
+                          child: Icon(
+                            Icons.star,
+                            color: estrella <= (_filtroEstrellas ?? 0) ? Colors.amber : Colors.grey,
+                            size: 24, // Ajusta el tamaño según sea necesario
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -117,11 +317,11 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
     await makeRequest(
       method: DELETE,
       url: ROUTE_DETAIL,
-      urlVars: {'id': id}, // URL de la API para eliminar una ruta específica.
+      urlVars: {'id': id},
       onOk: (response) {
         setState(() {
-          rutasGuardadas!.removeWhere((ruta) => ruta['id'] == id); // Elimina la ruta localmente.
-          _aplicarFiltro(); // Aplica el filtro después de eliminar.
+          rutasGuardadas!.removeWhere((ruta) => ruta['id'] == id);
+          _aplicarFiltro();
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ruta eliminada con éxito')),
@@ -173,18 +373,18 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
 
   // Obtiene los puntos de la ruta desde el backend.
   Future<List<LatLng>> _fetchRoutePoints(int routeId) async {
-    final List<LatLng> points = []; // Lista para almacenar los puntos
+    final List<LatLng> points = [];
 
     await makeRequest(
       method: GET,
       url: ROUTE_DETAIL,
-      urlVars: {'id': routeId}, // Llama al backend con el ID de la ruta.
+      urlVars: {'id': routeId},
       onOk: (response) {
-        final jsonResponse = jsonDecode(response.body); // Decodifica la respuesta JSON.
+        final jsonResponse = jsonDecode(response.body);
         if (jsonResponse['puntos'] != null && jsonResponse['puntos'].isNotEmpty) {
           points.addAll(
             jsonResponse['puntos'].map<LatLng>((punto) => LatLng(punto['latitud'], punto['longitud'])),
-          ); // Convierte cada punto en LatLng y lo agrega a la lista
+          );
         }
       },
       onError: (response) {
@@ -199,7 +399,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
       },
     );
 
-    return points; // Retorna la lista de puntos
+    return points;
   }
 
   @override
@@ -244,7 +444,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
             child: ListTile(
               title: Text(
                 ruta['nombre'],
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,6 +452,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                   Text(ruta['descripcion']),
                   const SizedBox(height: 5),
                   Text('Dificultad: ${ruta['dificultad']}'),
+                  // No mostramos las estrellas en el listado
                 ],
               ),
               leading: const Icon(Icons.map, color: Color(0xFF50C9B5)),
@@ -285,7 +486,19 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
       appBar: CustomAppBar(title: 'Listado de Rutas'),
       body: Column(
         children: [
-          _buildFiltros(),
+          // Envolvemos los filtros en SingleChildScrollView para permitir el desplazamiento vertical
+          Expanded(
+            flex: 0,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildFiltrosPrincipales(), // Filtros "Todas" y "Locales"
+                  _buildFiltrosAdicionales(), // Filtros de Dificultad, Nombre y Estrellas
+                ],
+              ),
+            ),
+          ),
+          // Contenido principal que se expande
           Expanded(child: bodyContent),
         ],
       ),

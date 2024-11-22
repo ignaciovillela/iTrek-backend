@@ -12,6 +12,7 @@ import 'package:itrek/helpers/db.dart';
 import 'package:itrek/helpers/map.dart';
 import 'package:itrek/helpers/request.dart';
 import 'package:itrek/helpers/widgets.dart';
+import 'package:itrek/pages/route/route_list.dart';
 import 'package:itrek/pages/route/route_register_form.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -52,6 +53,7 @@ Future<void> requestNotificationPermission() async {
   }
 }
 
+
 // Función para convertir una lista de coordenadas LatLng a un formato JSON
 Future<Map<String, dynamic>> getPostRouteData(
     String routeId, int seconds, double distanceTraveled) async {
@@ -88,7 +90,6 @@ List<Map<String, dynamic>> getPointsData(List<Map<String, dynamic>> points) {
 // Función para enviar una ruta al backend mediante una solicitud HTTP POST
 Future<int?> postRuta(Map<String, dynamic> rutaData) async {
   int? rutaId;
-
   print('rutaData: $rutaData');
   await makeRequest(
     method: POST,
@@ -100,8 +101,8 @@ Future<int?> postRuta(Map<String, dynamic> rutaData) async {
       rutaId = responseData['id'];
     },
     onError: (response) {
-      print(response.body);
       print('Error al crear la ruta: ${response.statusCode}');
+      print('Mensaje de error: ${response.body}');
     },
     onConnectionError: (errorMessage) {
       print('Error en la solicitud: $errorMessage');
@@ -113,7 +114,7 @@ Future<int?> postRuta(Map<String, dynamic> rutaData) async {
 
 // Función para actualizar la ruta con datos adicionales usando PATCH
 Future<void> _updateRuta(int id, String nombre, String descripcion,
-    String dificultad, double distanciaKm, int tiempoEstimadoMinutos) async {
+    String dificultad, double distanciaKm, int tiempoEstimadoMinutos, bool publica) async {
   await makeRequest(
     method: PATCH,
     url: ROUTE_DETAIL,
@@ -124,6 +125,7 @@ Future<void> _updateRuta(int id, String nombre, String descripcion,
       'dificultad': dificultad,
       'distancia_km': distanciaKm,
       'tiempo_estimado_minutos': tiempoEstimadoMinutos,
+      'publica': publica,
     },
     onOk: (response) {
       print('Ruta actualizada con éxito');
@@ -271,15 +273,12 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       if (mounted) {
         setState(() {
           _seconds++;
-          // Actualizar la notificación si está activa
           if (notiActiva) {
             _actualizarNotificacion();
           }
         });
       }
     });
-
-    // Iniciar notificación
     _mostrarNotificacion();
 
     _iniciarSeguimientoUbicacion();
@@ -348,7 +347,6 @@ class RegistrarRutaState extends State<RegistrarRuta> {
         'longitud': longitude,
         'orden': _routeCoords.length + 1, // Ajustar el orden
       });
-
       LatLng nuevaPosicion = LatLng(latitude, longitude);
       if (_routeCoords.isNotEmpty) {
         _distanceTraveled +=
@@ -396,7 +394,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   }
 
   void _finalizarRegistro() async {
-    // Mostrar un indicador de carga antes de realizar las operaciones
+    print('Tiempo en segundos: $_seconds');
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -410,25 +408,20 @@ class RegistrarRutaState extends State<RegistrarRuta> {
     try {
       final routeData = await getPostRouteData(_routeId!, _seconds, _distanceTraveled);
       int? rutaId = await postRuta(routeData);
-
       if (rutaId != null) {
-        await db.routes.deleteRoute(_routeId!);
-        _borrarRegistro();
-
         // Cerrar el diálogo de carga antes de navegar al formulario
         if (mounted) Navigator.pop(context);
-
-        // Navegar al formulario de edición
         await _mostrarFormularioRuta(rutaId);
       } else {
         if (mounted) Navigator.pop(context);
-        print('Error al enviar la ruta al backend');
+        print('Error al enviar la ruta al servidor');
       }
     } catch (e) {
       if (mounted) Navigator.pop(context);
       print('Error durante la finalización de la ruta: $e');
     }
   }
+
 
   Future<void> _mostrarFormularioRuta(int rutaId) async {
     await Navigator.push(
@@ -446,8 +439,20 @@ class RegistrarRutaState extends State<RegistrarRuta> {
               rutaData['dificultad'],
               _distanceTraveled / 1000,
               _seconds ~/ 60,
+              rutaData['publica'],
             );
+            _borrarRegistro();
             Navigator.of(context).pop();
+
+            if (mounted) {
+              Navigator.of(context).pop(); // Cierra el formulario
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>  ListadoRutasScreen()
+                ),
+              );
+            }
           },
           onCancel: () {
             Navigator.of(context).pop();
@@ -862,17 +867,24 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   }
 
   String _formatTime(int seconds) {
-    int hours = seconds ~/ 3600;
-    int minutes = (seconds % 3600) ~/ 60;
-    int remainingSeconds = seconds % 60;
-    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+    if (seconds < 60) {
+      // Menos de 1 minuto: Mostrar solo segundos
+      return '${seconds}s';
+    } else if (seconds < 3600) {
+      // Menos de 1 hora: Mostrar minutos y segundos
+      int minutes = seconds ~/ 60;
+      int remainingSeconds = seconds % 60;
+      return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+    } else {
+      // Más de 1 hora: Mostrar horas, minutos y segundos
+      int hours = seconds ~/ 3600;
+      int minutes = (seconds % 3600) ~/ 60;
+      int remainingSeconds = seconds % 60;
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+    }
   }
 
-  String _formatDistance(double distance) {
-    if (distance < 1000) {
-      return '${distance.toStringAsFixed(2)} m';
-    } else {
-      return '${(distance / 1000).toStringAsFixed(2)} km';
-    }
+  String _formatDistance(double distanceInMeters) {
+    return '${(distanceInMeters / 1000).toStringAsFixed(1)} km';
   }
 }

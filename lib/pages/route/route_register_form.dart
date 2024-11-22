@@ -26,6 +26,7 @@ class _RutaFormPageState extends State<RutaFormPage> {
   String _nombre = '';
   String _descripcion = '';
   String _dificultad = 'facil';
+  bool _esPublica = false;
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +52,7 @@ class _RutaFormPageState extends State<RutaFormPage> {
                     _buildInfoItem(
                       icon: Icons.directions_walk,
                       label: 'Distancia',
-                      value: '${widget.distanceTraveled.toStringAsFixed(2)} km',
+                      value: _formatDistance(widget.distanceTraveled),
                     ),
                     _buildInfoItem(
                       icon: Icons.timer,
@@ -143,6 +144,18 @@ class _RutaFormPageState extends State<RutaFormPage> {
                           });
                         },
                       ),
+                      const SizedBox(height: 20),
+                      SwitchListTile(
+                        title: const Text('¿Hacer esta ruta pública?'),
+                        value: _esPublica,
+                        onChanged: (bool value) {
+                          setState(() {
+                            _esPublica = value;
+                          });
+                        },
+                        activeColor: Colors.teal.shade700,
+                        inactiveThumbColor: Colors.grey,
+                      ),
                       const SizedBox(height: 30),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -155,6 +168,7 @@ class _RutaFormPageState extends State<RutaFormPage> {
                                   "nombre": _nombre,
                                   "descripcion": _descripcion,
                                   "dificultad": _dificultad,
+                                  "publica": _esPublica
                                 };
                                 widget.onSave(rutaData);
                               }
@@ -208,9 +222,27 @@ class _RutaFormPageState extends State<RutaFormPage> {
   }
 
   String _formatTime(int seconds) {
-    int hours = seconds ~/ 3600;
-    int minutes = (seconds % 3600) ~/ 60;
-    int remainingSeconds = seconds % 60;
-    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+    if (seconds < 60) {
+      // Menos de 1 minuto: Mostrar solo segundos
+      return '${seconds}s';
+    } else if (seconds < 3600) {
+      // Menos de 1 hora: Mostrar minutos y segundos
+      int minutes = seconds ~/ 60;
+      int remainingSeconds = seconds % 60;
+      return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+    } else {
+      // Más de 1 hora: Mostrar horas, minutos y segundos
+      int hours = seconds ~/ 3600;
+      int minutes = (seconds % 3600) ~/ 60;
+      int remainingSeconds = seconds % 60;
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+    }
   }
+
+  String _formatDistance(double distanceInMeters) {
+    return '${(distanceInMeters / 1000).toStringAsFixed(1)} km';
+  }
+
+
 }
+
