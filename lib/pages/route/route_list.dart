@@ -89,7 +89,8 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
     }
     if (_filtroEstrellas != null) {
       rutas = rutas?.where((ruta) {
-        if (ruta['estrellas'] != null) {double estrellasRuta = (ruta['estrellas'] as num).toDouble();
+        if (ruta['estrellas'] != null) {
+          double estrellasRuta = (ruta['estrellas'] as num).toDouble();
           return estrellasRuta == _filtroEstrellas;
         }
         return false;
@@ -154,9 +155,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
               child: Text(
                 'Locales',
                 style: TextStyle(
-                  fontWeight: mostrarRutasLocales
-                      ? FontWeight.bold
-                      : FontWeight.normal,
+                  fontWeight: mostrarRutasLocales ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
             ),
@@ -198,8 +197,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                         });
                       },
                       style: TextButton.styleFrom(
-                        foregroundColor:
-                        isSelected ? Colors.blue : Colors.black,
+                        foregroundColor: isSelected ? Colors.blue : Colors.black,
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         minimumSize: const Size(80, 40),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -300,7 +298,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                           },
                           child: Icon(
                             Icons.star,
-                            color: estrella <= (_filtroEstrellas ?? 0.0) ? Colors.amber : Colors.grey,
+                            color: estrella <= (_filtroEstrellas ?? 0) ? Colors.amber : Colors.grey,
                             size: 24, // Ajusta el tamaño según sea necesario
                           ),
                         );
@@ -432,7 +430,6 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
         itemBuilder: (context, index) {
           final ruta = rutasFiltradas![index];
           final bool esLocal = ruta['local'] == 1;
-          // Manejar posibles valores nulos en 'estrellas'
           final double puntaje = (ruta['puntaje'] as num?)?.toDouble() ?? 0.0;
 
           return Card(
