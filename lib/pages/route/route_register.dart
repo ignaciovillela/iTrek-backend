@@ -114,7 +114,7 @@ Future<int?> postRuta(Map<String, dynamic> rutaData) async {
 
 // Función para actualizar la ruta con datos adicionales usando PATCH
 Future<void> _updateRuta(int id, String nombre, String descripcion,
-    String dificultad, double distanciaKm, int tiempoEstimadoMinutos) async {
+    String dificultad, double distanciaKm, int tiempoEstimadoMinutos, bool publica) async {
   await makeRequest(
     method: PATCH,
     url: ROUTE_DETAIL,
@@ -125,6 +125,7 @@ Future<void> _updateRuta(int id, String nombre, String descripcion,
       'dificultad': dificultad,
       'distancia_km': distanciaKm,
       'tiempo_estimado_minutos': tiempoEstimadoMinutos,
+      'publica': publica,
     },
     onOk: (response) {
       print('Ruta actualizada con éxito');
@@ -438,6 +439,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
               rutaData['dificultad'],
               _distanceTraveled / 1000,
               _seconds ~/ 60,
+              rutaData['publica'],
             );
             _borrarRegistro();
             Navigator.of(context).pop();

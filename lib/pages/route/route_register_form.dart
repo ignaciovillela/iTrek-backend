@@ -26,6 +26,7 @@ class _RutaFormPageState extends State<RutaFormPage> {
   String _nombre = '';
   String _descripcion = '';
   String _dificultad = 'facil';
+  bool _esPublica = false;
 
   @override
   Widget build(BuildContext context) {
@@ -143,6 +144,18 @@ class _RutaFormPageState extends State<RutaFormPage> {
                           });
                         },
                       ),
+                      const SizedBox(height: 20),
+                      SwitchListTile(
+                        title: const Text('¿Hacer esta ruta pública?'),
+                        value: _esPublica,
+                        onChanged: (bool value) {
+                          setState(() {
+                            _esPublica = value;
+                          });
+                        },
+                        activeColor: Colors.teal.shade700,
+                        inactiveThumbColor: Colors.grey,
+                      ),
                       const SizedBox(height: 30),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -155,6 +168,7 @@ class _RutaFormPageState extends State<RutaFormPage> {
                                   "nombre": _nombre,
                                   "descripcion": _descripcion,
                                   "dificultad": _dificultad,
+                                  "publica": _esPublica
                                 };
                                 widget.onSave(rutaData);
                               }
