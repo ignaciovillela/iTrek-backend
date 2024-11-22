@@ -51,6 +51,7 @@ Widget buildMap({
   required List<Polyline> routePolylines,
   required List<Marker> markers,
   PositionCallback? onPositionChanged,
+  VoidCallback? onMapReady,
   double initialZoom = 18.0,
 }) {
   return FlutterMap(
@@ -59,6 +60,7 @@ Widget buildMap({
       initialCenter: initialPosition ?? LatLng(0, 0), // Usa initialCenter
       initialZoom: initialZoom,
       onPositionChanged: onPositionChanged,
+      onMapReady: onMapReady,
     ),
     children: [
       TileLayer(

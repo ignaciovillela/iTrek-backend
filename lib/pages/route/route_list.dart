@@ -153,7 +153,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Text(
-                'Locales',
+                'Sin conexión',
                 style: TextStyle(
                   fontWeight: mostrarRutasLocales ? FontWeight.bold : FontWeight.normal,
                 ),
