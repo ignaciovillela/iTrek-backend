@@ -172,14 +172,33 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
         method: POST,
         url: ROUTE_RATING, // Asegúrate de que esta URL esté configurada correctamente
         urlVars: {'id': widget.ruta['id']}, // Envía el ID de la ruta
-        body: {'puntaje': rating}, // El cuerpo ahora utiliza "puntaje"
+        body: {'puntaje': rating}, // El cuerpo envía el puntaje seleccionado
         onOk: (response) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('¡Gracias por tu valoración!')),
-          );
-          setState(() {
-            widget.ruta['puntaje'] = rating; // Actualiza el puntaje localmente
-          });
+          try {
+            // Intenta deserializar la respuesta
+            final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+            // Extrae valores del backend
+            final nuevoPuntaje = (responseData['puntaje'] as num?)?.toDouble() ?? 0.0; // Puntaje promedio
+            final miPuntaje = (responseData['mi_puntaje'] as num?)?.toDouble() ?? 0.0; // Mi puntaje enviado
+            final mensaje = responseData['message'] as String? ?? '¡Gracias por tu valoración!';
+
+            // Actualiza los valores necesarios
+            setState(() {
+              widget.ruta['puntaje'] = nuevoPuntaje; // Actualiza el puntaje promedio
+              _rating = miPuntaje; // Actualiza mi calificación
+            });
+
+            // Muestra el mensaje del backend
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(mensaje)),
+            );
+          } catch (e) {
+            print('Error al procesar la respuesta: $e');
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Error al procesar la respuesta del servidor.')),
+            );
+          }
         },
         onError: (response) {
           print('Error del backend: ${response.statusCode} - ${response.body}');
