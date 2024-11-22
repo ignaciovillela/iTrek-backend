@@ -431,7 +431,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
           final ruta = rutasFiltradas![index];
           final bool esLocal = ruta['local'] == 1;
           final double puntaje = (ruta['puntaje'] as num?)?.toDouble() ?? 0.0;
-          final String puntajeDisplay = puntaje > 0 ? puntaje.toString() : '---';
+          final String puntajeDisplay = puntaje > 0 ? puntaje.toStringAsFixed(1) : '---';
 
           return Card(
             margin: const EdgeInsets.all(8.0),
