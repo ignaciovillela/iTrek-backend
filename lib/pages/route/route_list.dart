@@ -170,12 +170,16 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
+          // Filtros de Dificultad
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              const Text('Dificultad: '),
+              const Text(
+                'Dificultad: ',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
               // Filtro de Dificultad
               Wrap(
                 spacing: 8.0,
@@ -212,10 +216,53 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                   );
                 }).toList(),
               ),
-              // Icono de Lupa del Filtro de Dificultad
+            ],
+          ),
+          const SizedBox(height: 13),
+          // Filtro de Estrellas y Lupa
+          Row(
+            children: [
+              const Text(
+                'Estrellas: ',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              Expanded(
+                child: Center(
+                  child: SizedBox(
+                    height: 30,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(5, (index) {
+                        int estrella = index + 1;
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              if (_filtroEstrellas == estrella) {
+                                _filtroEstrellas = null;
+                                print('Deseleccionando estrellas: $estrella');
+                              } else {
+                                _filtroEstrellas = estrella;
+                                print('Seleccionando estrellas: $estrella');
+                              }
+                              _aplicarFiltro();
+                            });
+                          },
+                          child: Icon(
+                            Icons.star,
+                            color: estrella <= (_filtroEstrellas ?? 0) ? Colors.amber : Colors.grey,
+                            size: 24,
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+              ),
+              // Icono de Lupa
               IconButton(
                 icon: Icon(
-                  _mostrarFiltroNombre ? Icons.close : Icons.search, color: Colors.blue,
+                  _mostrarFiltroNombre ? Icons.close : Icons.search,
+                  color: Colors.blue,
                 ),
                 onPressed: () {
                   setState(() {
@@ -236,79 +283,31 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
           if (_mostrarFiltroNombre)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        labelText: 'Filtrar por Nombre',
-                        border: OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () {
-                            setState(() {
-                              _mostrarFiltroNombre = false;
-                              _filtroNombre = '';
-                              _aplicarFiltro();
-                              print('Limpiando y ocultando filtro por nombre');
-                            });
-                          },
-                        ),
-                      ),
-                      onChanged: (value) {
-                        setState(() {
-                          _filtroNombre = value;
-                          _aplicarFiltro();
-                          print('Filtrando por nombre: $value');
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          const SizedBox(height: 8),
-          // Filtro de Estrellas
-          Row(
-            children: [
-              const Text('Estrellas: '),
-              Expanded(
-                child: Align(
-                  alignment: const Alignment(-0.2, 0), // Ajusta este valor para mover más a la izquierda
-                  child: SizedBox(
-                    height: 30, // Ajusta la altura según sea necesario
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: List.generate(5, (index) {
-                        int estrella = index + 1;
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              if (_filtroEstrellas == estrella) {
-                                // Si se hace clic en la misma estrella, se quita el filtro
-                                _filtroEstrellas = null;
-                                print('Deseleccionando estrellas: $estrella');
-                              } else {
-
-                                _filtroEstrellas = estrella;
-                                print('Seleccionando estrellas: $estrella');
-                              }
-                              _aplicarFiltro();
-                            });
-                          },
-                          child: Icon(
-                            Icons.star,
-                            color: estrella <= (_filtroEstrellas ?? 0) ? Colors.amber : Colors.grey,
-                            size: 24, // Ajusta el tamaño según sea necesario
-                          ),
-                        );
-                      }),
-                    ),
+              child: TextField(
+                decoration: InputDecoration(
+                  labelText: 'Filtrar por Nombre',
+                  border: OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      setState(() {
+                        _mostrarFiltroNombre = false;
+                        _filtroNombre = '';
+                        _aplicarFiltro();
+                        print('Limpiando y ocultando filtro por nombre');
+                      });
+                    },
                   ),
                 ),
+                onChanged: (value) {
+                  setState(() {
+                    _filtroNombre = value;
+                    _aplicarFiltro();
+                    print('Filtrando por nombre: $value');
+                  });
+                },
               ),
-            ],
-          ),
+            ),
         ],
       ),
     );
