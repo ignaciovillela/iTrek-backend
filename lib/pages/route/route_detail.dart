@@ -423,7 +423,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Obtener el número de estrellas, asegurando que sea un double válido
     final double puntaje = (widget.ruta['puntaje'] as num?)?.toDouble() ?? 0.0;
 
     return Scaffold(
@@ -588,9 +587,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
               CircleIconButton(
                 icon: _isEditing ? Icons.save : Icons.edit,
                 color: _isEditing ? Colors.green : colorScheme.primary,
-                onPressed: _isEditing
-                    ? updateRuta
-                    : () => setState(() => _isEditing = true),
+                onPressed: _isEditing ? updateRuta : () => setState(() => _isEditing = true),
               ),
               CircleIconButton(
                 icon: Icons.directions_walk,
