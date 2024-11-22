@@ -424,7 +424,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     final double puntaje = (widget.ruta['puntaje'] as num?)?.toDouble() ?? 0.0;
-
     return Scaffold(
       resizeToAvoidBottomInset: false, // Evita que el footer se mueva con el teclado
       appBar: CustomAppBar(title: 'Detalle de Ruta'),
@@ -569,8 +568,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                         children: [
                           Icon(Icons.calendar_today, color: colorScheme.primary),
                           const SizedBox(width: 10),
-                          Text(
-                            'Fecha de creación: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(widget.ruta['creado_en']))}',
+                          Text('Fecha de creación: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(widget.ruta['creado_en']))}',
                           ),
                         ],
                       ),

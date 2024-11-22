@@ -23,7 +23,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   // Variables para los filtros
   String? _filtroDificultad;
   String _filtroNombre = '';
-  double? _filtroEstrellas;
+  int? _filtroEstrellas;
 
   // Controla la visibilidad del campo de texto del filtro de nombre
   bool _mostrarFiltroNombre = false;
@@ -85,10 +85,8 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
         return rutaDificultad == filtroNormalizado;
       }).toList();
     }
-
     if (_filtroNombre.isNotEmpty) {rutas = rutas?.where((ruta) => ruta['nombre'].toString().toLowerCase().contains(_filtroNombre.toLowerCase())).toList();
     }
-
     if (_filtroEstrellas != null) {
       rutas = rutas?.where((ruta) {
         if (ruta['estrellas'] != null) {double estrellasRuta = (ruta['estrellas'] as num).toDouble();
@@ -130,9 +128,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
               child: Text(
                 'Todas',
                 style: TextStyle(
-                  fontWeight: !mostrarRutasLocales
-                      ? FontWeight.bold
-                      : FontWeight.normal,
+                  fontWeight: !mostrarRutasLocales ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
             ),
@@ -150,8 +146,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                 });
               },
               style: TextButton.styleFrom(
-                foregroundColor:
-                mostrarRutasLocales ? Colors.blue : Colors.black,
+                foregroundColor: mostrarRutasLocales ? Colors.blue : Colors.black,
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 minimumSize: const Size(80, 40),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -287,7 +282,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: List.generate(5, (index) {
-                        double estrella = (index + 1).toDouble();
+                        int estrella = index + 1;
                         return GestureDetector(
                           onTap: () {
                             setState(() {
@@ -397,9 +392,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
       },
       onError: (response) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  'Error al cargar los puntos de la ruta: ${response.body}')),
+          SnackBar(content: Text('Error al cargar los puntos de la ruta: ${response.body}')),
         );
       },
       onConnectionError: (errorMessage) {
@@ -423,18 +416,14 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 10),
-            Text(
-              'Cargando rutas...',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+            Text('Cargando rutas...', style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
           ],
         ),
       );
     } else if (rutasFiltradas!.isEmpty) {
       bodyContent = const Center(
-        child: Text(
-          "No hay rutas para mostrar",
-          style: TextStyle(fontSize: 18, color: Colors.grey),
+        child: Text("No hay rutas para mostrar", style: TextStyle(fontSize: 18, color: Colors.grey),
         ),
       );
     } else {
@@ -454,9 +443,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
             elevation: 5,
             color: esLocal ? Colors.green.shade50 : null,
             child: ListTile(
-              title: Text(
-                ruta['nombre'],
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+              title: Text(ruta['nombre'], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -523,11 +510,8 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
       body: Column(
         children: [
           // Responsivo
-          Expanded(
-            flex: 0,
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
+          Expanded(flex: 0, child: SingleChildScrollView(
+              child: Column(children: [
                   _buildFiltrosPrincipales(), // Filtros "Todas" y "Locales"
                   _buildFiltrosAdicionales(), // Filtros de Dificultad, Nombre y Estrellas
                 ],
