@@ -20,12 +20,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  String? nombreNivel;
-  int? diasTrek;
-  double? distanciaTrek;
-  int? minutosTrek;
-  int? puntosTrek;
-  String? descripcionNivel;
+  Map<String, dynamic>? userStats;
 
   // Método para verificar si el token está almacenado
   Future<bool> _checkToken() async {
@@ -34,66 +29,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return tokenData != null;
   }
 
-  // Método para guardar datos individuales en la base de datos local
-  Future<void> _saveUserStatsLocally(Map<String, dynamic> stats) async {
-    await db.values.create('nombre_nivel', stats['nombre_nivel']);
-    await db.values.create('dias_trek', stats['dias_creacion_cuenta'].toString());
-    await db.values.create('distancia_trek', stats['distancia_trek'].toString());
-    await db.values.create('minutos_trek', stats['minutos_trek'].toString());
-    await db.values.create('puntos_trek', stats['puntos_trek'].toString());
-    await db.values.create('descripcion_nivel', stats['descripcion_nivel']);
-  }
-
-  // Método para cargar datos individuales desde la base de datos local
-  Future<void> _loadUserStatsLocally() async {
-    String? nombreNivelLocal = await db.values.get('nombre_nivel');
-    String? diasTrekLocal = await db.values.get('dias_trek');
-    String? distanciaTrekLocal = await db.values.get('distancia_trek');
-    String? minutosTrekLocal = await db.values.get('minutos_trek');
-    String? puntosTrekLocal = await db.values.get('puntos_trek');
-    String? descripcionNivelLocal = await db.values.get('descripcion_nivel');
-
-    setState(() {
-      nombreNivel = nombreNivelLocal;
-      diasTrek = int.tryParse(diasTrekLocal ?? '0');
-      distanciaTrek = double.tryParse(distanciaTrekLocal ?? '0.0');
-      minutosTrek = int.tryParse(minutosTrekLocal ?? '0');
-      puntosTrek = int.tryParse(puntosTrekLocal ?? '0');
-      descripcionNivel = descripcionNivelLocal;
-    });
-  }
-
   // Método para obtener estadísticas del usuario
   Future<void> _fetchAndSetUserStats() async {
-    // Cargar datos locales antes de realizar la solicitud a la API
-    await _loadUserStatsLocally();
-
-    // Intentar obtener los datos más recientes de la API
     await makeRequest(
       method: GET,
       url: LOGIN_CHECK,
-      onOk: (response) async {
+      onOk: (response) {
         final responseData = jsonDecode(response.body);
         print('Datos recibidos: $responseData');
-
         setState(() {
-          nombreNivel = responseData['nombre_nivel'];
-          diasTrek = responseData['dias_creacion_cuenta'];
-          distanciaTrek = responseData['distancia_trek'];
-          minutosTrek = responseData['minutos_trek'];
-          puntosTrek = responseData['puntos_trek'];
-          descripcionNivel = responseData['descripcion_nivel'];
+          userStats = responseData;
         });
-
-        // Guardar los datos obtenidos en la base de datos local
-        await _saveUserStatsLocally(responseData);
       },
       onError: (response) {
         print('Error al obtener estadísticas: ${response.statusCode}');
         print('Mensaje de error: ${response.body}');
+        setState(() {
+          userStats = {
+            'nombre_nivel': 'Error',
+            'puntos_trek': 0,
+            'descripcion_nivel': 'No se pudieron cargar los datos del usuario.',
+          };
+        });
       },
       onConnectionError: (errorMessage) {
         print('Error de conexión: $errorMessage');
+        setState(() {
+          userStats = {
+            'nombre_nivel': 'Error de Conexión',
+            'puntos_trek': 0,
+            'descripcion_nivel': 'No se pudo establecer una conexión con el servidor.',
+          };
+        });
       },
     );
   }
@@ -157,7 +124,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         },
                       ),
                       const SizedBox(height: 20),
-                      if (nombreNivel != null)
+                      if (userStats != null)
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -167,7 +134,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 Container(
                                   width: screenWidth * 0.3,
                                   child: Image.network(
-                                    '$BASE_URL/static/default_profile.jpg',
+                                    '$BASE_URL${userStats?['imagen_perfil'] ?? '/static/default_profile.jpg'}',
                                     fit: BoxFit.contain,
                                   ),
                                 ),
@@ -177,7 +144,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        '$nombreNivel',
+                                        '${userStats?['nombre_nivel'] ?? 'Cargando...'}',
                                         style: const TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
@@ -186,7 +153,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'Días trekkeando: $diasTrek',
+                                        'Días trekkeando: ${userStats?['dias_creacion_cuenta'] ?? 0}',
                                         style: const TextStyle(
                                           fontSize: 16,
                                           color: Colors.grey,
@@ -194,7 +161,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'Distancia recorrida: ${distanciaTrek?.toStringAsFixed(2)} km',
+                                        'Distancia recorrida: ${userStats?['distancia_trek']?.toStringAsFixed(2) ?? '0.00'} km',
                                         style: const TextStyle(
                                           fontSize: 16,
                                           color: Colors.grey,
@@ -202,7 +169,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'Minutos totales: $minutosTrek',
+                                        'Minutos totales: ${userStats?['minutos_trek'] ?? 0}',
                                         style: const TextStyle(
                                           fontSize: 16,
                                           color: Colors.grey,
@@ -210,7 +177,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'Puntos acumulados: $puntosTrek',
+                                        'Puntos acumulados: ${userStats?['puntos_trek'] ?? 0}',
                                         style: const TextStyle(
                                           fontSize: 16,
                                           color: Colors.grey,
@@ -223,7 +190,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             const SizedBox(height: 20),
                             Text(
-                              descripcionNivel ?? '',
+                              userStats?['descripcion_nivel'] ?? '',
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
