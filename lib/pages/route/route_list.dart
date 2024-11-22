@@ -85,13 +85,14 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
         return rutaDificultad == filtroNormalizado;
       }).toList();
     }
-    if (_filtroNombre.isNotEmpty) {rutas = rutas?.where((ruta) => ruta['nombre'].toString().toLowerCase().contains(_filtroNombre.toLowerCase())).toList();
+    if (_filtroNombre.isNotEmpty) {
+      rutas = rutas?.where((ruta) => ruta['nombre'].toString().toLowerCase().contains(_filtroNombre.toLowerCase())).toList();
     }
     if (_filtroEstrellas != null) {
       rutas = rutas?.where((ruta) {
         if (ruta['puntaje'] != null) {
           final estrellasRuta = ruta['puntaje'];
-          return _filtroEstrellas! <= estrellasRuta && estrellasRuta < _filtroEstrellas!+1;
+          return _filtroEstrellas! <= estrellasRuta && estrellasRuta < _filtroEstrellas! + 1;
         }
         return false;
       }).toList();
@@ -313,65 +314,6 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
     );
   }
 
-  // Función para eliminar una ruta a través de la API.
-  Future<void> _deleteRuta(int id) async {
-    await makeRequest(
-      method: DELETE,
-      url: ROUTE_DETAIL,
-      urlVars: {'id': id},
-      onOk: (response) {
-        setState(() {
-          rutasGuardadas!.removeWhere((ruta) => ruta['id'] == id);
-          _aplicarFiltro();
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ruta eliminada con éxito')),
-        );
-      },
-      onError: (response) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error al eliminar la ruta')),
-        );
-      },
-      onConnectionError: (errorMessage) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
-        );
-      },
-    );
-  }
-
-  // Muestra un cuadro de diálogo de confirmación antes de eliminar una ruta.
-  Future<void> _confirmDelete(BuildContext context, int id) async {
-    final bool? shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Confirmar eliminación'),
-          content: const Text('¿Estás seguro de que deseas eliminar esta ruta? Esta acción no se puede deshacer.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(false); // Cancela la acción.
-              },
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(true); // Confirma la acción de eliminación.
-              },
-              child: const Text('Eliminar'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (shouldDelete == true) {
-      _deleteRuta(id); // Llama a la función para eliminar la ruta si se confirma.
-    }
-  }
-
   // Obtiene los puntos de la ruta desde el backend.
   Future<List<LatLng>> _fetchRoutePoints(int routeId) async {
     final List<LatLng> points = [];
@@ -383,7 +325,10 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
       onOk: (response) {
         final jsonResponse = jsonDecode(response.body);
         if (jsonResponse['puntos'] != null && jsonResponse['puntos'].isNotEmpty) {
-          points.addAll(jsonResponse['puntos'].map<LatLng>((punto) => LatLng(punto['latitud'], punto['longitud'])).toList(),
+          points.addAll(
+            jsonResponse['puntos']
+                .map<LatLng>((punto) => LatLng(punto['latitud'], punto['longitud']))
+                .toList(),
           );
         }
       },
@@ -413,14 +358,18 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 10),
-            Text('Cargando rutas...', style: TextStyle(fontSize: 16, color: Colors.grey),
+            Text(
+              'Cargando rutas...',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
           ],
         ),
       );
     } else if (rutasFiltradas!.isEmpty) {
       bodyContent = const Center(
-        child: Text("No hay rutas para mostrar", style: TextStyle(fontSize: 18, color: Colors.grey),
+        child: Text(
+          "No hay rutas para mostrar",
+          style: TextStyle(fontSize: 18, color: Colors.grey),
         ),
       );
     } else {
@@ -440,7 +389,9 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
             elevation: 5,
             color: esLocal ? Colors.green.shade50 : null,
             child: ListTile(
-              title: Text(ruta['nombre'], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+              title: Text(
+                ruta['nombre'],
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -476,17 +427,18 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                   ),
                 ],
               ),
-              trailing: CircleIconButton(
-                icon: Icons.delete,
-                color: Colors.red.shade100,
-                iconColor: Colors.red.shade800,
-                onPressed: () {
-                  _confirmDelete(context, ruta['id']);
-                },
-                size: 40,
-                iconSize: 20,
-                opacity: 0.8,
-              ),
+              // Eliminar el CircleIconButton de eliminar ruta
+              // trailing: CircleIconButton(
+              //   icon: Icons.delete,
+              //   color: Colors.red.shade100,
+              //   iconColor: Colors.red.shade800,
+              //   onPressed: () {
+              //     _confirmDelete(context, ruta['id']);
+              //   },
+              //   size: 40,
+              //   iconSize: 20,
+              //   opacity: 0.8,
+              // ),
               onTap: () async {
                 await Navigator.push(
                   context,
@@ -507,8 +459,11 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
       body: Column(
         children: [
           // Responsivo
-          Expanded(flex: 0, child: SingleChildScrollView(
-              child: Column(children: [
+          Expanded(
+            flex: 0,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
                   _buildFiltrosPrincipales(), // Filtros "Todas" y "Locales"
                   _buildFiltrosAdicionales(), // Filtros de Dificultad, Nombre y Estrellas
                 ],
