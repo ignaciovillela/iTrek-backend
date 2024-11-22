@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:itrek/helpers/config.dart';
 import 'package:itrek/helpers/db.dart';
 import 'package:itrek/helpers/img.dart';
+import 'package:itrek/helpers/request.dart';
 import 'package:itrek/helpers/widgets.dart';
 import 'package:itrek/pages/auth/login.dart';
 import 'package:itrek/pages/comunity.dart';
@@ -16,9 +20,55 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  Map<String, dynamic>? userStats;
+
+  // Método para verificar si el token está almacenado
   Future<bool> _checkToken() async {
     String? tokenData = await db.values.get(db.values.token);
+    print('Token encontrado: $tokenData');
     return tokenData != null;
+  }
+
+  // Método para obtener estadísticas del usuario
+  Future<void> _fetchAndSetUserStats() async {
+    await makeRequest(
+      method: GET,
+      url: LOGIN_CHECK,
+      onOk: (response) {
+        final responseData = jsonDecode(response.body);
+        print('Datos recibidos: $responseData');
+        setState(() {
+          userStats = responseData;
+        });
+      },
+      onError: (response) {
+        print('Error al obtener estadísticas: ${response.statusCode}');
+        print('Mensaje de error: ${response.body}');
+        setState(() {
+          userStats = {
+            'nombre_nivel': 'Error',
+            'puntos_trek': 0,
+            'descripcion_nivel': 'No se pudieron cargar los datos del usuario.',
+          };
+        });
+      },
+      onConnectionError: (errorMessage) {
+        print('Error de conexión: $errorMessage');
+        setState(() {
+          userStats = {
+            'nombre_nivel': 'Error de Conexión',
+            'puntos_trek': 0,
+            'descripcion_nivel': 'No se pudo establecer una conexión con el servidor.',
+          };
+        });
+      },
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAndSetUserStats();
   }
 
   @override
@@ -74,50 +124,85 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         },
                       ),
                       const SizedBox(height: 20),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: screenWidth * 0.3,
-                            child: Image.asset(
-                              'assets/images/trek.png',
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                          const SizedBox(width: 20),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text(
-                                  'Nivel: Avanzado',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
+                      if (userStats != null)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: screenWidth * 0.3,
+                                  child: Image.network(
+                                    '$BASE_URL${userStats?['imagen_perfil'] ?? '/static/default_profile.jpg'}',
+                                    fit: BoxFit.contain,
                                   ),
                                 ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Trekking realizados: 25',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Próxima ruta: Torres del Paine',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey,
+                                const SizedBox(width: 20),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '${userStats?['nombre_nivel'] ?? 'Cargando...'}',
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Días trekkeando: ${userStats?['dias_creacion_cuenta'] ?? 0}',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Distancia recorrida: ${userStats?['distancia_trek']?.toStringAsFixed(2) ?? '0.00'} km',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Minutos totales: ${userStats?['minutos_trek'] ?? 0}',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Puntos acumulados: ${userStats?['puntos_trek'] ?? 0}',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                        ],
-                      ),
+                            const SizedBox(height: 20),
+                            Text(
+                              userStats?['descripcion_nivel'] ?? '',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        const Center(
+                          child: CircularProgressIndicator(),
+                        ),
                       const SizedBox(height: 40),
                       GridView.count(
                         shrinkWrap: true,
