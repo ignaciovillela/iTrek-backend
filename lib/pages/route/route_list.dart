@@ -23,7 +23,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   // Variables para los filtros
   String? _filtroDificultad;
   String _filtroNombre = '';
-  int? _filtroEstrellas;
+  double? _filtroEstrellas; // Cambiado a double para soportar decimales
 
   // Controla la visibilidad del campo de texto del filtro de nombre
   bool _mostrarFiltroNombre = false;
@@ -77,21 +77,34 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
     }
 
     if (_filtroDificultad != null && _filtroDificultad!.isNotEmpty) {
-      String filtroNormalizado = removeDiacritics(_filtroDificultad!.toLowerCase().trim());
+      String filtroNormalizado =
+      removeDiacritics(_filtroDificultad!.toLowerCase().trim());
       print('Filtrando por dificultad (normalizado): $filtroNormalizado');
       rutas = rutas?.where((ruta) {
-        String rutaDificultad = removeDiacritics(ruta['dificultad'].toString().toLowerCase().trim());
+        String rutaDificultad =
+        removeDiacritics(ruta['dificultad'].toString().toLowerCase().trim());
         print('Ruta dificultad (normalizado): $rutaDificultad');
         return rutaDificultad == filtroNormalizado;
       }).toList();
     }
 
     if (_filtroNombre.isNotEmpty) {
-      rutas = rutas?.where((ruta) => ruta['nombre'].toString().toLowerCase().contains(_filtroNombre.toLowerCase())).toList();
+      rutas = rutas?.where((ruta) =>
+          ruta['nombre']
+              .toString()
+              .toLowerCase()
+              .contains(_filtroNombre.toLowerCase())).toList();
     }
 
     if (_filtroEstrellas != null) {
-      rutas = rutas?.where((ruta) => ruta['estrellas'] == _filtroEstrellas!).toList();
+      rutas = rutas?.where((ruta) {
+        // Asegurarse de que 'estrellas' no sea null y convertir a double
+        if (ruta['estrellas'] != null) {
+          double estrellasRuta = (ruta['estrellas'] as num).toDouble();
+          return estrellasRuta == _filtroEstrellas;
+        }
+        return false;
+      }).toList();
     }
 
     setState(() {
@@ -118,7 +131,8 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                 });
               },
               style: TextButton.styleFrom(
-                foregroundColor: !mostrarRutasLocales ? Colors.blue : Colors.black,
+                foregroundColor:
+                !mostrarRutasLocales ? Colors.blue : Colors.black,
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 minimumSize: const Size(80, 40),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -126,7 +140,9 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
               child: Text(
                 'Todas',
                 style: TextStyle(
-                  fontWeight: !mostrarRutasLocales ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: !mostrarRutasLocales
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                 ),
               ),
             ),
@@ -144,7 +160,8 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                 });
               },
               style: TextButton.styleFrom(
-                foregroundColor: mostrarRutasLocales ? Colors.blue : Colors.black,
+                foregroundColor:
+                mostrarRutasLocales ? Colors.blue : Colors.black,
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 minimumSize: const Size(80, 40),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -152,7 +169,9 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
               child: Text(
                 'Locales',
                 style: TextStyle(
-                  fontWeight: mostrarRutasLocales ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: mostrarRutasLocales
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                 ),
               ),
             ),
@@ -187,14 +206,16 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                             _filtroDificultad = null; // Deseleccionar si ya está seleccionado
                             print('Deseleccionando dificultad: $dificultad');
                           } else {
-                            _filtroDificultad = dificultad; // Seleccionar nueva dificultad
+                            _filtroDificultad =
+                                dificultad; // Seleccionar nueva dificultad
                             print('Seleccionando dificultad: $dificultad');
                           }
                           _aplicarFiltro();
                         });
                       },
                       style: TextButton.styleFrom(
-                        foregroundColor: isSelected ? Colors.blue : Colors.black,
+                        foregroundColor:
+                        isSelected ? Colors.blue : Colors.black,
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         minimumSize: const Size(80, 40),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -202,7 +223,8 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                       child: Text(
                         dificultad,
                         style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -278,7 +300,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: List.generate(5, (index) {
-                        int estrella = index + 1;
+                        double estrella = (index + 1).toDouble();
                         return GestureDetector(
                           onTap: () {
                             setState(() {
@@ -287,7 +309,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                                 _filtroEstrellas = null;
                                 print('Deseleccionando estrellas: $estrella');
                               } else {
-                                // Se establece el filtro al número de estrellas seleccionado
+
                                 _filtroEstrellas = estrella;
                                 print('Seleccionando estrellas: $estrella');
                               }
@@ -296,7 +318,9 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                           },
                           child: Icon(
                             Icons.star,
-                            color: estrella <= (_filtroEstrellas ?? 0) ? Colors.amber : Colors.grey,
+                            color: estrella <= (_filtroEstrellas ?? 0.0)
+                                ? Colors.amber
+                                : Colors.grey,
                             size: 24, // Ajusta el tamaño según sea necesario
                           ),
                         );
@@ -347,7 +371,8 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Confirmar eliminación'),
-          content: const Text('¿Estás seguro de que deseas eliminar esta ruta? Esta acción no se puede deshacer.'),
+          content: const Text(
+              '¿Estás seguro de que deseas eliminar esta ruta? Esta acción no se puede deshacer.'),
           actions: [
             TextButton(
               onPressed: () {
@@ -383,13 +408,18 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
         final jsonResponse = jsonDecode(response.body);
         if (jsonResponse['puntos'] != null && jsonResponse['puntos'].isNotEmpty) {
           points.addAll(
-            jsonResponse['puntos'].map<LatLng>((punto) => LatLng(punto['latitud'], punto['longitud'])),
+            jsonResponse['puntos']
+                .map<LatLng>((punto) =>
+                LatLng(punto['latitud'], punto['longitud']))
+                .toList(),
           );
         }
       },
       onError: (response) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar los puntos de la ruta: ${response.body}')),
+          SnackBar(
+              content: Text(
+                  'Error al cargar los puntos de la ruta: ${response.body}')),
         );
       },
       onConnectionError: (errorMessage) {
@@ -433,6 +463,8 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
         itemBuilder: (context, index) {
           final ruta = rutasFiltradas![index];
           final bool esLocal = ruta['local'] == 1;
+          // Manejar posibles valores nulos en 'estrellas'
+          final double puntaje = (ruta['puntaje'] as num?)?.toDouble() ?? 0.0;
 
           return Card(
             margin: const EdgeInsets.all(8.0),
@@ -444,7 +476,8 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
             child: ListTile(
               title: Text(
                 ruta['nombre'],
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: Colors.black),
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,10 +485,34 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                   Text(ruta['descripcion']),
                   const SizedBox(height: 5),
                   Text('Dificultad: ${ruta['dificultad']}'),
-                  // No mostramos las estrellas en el listado
                 ],
               ),
-              leading: const Icon(Icons.map, color: Color(0xFF50C9B5)),
+              leading: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.map, color: Color(0xFF50C9B5)),
+                  const SizedBox(height: 4),
+                  // Mostrar puntaje
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        puntaje.toStringAsFixed(1),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      const Icon(
+                        Icons.star,
+                        size: 14,
+                        color: Colors.amber,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
               trailing: CircleIconButton(
                 icon: Icons.delete,
                 color: Colors.red.shade100,
@@ -486,7 +543,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
       appBar: CustomAppBar(title: 'Listado de Rutas'),
       body: Column(
         children: [
-          // Envolvemos los filtros en SingleChildScrollView para permitir el desplazamiento vertical
+          // Responsivo
           Expanded(
             flex: 0,
             child: SingleChildScrollView(

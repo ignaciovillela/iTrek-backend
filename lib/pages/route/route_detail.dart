@@ -120,21 +120,21 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
           );
           widget.ruta['tiempo_estimado_horas'] = jsonResponse['tiempo_estimado_horas'] ?? 0.0;
           widget.ruta['tiempo_estimado_minutos'] = (widget.ruta['tiempo_estimado_horas'] * 60).round();
-          },
-          onError: (response) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error al cargar la ruta: ${response.body}')),
-            );
-          },
-          onConnectionError: (errorMessage) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error de conexión: $errorMessage')),
-            );
-          },
-        );
-      } catch (e) {
-        print('Error al obtener los puntos de la ruta: $e');
-      }
+        },
+        onError: (response) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error al cargar la ruta: ${response.body}')),
+          );
+        },
+        onConnectionError: (errorMessage) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error de conexión: $errorMessage')),
+          );
+        },
+      );
+    } catch (e) {
+      print('Error al obtener los puntos de la ruta: $e');
+    }
     }
     return points;
   }
@@ -423,6 +423,9 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    // Obtener el número de estrellas, asegurando que sea un double válido
+    final double puntaje = (widget.ruta['puntaje'] as num?)?.toDouble() ?? 0.0;
+
     return Scaffold(
       resizeToAvoidBottomInset: false, // Evita que el footer se mueva con el teclado
       appBar: CustomAppBar(title: 'Detalle de Ruta'),
@@ -433,18 +436,59 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
             padding: const EdgeInsets.only(bottom: 100), // Espacio para evitar solapamiento
             child: Column(
               children: [
-                // Mapa
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.4,
-                  child: routePoints.isEmpty
-                      ? const Center(child: CircularProgressIndicator())
-                      : buildMap(
-                    mapController: _mapController,
-                    initialPosition: getCenterAndZoomForBounds(routePoints)['center'],
-                    initialZoom: getCenterAndZoomForBounds(routePoints)['zoom'],
-                    routePolylines: [buildPreviousPloyline(routePoints)],
-                    markers: _interestPoints,
-                  ),
+                // Colocar Estrellas en Mapa
+                Stack(
+                  children: [
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.4,
+                      child: routePoints.isEmpty
+                          ? const Center(child: CircularProgressIndicator())
+                          : buildMap(
+                        mapController: _mapController,
+                        initialPosition: getCenterAndZoomForBounds(routePoints)['center'],
+                        initialZoom: getCenterAndZoomForBounds(routePoints)['zoom'],
+                        routePolylines: [buildPreviousPloyline(routePoints)],
+                        markers: _interestPoints,
+                      ),
+                    ),
+
+                    Positioned(
+                      top: 16,
+                      left: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              puntaje.toStringAsFixed(1),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.star,
+                              size: 20,
+                              color: Colors.amber,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
 
                 // Información de la ruta
@@ -527,7 +571,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                           Icon(Icons.calendar_today, color: colorScheme.primary),
                           const SizedBox(width: 10),
                           Text(
-                            'Fecha de creacion: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(widget.ruta['creado_en']))}',
+                            'Fecha de creación: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(widget.ruta['creado_en']))}',
                           ),
                         ],
                       ),
@@ -544,7 +588,9 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
               CircleIconButton(
                 icon: _isEditing ? Icons.save : Icons.edit,
                 color: _isEditing ? Colors.green : colorScheme.primary,
-                onPressed: _isEditing ? updateRuta : () => setState(() => _isEditing = true),
+                onPressed: _isEditing
+                    ? updateRuta
+                    : () => setState(() => _isEditing = true),
               ),
               CircleIconButton(
                 icon: Icons.directions_walk,
