@@ -56,6 +56,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     _nombreController.dispose();
     _descripcionController.dispose();
     _searchController.dispose();
+    _commentController.dispose();
     super.dispose();
   }
 
@@ -63,7 +64,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     final commentText = _commentController.text.trim();
     if (commentText.isEmpty) return;
 
-    // Obtén el nombre del usuario actual (ajusta esto según tu implementación)
     final username = await db.values.get(db.values.username);
 
     // Prepara el nuevo comentario
@@ -146,7 +146,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     _updateInterestPoints();
   }
 
-
   Future<List<LatLng>> _fetchRoutePoints() async {
     final List<LatLng> points = [];
     print('la ruta ${widget.ruta.containsKey('puntos') ? '' : 'no '}tiene puntos, y todo esto ${widget.ruta}');
@@ -157,8 +156,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
         urlVars: {'id': widget.ruta['id']},
         onOk: (response) async {
           final jsonResponse = jsonDecode(response.body);
-          widget.ruta['tiempo_estimado_horas'] = jsonResponse['tiempo_estimado_horas'] ?? 0.0;
-          widget.ruta['tiempo_estimado_minutos'] = (widget.ruta['tiempo_estimado_horas'] * 60).round();
           widget.ruta['puntos'] = jsonResponse['puntos'];
           widget.ruta['comentarios'] = jsonResponse['comentarios'];
           setState(() {
@@ -418,6 +415,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       },
     );
   }
+
   Future<void> guardarRutaEnBackend() async {
     final routeId = widget.ruta['id'].toString();
     final routeData = await db.routes.getRouteById(routeId);
@@ -432,7 +430,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       // Enviar la ruta al backend
       makeRequest(
         method: POST,
-        url: ROUTES, // Asegúrate de que esta URL esté correctamente configurada
+        url: ROUTES,
         body: rutaData,
         onOk: (response) {
           db.routes.deleteRoute(routeId);
@@ -483,7 +481,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     );
   }
 
-
   Future<void> _compartirRutaConUsuario(int usuarioId) async {
     await makeRequest(
       method: POST,
@@ -502,6 +499,63 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       onConnectionError: (errorMessage) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error de conexión: $errorMessage')),
+        );
+      },
+    );
+  }
+
+  // Función para eliminar una ruta a través de la API.
+  Future<void> _deleteRuta(int id) async {
+    await makeRequest(
+      method: DELETE,
+      url: ROUTE_DETAIL,
+      urlVars: {'id': id},
+      onOk: (response) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ruta eliminada con éxito')),
+        );
+        // Navegar de regreso a la pantalla anterior después de eliminar
+        Navigator.of(context).pop(true);
+      },
+      onError: (response) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al eliminar la ruta')),
+        );
+      },
+      onConnectionError: (errorMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      },
+    );
+  }
+
+  // Definir el método _confirmDelete
+  void _confirmDelete(BuildContext context, int id) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirmar Eliminación'),
+          content: const Text('¿Estás seguro de que deseas eliminar esta ruta? Esta acción no se puede deshacer.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _deleteRuta(id);
+              },
+              child: const Text(
+                'Eliminar',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
         );
       },
     );
@@ -652,7 +706,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                                       ),
                                     ],
                                   ),
-                                  if (_isEditing)
+                                  if (_isEditing && esPropietario)
                                     Switch(
                                       value: widget.ruta['publica'],
                                       onChanged: (value) {
@@ -796,11 +850,14 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
           // Footer fijo con botones flotantes
           FixedFooter(
             children: [
-              CircleIconButton(
-                icon: _isEditing ? Icons.save : Icons.edit,
-                color: colorScheme.primary,
-                onPressed: _isEditing ? updateRuta : () => setState(() => _isEditing = true),
-              ),
+              if (esPropietario)
+                CircleIconButton(
+                  icon: _isEditing ? Icons.save : Icons.edit,
+                  color: colorScheme.primary,
+                  onPressed: _isEditing
+                      ? updateRuta
+                      : () => setState(() => _isEditing = true),
+                ),
               CircleIconButton(
                 icon: Icons.directions_walk,
                 color: Colors.blue,
@@ -818,6 +875,13 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                 color: Colors.purple,
                 onPressed: () => _showUsuariosBottomSheet(widget.ruta['id'].toString()),
               ),
+              // Agregar el botón de eliminar solo si es el propietario
+              if (esPropietario)
+                CircleIconButton(
+                  icon: Icons.delete,
+                  color: Colors.red.shade800,
+                  onPressed: () => _confirmDelete(context, widget.ruta['id']),
+                ),
               // Botón de guardar en el backend, se muestra si la ruta es local
               if (widget.ruta['local'] == 1)
                 CircleIconButton(
