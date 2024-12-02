@@ -472,7 +472,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               title: Text(
-                'Agregar Punto clave',
+                'Agregar Punto Clave',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               content: SingleChildScrollView(
@@ -817,7 +817,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
                 // Botones de íconos alineados a la derecha con fondo gris transparente
                 Row(
                   children: [
-                    // Botón para agregar punto de interés (solo visible al grabar)
+                    // Botón para agregar punto clave (solo visible al grabar)
                     if (_isRecording)
                       Container(
                         decoration: BoxDecoration(
@@ -831,7 +831,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
                             size: 28,
                           ),
                           onPressed: _mostrarModalAgregarPuntoInteres,
-                          tooltip: 'Agregar Punto de Interés',
+                          tooltip: 'Agregar Punto Clave',
                         ),
                       ),
 

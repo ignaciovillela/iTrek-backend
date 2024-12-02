@@ -156,8 +156,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
         urlVars: {'id': widget.ruta['id']},
         onOk: (response) async {
           final jsonResponse = jsonDecode(response.body);
-          widget.ruta['tiempo_estimado_horas'] = jsonResponse['tiempo_estimado_horas'] ?? 0.0;
-          widget.ruta['tiempo_estimado_minutos'] = (jsonResponse['tiempo_estimado_horas'] * 60).round();
           widget.ruta['puntos'] = jsonResponse['puntos'];
           widget.ruta['comentarios'] = jsonResponse['comentarios'];
           setState(() {
@@ -881,10 +879,8 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
               if (esPropietario)
                 CircleIconButton(
                   icon: Icons.delete,
-                  color: Colors.red.shade100,
-                  iconColor: Colors.red.shade800,
-                  onPressed: () {_confirmDelete(context, widget.ruta['id']);
-                  },
+                  color: Colors.red.shade800,
+                  onPressed: () => _confirmDelete(context, widget.ruta['id']),
                 ),
               // Botón de guardar en el backend, se muestra si la ruta es local
               if (widget.ruta['local'] == 1)
