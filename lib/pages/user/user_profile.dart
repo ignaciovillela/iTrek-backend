@@ -49,62 +49,61 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
   }
 
   Future<void> _guardarDatos() async {
-    try {
-      final updatedData = {
-        "username": _userNameController.text.isNotEmpty ? _userNameController.text : "Sin Nombre",
-        "first_name": _nombreController.text.isNotEmpty ? _nombreController.text : "Sin Nombre",
-        "last_name": _apellidoController.text.isNotEmpty ? _apellidoController.text : "Sin Apellido",
-        "biografia": _biografiaController.text.isNotEmpty ? _biografiaController.text : "Sin Biografía",
-      };
+    final updatedData = {
+      "username": _userNameController.text.isNotEmpty ? _userNameController.text : "Sin Nombre",
+      "first_name": _nombreController.text.isNotEmpty ? _nombreController.text : "Sin Nombre",
+      "last_name": _apellidoController.text.isNotEmpty ? _apellidoController.text : "Sin Apellido",
+      "biografia": _biografiaController.text.isNotEmpty ? _biografiaController.text : "Sin Biografía",
+    };
 
-      if (_imageFile != null) {
-        updatedData["imagen_perfil"] = base64Encode(await _imageFile!.readAsBytes());
-      }
-
-      await makeRequest(
-        method: PUT,
-        url: USER_UPDATE,
-        body: updatedData,
-        onOk: (response) async {
-          final Map<String, dynamic> responseData = jsonDecode(response.body);
-
-          await db.values.setUserData({
-            "username": responseData["username"] ?? updatedData["username"],
-            "first_name": responseData["first_name"] ?? updatedData["first_name"],
-            "last_name": responseData["last_name"] ?? updatedData["last_name"],
-            "biografia": responseData["biografia"] ?? updatedData["biografia"],
-            "imagen_perfil": responseData["imagen_perfil"] ?? updatedData["imagen_perfil"],
-          });
-
-          setState(() {
-            _userNameController.text = responseData["username"] ?? updatedData["username"];
-            _nombreController.text = responseData["first_name"] ?? updatedData["first_name"];
-            _apellidoController.text = responseData["last_name"] ?? updatedData["last_name"];
-            _biografiaController.text = responseData["biografia"] ?? updatedData["biografia"];
-
-            final imagenPerfil = responseData["imagen_perfil"];
-            _imagenPerfil = (imagenPerfil != null && imagenPerfil.isNotEmpty)
-                ? '$BASE_URL$imagenPerfil'
-                : 'assets/images/profile.png';
-          });
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Datos actualizados exitosamente.')),
-          );
-        },
-        onError: (response) {
-          print('Error al guardar datos en el backend: ${response.body}');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error al guardar datos: ${response.body}')),
-          );
-        },
-      );
-    } catch (e) {
-      print('Error inesperado: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error inesperado al guardar los datos.')),
-      );
+    if (_imageFile != null) {
+      updatedData["imagen_perfil"] = base64Encode(await _imageFile!.readAsBytes());
     }
+
+    await makeRequest(
+      method: PUT,
+      url: USER_UPDATE,
+      body: updatedData,
+      onOk: (response) async {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+        await db.values.setUserData({
+          "username": responseData["username"] ?? updatedData["username"],
+          "first_name": responseData["first_name"] ?? updatedData["first_name"],
+          "last_name": responseData["last_name"] ?? updatedData["last_name"],
+          "biografia": responseData["biografia"] ?? updatedData["biografia"],
+          "imagen_perfil": responseData["imagen_perfil"] ?? updatedData["imagen_perfil"],
+        });
+
+        setState(() {
+          _userNameController.text = responseData["username"] ?? updatedData["username"];
+          _nombreController.text = responseData["first_name"] ?? updatedData["first_name"];
+          _apellidoController.text = responseData["last_name"] ?? updatedData["last_name"];
+          _biografiaController.text = responseData["biografia"] ?? updatedData["biografia"];
+
+          final imagenPerfil = responseData["imagen_perfil"];
+          _imagenPerfil = (imagenPerfil != null && imagenPerfil.isNotEmpty)
+              ? '$BASE_URL$imagenPerfil'
+              : 'assets/images/profile.png';
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Datos actualizados exitosamente.')),
+        );
+      },
+      onError: (response) {
+        print('Error al guardar datos en el backend: ${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al guardar datos: ${response.body}')),
+        );
+      },
+      onConnectionError: (errorMessage) {
+        print('Error de conexión: $errorMessage');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error de conexión: $errorMessage')),
+        );
+      },
+    );
   }
 
   Future<void> _pickImage() async {
