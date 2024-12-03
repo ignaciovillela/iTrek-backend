@@ -64,7 +64,6 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
       await makeRequest(
         method: PUT,
         url: USER_UPDATE,
-        useToken: true,
         body: updatedData,
         onOk: (response) async {
           final Map<String, dynamic> responseData = jsonDecode(response.body);
@@ -90,7 +89,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
           });
 
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Datos guardados exitosamente.')),
+            const SnackBar(content: Text('Datos actualizados exitosamente.')),
           );
         },
         onError: (response) {

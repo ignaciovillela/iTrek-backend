@@ -134,7 +134,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 Container(
                                   width: screenWidth * 0.3,
                                   child: Image.network(
-                                    '$BASE_URL${userStats?['imagen_perfil'] ?? '/static/default_profile.jpg'}?timestamp=${DateTime.now().millisecondsSinceEpoch}',
+                                    '$BASE_URL${userStats?['imagen_perfil'] ?? '/static/default_profile.jpg'}',
                                     fit: BoxFit.contain,
                                   ),
                                 ),
