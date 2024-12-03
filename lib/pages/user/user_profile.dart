@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:itrek/helpers/config.dart';
@@ -45,6 +46,66 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
           ? '$BASE_URL$imagenPerfil'
           : 'assets/images/profile.png';
     });
+  }
+
+  Future<void> _guardarDatos() async {
+    try {
+      final updatedData = {
+        "username": _userNameController.text.isNotEmpty ? _userNameController.text : "Sin Nombre",
+        "first_name": _nombreController.text.isNotEmpty ? _nombreController.text : "Sin Nombre",
+        "last_name": _apellidoController.text.isNotEmpty ? _apellidoController.text : "Sin Apellido",
+        "biografia": _biografiaController.text.isNotEmpty ? _biografiaController.text : "Sin Biografía",
+      };
+
+      if (_imageFile != null) {
+        updatedData["imagen_perfil"] = base64Encode(await _imageFile!.readAsBytes());
+      }
+
+      await makeRequest(
+        method: PUT,
+        url: USER_UPDATE,
+        useToken: true,
+        body: updatedData,
+        onOk: (response) async {
+          final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+          await db.values.setUserData({
+            "username": responseData["username"] ?? updatedData["username"],
+            "first_name": responseData["first_name"] ?? updatedData["first_name"],
+            "last_name": responseData["last_name"] ?? updatedData["last_name"],
+            "biografia": responseData["biografia"] ?? updatedData["biografia"],
+            "imagen_perfil": responseData["imagen_perfil"] ?? updatedData["imagen_perfil"],
+          });
+
+          setState(() {
+            _userNameController.text = responseData["username"] ?? updatedData["username"];
+            _nombreController.text = responseData["first_name"] ?? updatedData["first_name"];
+            _apellidoController.text = responseData["last_name"] ?? updatedData["last_name"];
+            _biografiaController.text = responseData["biografia"] ?? updatedData["biografia"];
+
+            final imagenPerfil = responseData["imagen_perfil"];
+            _imagenPerfil = (imagenPerfil != null && imagenPerfil.isNotEmpty)
+                ? '$BASE_URL$imagenPerfil'
+                : 'assets/images/profile.png';
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Datos guardados exitosamente.')),
+          );
+        },
+        onError: (response) {
+          print('Error al guardar datos en el backend: ${response.body}');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error al guardar datos: ${response.body}')),
+          );
+        },
+      );
+    } catch (e) {
+      print('Error inesperado: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error inesperado al guardar los datos.')),
+      );
+    }
   }
 
   Future<void> _pickImage() async {
@@ -143,7 +204,7 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                   setState(() {
                     _editMode = !_editMode;
                   });
-                  if (!_editMode) _loadUserData();
+                  if (!_editMode) _guardarDatos();
                 },
               ),
               CircleIconButton(

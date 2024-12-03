@@ -134,7 +134,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 Container(
                                   width: screenWidth * 0.3,
                                   child: Image.network(
-                                    '$BASE_URL${userStats?['imagen_perfil'] ?? '/static/default_profile.jpg'}',
+                                    '$BASE_URL${userStats?['imagen_perfil'] ?? '/static/default_profile.jpg'}?timestamp=${DateTime.now().millisecondsSinceEpoch}',
                                     fit: BoxFit.contain,
                                   ),
                                 ),
@@ -235,7 +235,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   const PerfilUsuarioScreen(),
                                 ),
                               );
-                              setState(() {});
+                              await _fetchAndSetUserStats();
                             },
                           ),
                           DashboardCircleButton(
