@@ -807,6 +807,8 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                         child: const Text('Enviar Comentario'),
                       ),
                       const SizedBox(height: 20),
+                      if (_comments.isEmpty)
+                        const SizedBox(height: 60),
                       _comments.isEmpty
                           ? const Text('No hay comentarios aún.')
                           : ListView.builder(
@@ -842,6 +844,8 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                           );
                         },
                       ),
+                      if (_comments.isEmpty)
+                        const SizedBox(height: 60),
                     ],
                   ),
                 ),
