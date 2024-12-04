@@ -303,7 +303,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 }
 
 /// A reusable custom text field widget for forms.
-/// A reusable custom text field widget for forms.
 class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
   final String label;

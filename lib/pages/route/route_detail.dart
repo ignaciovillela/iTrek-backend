@@ -14,6 +14,7 @@ import 'package:itrek/helpers/widgets.dart';
 import 'package:itrek/pages/route/route_register.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:share_plus/share_plus.dart';
+import 'dart:async';
 
 class DetalleRutaScreen extends StatefulWidget {
   final Map<String, dynamic> ruta;
@@ -39,6 +40,8 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   double? _myRate;
   final TextEditingController _commentController = TextEditingController();
   List<Map<String, dynamic>> _comments = [];
+  late Timer _timer;
+  late Timer _timer2;
 
   @override
   void initState() {
@@ -50,6 +53,12 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     _fetchLocalUsername();
     _loadRoutePoints();
     _comments = List<Map<String, dynamic>>.from(widget.ruta['comentarios'] ?? []);
+    _timer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
+      setState(() {});
+    });
+    _timer2 = Timer.periodic(const Duration(seconds: 10), (Timer t) {
+      _fetchRoutePoints(onlyComments: true);
+    });
   }
 
   @override
@@ -58,6 +67,8 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     _descripcionController.dispose();
     _searchController.dispose();
     _commentController.dispose();
+    _timer.cancel();
+    _timer2.cancel();
     super.dispose();
   }
 
@@ -112,7 +123,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   }
 
   Future<void> _loadRoutePoints() async {
-    List<LatLng> points = [];
+    List<LatLng>? points = [];
     double distanciaKm = 0.0;
 
     if (widget.ruta['local'] == 1) {
@@ -140,33 +151,37 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
 
     // Actualizar el estado con los puntos cargados
     setState(() {
-      routePoints = points;
+      routePoints = points!;
     });
 
     // Actualizar puntos clave (si corresponde)
     _updateInterestPoints();
   }
 
-  Future<List<LatLng>> _fetchRoutePoints() async {
+  Future<List<LatLng>?> _fetchRoutePoints({bool onlyComments = false}) async {
     final List<LatLng> points = [];
     print('la ruta ${widget.ruta.containsKey('puntos') ? '' : 'no '}tiene puntos, y todo esto ${widget.ruta}');
     if (!widget.ruta.containsKey('puntos') || !widget.ruta.containsKey('comentarios')) {
       await makeRequest(
         method: GET,
-        url: ROUTE_DETAIL,
+        url: onlyComments ? ROUTE_COMMENT : ROUTE_DETAIL,
         urlVars: {'id': widget.ruta['id']},
         onOk: (response) async {
           final jsonResponse = jsonDecode(response.body);
-          widget.ruta['puntos'] = jsonResponse['puntos'];
+          if (!onlyComments) {
+            widget.ruta['puntos'] = jsonResponse['puntos'];
+          }
           widget.ruta['comentarios'] = jsonResponse['comentarios'];
           setState(() {
             _comments = List<Map<String, dynamic>>.from(widget.ruta['comentarios']);
           });
         },
         onError: (response) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error al cargar la ruta: ${response.body}')),
-          );
+          if (!onlyComments) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error al cargar la ruta')),
+            );
+          }
         },
         onConnectionError: (errorMessage) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -176,9 +191,12 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       );
     }
 
-    points.addAll(widget.ruta['puntos'].map<LatLng>((punto) => LatLng(punto['latitud'], punto['longitud'])));
-    await db.routes.createBackendRoute(widget.ruta);
-    return points;
+    if (!onlyComments) {
+      points.addAll(widget.ruta['puntos'].map<LatLng>((punto) => LatLng(punto['latitud'], punto['longitud'])));
+      await db.routes.createBackendRoute(widget.ruta);
+      return points;
+    }
+    return null;
   }
 
   String _formatHoras(dynamic tiempoEnMinutos) {
@@ -232,7 +250,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       onError: (response) {
         print('Error del backend: ${response.statusCode} - ${response.body}');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al enviar valoración: ${response.body}')),
+          SnackBar(content: Text('Error al enviar valoración')),
         );
       },
       onConnectionError: (errorMessage) {
@@ -304,9 +322,11 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   void _showUsuariosBottomSheet(routeId) {
     final String textToShare = shareRoute(routeId);
 
-    // Llama al método para compartir
-    Share.share(textToShare);
-    return;
+    if (!esPropietario) {
+      Share.share(textToShare);
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       builder: (context) {
@@ -334,11 +354,12 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                           ),
                         ),
                       ),
-                      IconButton(
-                        icon: Icon(Icons.search),
-                        onPressed: () async {
-                          await _fetchUsuarios();
-                          setModalState(() {});
+                      const SizedBox(width: 10),
+                      CircleIconButton(
+                        icon: Icons.share,
+                        color: Colors.purple,
+                        onPressed: () {
+                          Share.share(textToShare); // Comparte directamente
                         },
                       ),
                     ],
@@ -354,16 +375,98 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                   ),
                 Expanded(
                   child: usuariosFiltrados == null
-                      ? const Center(child: Text("Ingrese un término para buscar usuarios"))
+                      ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Agrega amigos a ver esta ruta privada"),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            "O presione ",
+                            style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              final String textToShare = shareRoute(routeId);
+                              Share.share(textToShare);
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.purple.withOpacity(0.1), // Fondo morado claro
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(8), // Tamaño del círculo
+                              child: const Icon(
+                                Icons.share,
+                                color: Colors.purple, // Ícono morado
+                                size: 15, // Tamaño del ícono
+                              ),
+                            ),
+                          ),
+                          const Text(
+                            " para enviarlo en redes sociales",
+                            style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                          ),
+                        ],
+                      ),
+                    ],
+                  )
                       : usuariosFiltrados!.isEmpty
-                      ? const Center(child: Text("No se encontraron usuarios"))
+                      ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("No se encontraron usuarios"),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            "O presione ",
+                            style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              final String textToShare = shareRoute(routeId);
+                              Share.share(textToShare);
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.purple.withOpacity(0.1), // Fondo morado claro
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(8), // Tamaño del círculo
+                              child: const Icon(
+                                Icons.share,
+                                color: Colors.purple, // Ícono morado
+                                size: 20, // Tamaño del ícono
+                              ),
+                            ),
+                          ),
+                          const Text(
+                            " para enviarlo en redes sociales",
+                            style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                          ),
+                        ],
+                      ),
+                    ],
+                  )
                       : ListView.builder(
                     itemCount: usuariosFiltrados!.length,
                     itemBuilder: (context, index) {
                       final usuario = usuariosFiltrados![index];
 
                       return ListTile(
-                        title: Text(usuario['username']),
+                        leading: CircleAvatar(
+                          backgroundImage: NetworkImage('$BASE_URL/${usuario['imagen_perfil']}'),
+                          radius: 20,
+                          backgroundColor: Colors.grey.shade200,
+                        ),
+                        title: Text(
+                          usuario['username'],
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
                         onTap: () {
                           Navigator.pop(context);
                           _compartirRutaConUsuario(usuario['id']);
@@ -489,13 +592,15 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
       url: ROUTE_SHARE,
       urlVars: {'id': widget.ruta['id'], 'usuarioId': usuarioId},
       onOk: (response) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ruta compartida exitosamente con el usuario $usuarioId')),
+          SnackBar(content: Text(data['message'])),
         );
       },
       onError: (response) {
+        var errorData = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al compartir la ruta: Código ${response.statusCode}')),
+          SnackBar(content: Text(errorData['error'])),
         );
       },
       onConnectionError: (errorMessage) {
@@ -569,304 +674,351 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
 
     final double puntaje = (widget.ruta['puntaje'] as num?)?.toDouble() ?? 0.0;
     return Scaffold(
-      resizeToAvoidBottomInset: false, // Evita que el footer se mueva con el teclado
+      resizeToAvoidBottomInset: false,
       appBar: CustomAppBar(title: 'Detalle de Ruta'),
       body: Stack(
         children: [
-          // Contenido principal con scroll
-          SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: 100), // Espacio para evitar solapamiento
-            child: Column(
-              children: [
-                // Colocar Estrellas en Mapa
-                Stack(
-                  children: [
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.4,
-                      child: routePoints.isEmpty
-                          ? const Center(child: CircularProgressIndicator())
-                          : buildMap(
-                        mapController: _mapController,
-                        initialPosition: getCenterAndZoomForBounds(routePoints)['center'],
-                        initialZoom: getCenterAndZoomForBounds(routePoints)['zoom'],
-                        routePolylines: [buildPreviousPloyline(routePoints)],
-                        markers: _interestPoints,
-                      ),
-                    ),
-
-                    Positioned(
-                      top: 16,
-                      left: 16,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.8),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                          puntaje > 0.0 ? conDecimales.format(puntaje) : '---',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            const Icon(
-                              Icons.star,
-                              size: 20,
-                              color: Colors.amber,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          // Agregar RefreshIndicator para permitir actualizar datos con scroll hacia arriba
+          RefreshIndicator(
+            onRefresh: _refreshData,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 100),
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  // Colocar Estrellas en Mapa
+                  Stack(
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ProfileTextField(
-                            controller: _nombreController,
-                            label: 'Nombre de la Ruta',
-                            enabled: _isEditing,
-                          ),
-                          const SizedBox(height: 10),
-                          TextField(
-                            controller: _descripcionController,
-                            decoration: const InputDecoration(
-                              labelText: 'Descripción',
-                              border: OutlineInputBorder(),
-                            ),
-                            style: const TextStyle(fontSize: 16),
-                            enabled: _isEditing,
-                            maxLines: null,
-                            minLines: 3,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.4,
+                        child: routePoints.isEmpty
+                            ? const Center(child: CircularProgressIndicator())
+                            : buildMap(
+                          mapController: _mapController,
+                          initialPosition: getCenterAndZoomForBounds(routePoints)['center'],
+                          initialZoom: getCenterAndZoomForBounds(routePoints)['zoom'],
+                          routePolylines: [buildPreviousPloyline(routePoints)],
+                          markers: _interestPoints,
                         ),
-                        elevation: 4,
-                        child: Padding(
+                      ),
+                      Positioned(
+                        top: 16,
+                        left: 16,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                puntaje > 0.0 ? conDecimales.format(puntaje) : '---',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.star,
+                                size: 20,
+                                color: Colors.amber,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ProfileTextField(
+                              controller: _nombreController,
+                              label: 'Nombre de la Ruta',
+                              enabled: _isEditing,
+                            ),
+                            const SizedBox(height: 10),
+                            TextField(
+                              controller: _descripcionController,
+                              decoration: const InputDecoration(
+                                labelText: 'Descripción',
+                                border: OutlineInputBorder(),
+                              ),
+                              style: const TextStyle(fontSize: 16),
+                              enabled: _isEditing,
+                              maxLines: null,
+                              minLines: 3,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 4,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.timeline, color: colorScheme.primary),
+                                    const SizedBox(width: 10),
+                                    Text('Dificultad: ${widget.ruta['dificultad']}'),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    Icon(Icons.directions_walk, color: colorScheme.primary),
+                                    const SizedBox(width: 10),
+                                    Text('Distancia: ${formatDistancia(widget.ruta['distancia_km'])} km'),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    Icon(Icons.timer, color: colorScheme.primary),
+                                    const SizedBox(width: 10),
+                                    Text('Tiempo estimado: ${_formatHoras(widget.ruta['tiempo_estimado_minutos'])}'),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          widget.ruta['publica'] ? Icons.public : Icons.public_off,
+                                          color: colorScheme.primary,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Text(
+                                          widget.ruta['publica'] ? 'Pública' : 'Privada',
+                                        ),
+                                      ],
+                                    ),
+                                    if (_isEditing && esPropietario)
+                                      Switch(
+                                        value: widget.ruta['publica'],
+                                        onChanged: (value) {
+                                          setState(() {
+                                            widget.ruta['publica'] = value;
+                                          });
+                                        },
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    Icon(Icons.calendar_today, color: colorScheme.primary),
+                                    const SizedBox(width: 10),
+                                    Text('Fecha de creación: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(widget.ruta['creado_en']))}',
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () => _showUserProfileModal(widget.ruta['usuario']),
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.person, color: colorScheme.primary),
+                                        const SizedBox(width: 10),
+                                        Text(
+                                          'Creador: ${widget.ruta['usuario']['username']}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blue,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
+                              // Sección de calificación
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.timeline, color: colorScheme.primary),
-                                  const SizedBox(width: 10),
-                                  Text('Dificultad: ${widget.ruta['dificultad']}'),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  Icon(Icons.directions_walk, color: colorScheme.primary),
-                                  const SizedBox(width: 10),
-                                  Text('Distancia: ${formatDistancia(widget.ruta['distancia_km'])} km'),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  Icon(Icons.timer, color: colorScheme.primary),
-                                  const SizedBox(width: 10),
-                                  Text('Tiempo estimado: ${_formatHoras(widget.ruta['tiempo_estimado_minutos'])}'),
-                                ],
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        widget.ruta['publica'] ? Icons.public : Icons.public_off,
-                                        color: colorScheme.primary,
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Text(
-                                        widget.ruta['publica'] ? 'Pública' : 'Privada',
-                                      ),
-                                    ],
+                                  const SizedBox(height: 20),
+                                  const Text(
+                                    'Calificar esta ruta:',
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                   ),
-                                  if (_isEditing && esPropietario)
-                                    Switch(
-                                      value: widget.ruta['publica'],
-                                      onChanged: (value) {
-                                        setState(() {
-                                          widget.ruta['publica'] = value;
-                                        });
-                                      },
+                                  const SizedBox(height: 15),
+                                  RatingBar.builder(
+                                    initialRating: _myRate ?? 0,
+                                    minRating: 1,
+                                    direction: Axis.horizontal,
+                                    allowHalfRating: false,
+                                    itemCount: 5,
+                                    itemSize: 30.0,
+                                    itemBuilder: (context, _) => const Icon(
+                                      Icons.star,
+                                      color: Colors.amber,
                                     ),
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  Icon(Icons.calendar_today, color: colorScheme.primary),
-                                  const SizedBox(width: 10),
-                                  Text('Fecha de creación: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(widget.ruta['creado_en']))}',
-                                  ),
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  Icon(Icons.person, color: colorScheme.primary),
-                                  const SizedBox(width: 10),
-                                  Text('Creador: ${widget.ruta['usuario']['username']}',
+                                    onRatingUpdate: (rating) {
+                                      setState(() {
+                                        _myRate = _myRate == rating ? null : rating;
+                                      });
+                                      if (_myRate != null) {
+                                        _enviarValoracion(_myRate!);
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Se canceló la calificación')),
+                                        );
+                                      }
+                                    },
                                   ),
                                 ],
                               ),
                             ],
                           ),
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Sección de calificación
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                const SizedBox(height: 20),
-                                const Text(
-                                  'Calificar esta ruta:',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 15),
-                                RatingBar.builder(
-                                  initialRating: _myRate ?? 0,
-                                  minRating: 1,
-                                  direction: Axis.horizontal,
-                                  allowHalfRating: false,
-                                  itemCount: 5,
-                                  itemSize: 30.0,
-                                  itemBuilder: (context, _) => const Icon(
-                                    Icons.star,
-                                    color: Colors.amber,
-                                  ),
-                                  onRatingUpdate: (rating) {
-                                    setState(() {
-                                      _myRate = _myRate == rating ? null : rating;
-                                    });
-                                    if (_myRate != null) {
-                                      _enviarValoracion(_myRate!);
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Se canceló la calificación')),
-                                      );
-                                    }
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
 
-                      // Línea divisoria
-                      const Divider(thickness: 2),
-                      // Sección de comentarios
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Comentarios:',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: _commentController,
-                        decoration: const InputDecoration(
-                          labelText: 'Escribe un comentario',
-                          border: OutlineInputBorder(),
+                        // Línea divisoria
+                        const Divider(thickness: 2),
+                        // Sección de comentarios
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Comentarios:',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
-                        maxLines: null,
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        onPressed: _submitComment,
-                        child: const Text('Enviar Comentario'),
-                      ),
-                      const SizedBox(height: 20),
-                      if (_comments.isEmpty)
-                        const SizedBox(height: 60),
-                      _comments.isEmpty
-                          ? const Text('No hay comentarios aún.')
-                          : ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _comments.length,
-                        itemBuilder: (context, index) {
-                          final comment = _comments[index];
-                          print(comment['usuario']);
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundImage: NetworkImage('$BASE_URL/${comment['usuario']['imagen_perfil']}'),
-                              radius: 20,
-                              backgroundColor: Colors.grey.shade200,
-                            ),
-                            title: Row(
-                              children: [
-                                Text(
-                                  comment['usuario']['username'],
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                ),
-                                if (comment['usuario']['is_staff'] ?? false) // Verifica si es staff
-                                  Row(
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: _commentController,
+                          decoration: const InputDecoration(
+                            labelText: 'Escribe un comentario',
+                            border: OutlineInputBorder(),
+                          ),
+                          maxLines: null,
+                        ),
+                        const SizedBox(height: 10),
+                        ElevatedButton(
+                          onPressed: _submitComment,
+                          child: const Text('Enviar Comentario'),
+                        ),
+                        const SizedBox(height: 20),
+                        if (_comments.isEmpty)
+                          const SizedBox(height: 60),
+                        _comments.isEmpty
+                            ? const Text('No hay comentarios aún.')
+                            : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _comments.length,
+                          itemBuilder: (context, index) {
+                            final comment = _comments[index];
+                            final DateTime createdAt = DateTime.parse(comment['created_at']);
+
+                            return Material(
+                              color: Colors.transparent, // Fondo transparente para el efecto de onda
+                              child: InkWell(
+                                onTap: () => _showUserProfileModal(comment['usuario']),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+                                  child: Row(
                                     children: [
-                                      const SizedBox(width: 4),
-                                      Icon(Icons.admin_panel_settings, color: colorScheme.primary, size: 16), // Ícono de escudo
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'Staff',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: colorScheme.primary,
+                                      CircleAvatar(
+                                        backgroundImage: NetworkImage('$BASE_URL/${comment['usuario']['imagen_perfil']}'),
+                                        radius: 20,
+                                        backgroundColor: Colors.grey.shade200,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  comment['usuario']['username'],
+                                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                                ),
+                                                if (comment['usuario']['is_staff'] ?? false)
+                                                  Row(
+                                                    children: [
+                                                      const SizedBox(width: 4),
+                                                      Icon(Icons.admin_panel_settings, color: Theme.of(context).colorScheme.primary, size: 16), // Ícono de escudo
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        'Staff',
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Theme.of(context).colorScheme.primary,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  comment['usuario']['nombre_nivel'],
+                                                  style: const TextStyle(
+                                                    fontSize: 10,
+                                                    color: Colors.blue,
+                                                    fontStyle: FontStyle.italic,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              comment['descripcion'],
+                                              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              timeAgo(createdAt), // Llama a la función para mostrar el tiempo relativo
+                                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
                                   ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  comment['usuario']['nombre_nivel'],
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.blue,
-                                    fontStyle: FontStyle.italic,
-                                  ),
                                 ),
-                              ],
-                            ),
-                            subtitle: Text(comment['descripcion']),
-                          );
-                        },
-                      ),
-                      if (_comments.isEmpty)
-                        const SizedBox(height: 60),
-                    ],
+                              ),
+                            );
+                          },
+                        ),
+                        if (_comments.isEmpty)
+                          const SizedBox(height: 60),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
 
@@ -888,7 +1040,8 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => RegistrarRuta(initialRouteId: widget.ruta['id'].toString()),
+                      builder: (context) =>
+                          RegistrarRuta(initialRouteId: widget.ruta['id'].toString()),
                     ),
                   );
                 },
@@ -898,14 +1051,12 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                 color: Colors.purple,
                 onPressed: () => _showUsuariosBottomSheet(widget.ruta['id'].toString()),
               ),
-              // Agregar el botón de eliminar solo si es el propietario
               if (esPropietario)
                 CircleIconButton(
                   icon: Icons.delete,
                   color: Colors.red.shade800,
                   onPressed: () => _confirmDelete(context, widget.ruta['id']),
                 ),
-              // Botón de guardar en el backend, se muestra si la ruta es local
               if (widget.ruta['local'] == 1)
                 CircleIconButton(
                   icon: Icons.cloud_upload,
@@ -916,6 +1067,102 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
           ),
         ],
       ),
+    );
+  }
+
+// Función que se llama al hacer pull-to-refresh
+  Future<void> _refreshData() async {
+    await _loadRoutePoints();
+    setState(() {
+      // Re-renderiza la pantalla para reflejar los datos actualizados
+    });
+  }
+
+  void _showUserProfileModal(Map<String, dynamic> usuario) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: MediaQuery.of(context).size.width * 0.3,
+                    child: Image.network(
+                      '$BASE_URL${usuario['imagen_perfil'] ?? '/static/default_profile.jpg'}',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${usuario['nombre_nivel'] ?? 'Cargando...'}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Días trekkeando: ${sinDecimales.format(usuario['dias_creacion_cuenta'] ?? 0)}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Distancia recorrida: ${formatDistancia(usuario['distancia_trek'])} km',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tiempo total: ${formatTiempo(usuario['minutos_trek'] ?? 0)}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Puntos acumulados: ${sinDecimales.format(usuario['puntos_trek'] ?? 0)}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Center(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cerrar'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
