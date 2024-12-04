@@ -817,6 +817,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                         itemCount: _comments.length,
                         itemBuilder: (context, index) {
                           final comment = _comments[index];
+                          print(comment['usuario']);
                           return ListTile(
                             leading: CircleAvatar(
                               backgroundImage: NetworkImage('$BASE_URL/${comment['usuario']['imagen_perfil']}'),
@@ -829,6 +830,22 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                                   comment['usuario']['username'],
                                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                 ),
+                                if (comment['usuario']['is_staff'] ?? false) // Verifica si es staff
+                                  Row(
+                                    children: [
+                                      const SizedBox(width: 4),
+                                      Icon(Icons.admin_panel_settings, color: colorScheme.primary, size: 16), // Ícono de escudo
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Staff',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: colorScheme.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 const SizedBox(width: 8),
                                 Text(
                                   comment['usuario']['nombre_nivel'],
