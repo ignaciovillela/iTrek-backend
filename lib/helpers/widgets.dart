@@ -74,30 +74,67 @@ class ProfileTextField extends StatelessWidget {
 /// Un widget para mostrar la imagen de perfil con un botón de edición.
 Widget buildProfileImage({
   required String imageUrl,
-  required File? imageFile,
+  File? imageFile,
   required VoidCallback onEdit,
   required bool editMode,
 }) {
   return Stack(
-    alignment: Alignment.bottomRight,
+    alignment: Alignment.center,
     children: [
-      CircleAvatar(
-        radius: 60,
-        backgroundImage: (imageFile != null)
-            ? FileImage(imageFile)
-            : (imageUrl.isNotEmpty
-            ? NetworkImage(imageUrl)
-            : const AssetImage('assets/images/profile.png')) as ImageProvider,
+      ClipOval(
+        child: imageFile != null
+            ? Image.file(
+          imageFile,
+          width: 150,
+          height: 150,
+          fit: BoxFit.cover,
+        )
+            : (imageUrl.isNotEmpty && Uri.tryParse(imageUrl)?.hasAbsolutePath == true)
+            ? Image.network(
+          imageUrl,
+          width: 150,
+          height: 150,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            // Si ocurre un error al cargar la imagen desde la red, muestra la imagen predeterminada
+            return Image.asset(
+              'assets/images/profile.png',
+              width: 150,
+              height: 150,
+              fit: BoxFit.cover,
+            );
+          },
+        )
+            : Image.asset(
+          'assets/images/profile.png', // Imagen predeterminada
+          width: 150,
+          height: 150,
+          fit: BoxFit.cover,
+        ),
       ),
       if (editMode)
-        CircleIconButton(
-          icon: Icons.camera_alt,
-          color: Colors.blue.shade100,
-          iconColor: Colors.blue.shade800,
-          onPressed: onEdit,
-          size: 50,
-          iconSize: 24,
-          opacity: 0.8,
+        Positioned(
+          bottom: 0,
+          right: 4,
+          child: GestureDetector(
+            onTap: onEdit,
+            child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: CircleIconButton(
+                  icon: Icons.camera_alt,
+                  color: Colors.blue.shade100,
+                  iconColor: Colors.blue.shade800,
+                  onPressed: onEdit,
+                  size: 50,
+                  iconSize: 24,
+                  opacity: 0.8,
+                )
+            ),
+          ),
         ),
     ],
   );
@@ -278,19 +315,19 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       title: Row(
-          children: [
-            if (withLogo) logoWhite,
-            if (withLogo) const SizedBox(width: 10),
-            Text(
-              title,
-              style: titleStyle ??
-                  const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                    color: Colors.white,
-                  ),
-            ),
-          ],
+        children: [
+          if (withLogo) logoWhite,
+          if (withLogo) const SizedBox(width: 10),
+          Text(
+            title,
+            style: titleStyle ??
+                const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: Colors.white,
+                ),
+          ),
+        ],
       ),
       backgroundColor: backgroundColor,
       elevation: 0,

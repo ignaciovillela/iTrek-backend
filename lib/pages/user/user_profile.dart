@@ -1,13 +1,16 @@
-import 'dart:io';
-
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:itrek/helpers/config.dart';
 import 'package:itrek/helpers/db.dart';
 import 'package:itrek/helpers/request.dart';
 import 'package:itrek/helpers/widgets.dart';
 import 'package:itrek/pages/auth/login.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class PerfilUsuarioScreen extends StatefulWidget {
   const PerfilUsuarioScreen({super.key});
@@ -31,7 +34,13 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
   @override
   void initState() {
     super.initState();
+    _askPermissions();
     _loadUserData();
+  }
+
+  Future<void> _askPermissions() async {
+    await Permission.camera.request();
+    await Permission.storage.request();
   }
 
   Future<void> _loadUserData() async {
@@ -57,7 +66,10 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
     };
 
     if (_imageFile != null) {
-      updatedData["imagen_perfil"] = base64Encode(await _imageFile!.readAsBytes());
+      Uint8List originalImageBytes = await _imageFile!.readAsBytes();
+      Uint8List resizedImageBytes = await _resizeImage(originalImageBytes, 800);
+      updatedData["imagen_perfil"] = base64Encode(resizedImageBytes);
+      print("Imagen codificada en Base64: ${updatedData["imagen_perfil"]}");
     }
 
     await makeRequest(
@@ -106,12 +118,93 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
     );
   }
 
+  Future<Uint8List> _resizeImage(Uint8List originalImageBytes, int maxDimension) async {
+    final originalImage = img.decodeImage(originalImageBytes);
+    if (originalImage == null) {
+      throw Exception("No se pudo decodificar la imagen.");
+    }
+
+    int width = originalImage.width;
+    int height = originalImage.height;
+
+    // Calcular el factor de escala para mantener el aspect ratio
+    if (width > height) {
+      if (width > maxDimension) {
+        height = (height * maxDimension) ~/ width;
+        width = maxDimension;
+      }
+    } else {
+      if (height > maxDimension) {
+        width = (width * maxDimension) ~/ height;
+        height = maxDimension;
+      }
+    }
+
+    final resizedImage = img.copyResize(
+      originalImage,
+      width: width,
+      height: height,
+    );
+
+    return Uint8List.fromList(img.encodeJpg(resizedImage));
+  }
+
+  Future<ImageSource?> _showImageSourceDialog() async {
+    return showDialog<ImageSource>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Seleccionar fuente de imagen'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Cámara'),
+              onTap: () => Navigator.of(context).pop(ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Galería'),
+              onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.camera);
+    final ImageSource? source = await _showImageSourceDialog();
+    if (source == null) return; // Usuario canceló
+
+    final pickedFile = await _picker.pickImage(source: source);
+
     if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
+      final file = File(pickedFile.path);
+
+      if (await file.exists() && await file.length() > 0) {
+        final originalImageBytes = await file.readAsBytes();
+
+        // Decodificar la imagen para verificar si es válida
+        final originalImage = img.decodeImage(originalImageBytes);
+        if (originalImage == null) {
+          print("No se pudo decodificar la imagen. El archivo puede estar corrupto.");
+          return;
+        }
+
+        // Redimensionar la imagen manteniendo el aspect ratio
+        final resizedImageBytes = await _resizeImage(originalImageBytes, 800);
+
+        setState(() {
+          _imageFile = file; // Almacena el archivo original
+          // Puedes almacenar los bytes redimensionados si lo necesitas
+          //_resizedImageBytes = resizedImageBytes;
+        });
+      } else {
+        print("El archivo está vacío o no existe.");
+      }
+    } else {
+      print("No se seleccionó ninguna imagen.");
     }
   }
 

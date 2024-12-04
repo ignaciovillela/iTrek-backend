@@ -1141,7 +1141,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Puntos acumulados: ${sinDecimales.format(usuario['puntos_trek'] ?? 0)}',
+                          'Puntos trek: ${sinDecimales.format(usuario['puntos_trek'] ?? 0)}',
                           style: const TextStyle(
                             fontSize: 16,
                             color: Colors.grey,

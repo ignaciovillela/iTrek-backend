@@ -178,7 +178,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'Puntos acumulados: ${sinDecimales.format(userStats?['puntos_trek'] ?? 0)}',
+                                        'Puntos trek: ${sinDecimales.format(userStats?['puntos_trek'] ?? 0)}',
                                         style: const TextStyle(
                                           fontSize: 16,
                                           color: Colors.grey,

@@ -8,6 +8,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:itrek/helpers/db.dart';
 import 'package:diacritic/diacritic.dart';
 
+enum Filtro { todas, locales, misRutas }
+
 class ListadoRutasScreen extends StatefulWidget {
   const ListadoRutasScreen({super.key});
 
@@ -19,26 +21,33 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   List<dynamic>? rutasGuardadas;
   List<dynamic>? rutasFiltradas;
   List<dynamic>? rutasLocales;
-  bool mostrarRutasLocales = false;
 
-  // Variables para los filtros
+  Filtro filtroSeleccionado = Filtro.todas;
+
   String? _filtroDificultad;
   String _filtroNombre = '';
   int? _filtroEstrellas;
 
-  // Controla la visibilidad del campo de texto del filtro de nombre
   bool _mostrarFiltroNombre = false;
-
-  // Opciones de dificultad
   final List<String> _dificultades = ['Fácil', 'Moderada', 'Difícil'];
+
+  late String myUsername;
+  bool _isLoading = true; // Nueva bandera para controlar el estado de carga
 
   @override
   void initState() {
     super.initState();
-    _fetchRutas();
+    _initializeData();
   }
 
-  // Función para obtener las rutas desde la API.
+  Future<void> _initializeData() async {
+    myUsername = await db.values.get(db.values.username) ?? '';
+    await _fetchRutas();
+    setState(() {
+      _isLoading = false; // Indicar que los datos ya están cargados
+    });
+  }
+
   Future<void> _fetchRutas() async {
     rutasLocales = await db.routes.getLocalRoutes();
 
@@ -73,16 +82,23 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   void _aplicarFiltro() {
     List<dynamic>? rutas = rutasGuardadas;
 
-    if (mostrarRutasLocales) {
-      rutas = rutas?.where((ruta) => ruta['local'] == true).toList();
+    switch (filtroSeleccionado) {
+      case Filtro.locales:
+        rutas = rutasLocales;
+        break;
+      case Filtro.misRutas:
+        rutas = rutas?.where((ruta) => ruta['usuario']['username'] == myUsername).toList();
+        break;
+      case Filtro.todas:
+      default:
+      // No se aplica filtro adicional
+        break;
     }
 
     if (_filtroDificultad != null && _filtroDificultad!.isNotEmpty) {
       String filtroNormalizado = removeDiacritics(_filtroDificultad!.toLowerCase().trim());
-      print('Filtrando por dificultad (normalizado): $filtroNormalizado');
       rutas = rutas?.where((ruta) {
         String rutaDificultad = removeDiacritics(ruta['dificultad'].toString().toLowerCase().trim());
-        print('Ruta dificultad (normalizado): $rutaDificultad');
         return rutaDificultad == filtroNormalizado;
       }).toList();
     }
@@ -105,63 +121,45 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   }
 
   // Widget para los filtros "Todas" y "Locales"
+  Widget _buildFiltroButton({required String label, required Filtro filtro}) {
+    final bool isSelected = filtroSeleccionado == filtro;
+
+    return SizedBox(
+      height: 40,
+      child: TextButton(
+        onPressed: () {
+          setState(() {
+            filtroSeleccionado = filtro;
+            _aplicarFiltro();
+          });
+        },
+        style: TextButton.styleFrom(
+          foregroundColor: isSelected ? Colors.blue : Colors.black,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          minimumSize: const Size(80, 40),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFiltrosPrincipales() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Filtro "Todas"
-          SizedBox(
-            height: 40, // Asegura que el SizedBox tenga un tamaño uniforme
-            child: TextButton(
-              onPressed: () {
-                setState(() {
-                  mostrarRutasLocales = false;
-                  _aplicarFiltro();
-                  print('Seleccionado: Todas');
-                });
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: !mostrarRutasLocales ? Colors.blue : Colors.black,
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                minimumSize: const Size(80, 40),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                'Todas',
-                style: TextStyle(
-                  fontWeight: !mostrarRutasLocales ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-            ),
-          ),
+          _buildFiltroButton(label: 'Todas', filtro: Filtro.todas),
           const SizedBox(width: 8),
-          // Filtro "Locales"
-          SizedBox(
-            height: 40, // Asegura que el SizedBox tenga un tamaño uniforme
-            child: TextButton(
-              onPressed: () {
-                setState(() {
-                  mostrarRutasLocales = true;
-                  _aplicarFiltro();
-                  print('Seleccionado: Locales');
-                });
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: mostrarRutasLocales ? Colors.blue : Colors.black,
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                minimumSize: const Size(80, 40),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                'Sin conexión',
-                style: TextStyle(
-                  fontWeight: mostrarRutasLocales ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-            ),
-          ),
+          _buildFiltroButton(label: 'Sin conexión', filtro: Filtro.locales),
+          const SizedBox(width: 8),
+          _buildFiltroButton(label: 'Mis rutas', filtro: Filtro.misRutas),
         ],
       ),
     );
@@ -378,85 +376,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
         itemCount: rutasFiltradas!.length,
         itemBuilder: (context, index) {
           final ruta = rutasFiltradas![index];
-          final bool esLocal = ruta['local'] == 1;
-          final double puntaje = (ruta['puntaje'] as num?)?.toDouble() ?? 0.0;
-          final String puntajeDisplay = puntaje > 0 ? conDecimales.format(puntaje) : '---';
-
-          return Card(
-            margin: const EdgeInsets.all(8.0),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
-            ),
-            elevation: 5,
-            color: esLocal ? Colors.green.shade50 : null,
-            child: ListTile(
-              title: Text(
-                ruta['nombre'],
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-              ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(ruta['descripcion']),
-                    const SizedBox(height: 5),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Dificultad: ${ruta['dificultad']}'),
-                        Text('Creador: ${ruta['usuario']['username']}', style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
-                      ],
-                    ),
-                  ],
-                ),
-              leading: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.map, color: Color(0xFF50C9B5)),
-                  const SizedBox(height: 4),
-                  // Mostrar puntaje
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        puntajeDisplay,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      const Icon(
-                        Icons.star,
-                        size: 17,
-                        color: Colors.amber,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              // Eliminar el CircleIconButton de eliminar ruta
-              // trailing: CircleIconButton(
-              //   icon: Icons.delete,
-              //   color: Colors.red.shade100,
-              //   iconColor: Colors.red.shade800,
-              //   onPressed: () {
-              //     _confirmDelete(context, ruta['id']);
-              //   },
-              //   size: 40,
-              //   iconSize: 20,
-              //   opacity: 0.8,
-              // ),
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DetalleRutaScreen(ruta: ruta),
-                  ),
-                );
-                _fetchRutas();
-              },
-            ),
-          );
+          return _buildRutaCard(ruta);
         },
       );
     }
@@ -465,21 +385,76 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
       appBar: CustomAppBar(title: 'Listado de Rutas'),
       body: Column(
         children: [
-          // Responsivo
           Expanded(
             flex: 0,
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildFiltrosPrincipales(), // Filtros "Todas" y "Locales"
-                  _buildFiltrosAdicionales(), // Filtros de Dificultad, Nombre y Estrellas
-                ],
-              ),
+            child: Column(
+              children: [
+                _buildFiltrosPrincipales(),
+                _buildFiltrosAdicionales(),
+              ],
             ),
           ),
-          // Contenido principal que se expande
           Expanded(child: bodyContent),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRutaCard(dynamic ruta) {
+    final bool esLocal = ruta['local'] == 1;
+    final double puntaje = (ruta['puntaje'] as num?)?.toDouble() ?? 0.0;
+    final String puntajeDisplay = puntaje > 0 ? conDecimales.format(puntaje) : '---';
+
+    return Card(
+      margin: const EdgeInsets.all(8.0),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10.0),
+      ),
+      elevation: 5,
+      color: esLocal ? Colors.green.shade50 : null,
+      child: ListTile(
+        title: Text(
+          ruta['nombre'],
+          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(ruta['descripcion']),
+            const SizedBox(height: 5),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Dificultad: ${ruta['dificultad']}'),
+                Text('Creador: ${ruta['usuario']['username']}', style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
+              ],
+            ),
+          ],
+        ),
+        leading: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.map, color: Color(0xFF50C9B5)),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(puntajeDisplay, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                const SizedBox(width: 2),
+                const Icon(Icons.star, size: 17, color: Colors.amber),
+              ],
+            ),
+          ],
+        ),
+        onTap: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DetalleRutaScreen(ruta: ruta),
+            ),
+          );
+          _fetchRutas();
+        },
       ),
     );
   }
