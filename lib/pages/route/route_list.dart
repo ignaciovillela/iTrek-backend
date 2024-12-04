@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:itrek/helpers/numbers.dart';
 import 'package:itrek/helpers/request.dart';
 import 'package:itrek/helpers/widgets.dart';
 import 'package:itrek/pages/route/route_detail.dart';
@@ -379,7 +380,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
           final ruta = rutasFiltradas![index];
           final bool esLocal = ruta['local'] == 1;
           final double puntaje = (ruta['puntaje'] as num?)?.toDouble() ?? 0.0;
-          final String puntajeDisplay = puntaje > 0 ? puntaje.toStringAsFixed(1) : '---';
+          final String puntajeDisplay = puntaje > 0 ? conDecimales.format(puntaje) : '---';
 
           return Card(
             margin: const EdgeInsets.all(8.0),
@@ -393,14 +394,20 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
                 ruta['nombre'],
                 style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
               ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(ruta['descripcion']),
-                  const SizedBox(height: 5),
-                  Text('Dificultad: ${ruta['dificultad']}'),
-                ],
-              ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(ruta['descripcion']),
+                    const SizedBox(height: 5),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Dificultad: ${ruta['dificultad']}'),
+                        Text('Creador: ${ruta['usuario']['username']}', style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
+                      ],
+                    ),
+                  ],
+                ),
               leading: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [

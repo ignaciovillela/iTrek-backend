@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:itrek/helpers/config.dart';
 import 'package:itrek/helpers/db.dart';
 import 'package:itrek/helpers/map.dart';
+import 'package:itrek/helpers/numbers.dart';
 import 'package:itrek/helpers/request.dart';
 import 'package:itrek/helpers/text.dart';
 import 'package:itrek/helpers/widgets.dart';
@@ -35,7 +36,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   List<dynamic>? usuariosFiltrados;
   final TextEditingController _searchController = TextEditingController();
   String? errorMessage;
-  double? _rating;
+  double? _myRate;
   final TextEditingController _commentController = TextEditingController();
   List<Map<String, dynamic>> _comments = [];
 
@@ -45,7 +46,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     _nombreController = TextEditingController(text: widget.ruta['nombre']);
     _descripcionController = TextEditingController(text: widget.ruta['descripcion']);
     _mapController = MapController();
-    _rating = (widget.ruta['puntaje'] as num?)?.toDouble();
+    _myRate = (widget.ruta['mi_puntaje'] as num?)?.toDouble();
     _fetchLocalUsername();
     _loadRoutePoints();
     _comments = List<Map<String, dynamic>>.from(widget.ruta['comentarios'] ?? []);
@@ -130,7 +131,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
 
         // Actualizar la información en el widget
         widget.ruta['tiempo_estimado_minutos'] = tiempoGrabadoMinutos;
-        widget.ruta['distancia_km'] = distanciaKm.toStringAsFixed(2);
+        widget.ruta['distancia_km'] = distanciaKm;
       }
     } else {
       // Cargar puntos desde un origen remoto
@@ -220,7 +221,8 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
 
         setState(() {
           widget.ruta['puntaje'] = nuevoPuntaje;
-          _rating = miPuntaje;
+          widget.ruta['mi_puntaje'] = miPuntaje;
+          _myRate = miPuntaje;
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -612,7 +614,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              puntaje.toStringAsFixed(1),
+                          puntaje > 0.0 ? conDecimales.format(puntaje) : '---',
                               style: const TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey,
@@ -680,7 +682,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                                 children: [
                                   Icon(Icons.directions_walk, color: colorScheme.primary),
                                   const SizedBox(width: 10),
-                                  Text('Distancia: ${widget.ruta['distancia_km']} km'),
+                                  Text('Distancia: ${formatDistancia(widget.ruta['distancia_km'])} km'),
                                 ],
                               ),
                               const SizedBox(height: 10),
@@ -753,7 +755,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                                 ),
                                 const SizedBox(height: 15),
                                 RatingBar.builder(
-                                  initialRating: _rating ?? 0,
+                                  initialRating: _myRate ?? 0,
                                   minRating: 1,
                                   direction: Axis.horizontal,
                                   allowHalfRating: false,
@@ -765,10 +767,10 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                                   ),
                                   onRatingUpdate: (rating) {
                                     setState(() {
-                                      _rating = _rating == rating ? null : rating;
+                                      _myRate = _myRate == rating ? null : rating;
                                     });
-                                    if (_rating != null) {
-                                      _enviarValoracion(_rating!);
+                                    if (_myRate != null) {
+                                      _enviarValoracion(_myRate!);
                                     } else {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(content: Text('Se canceló la calificación')),

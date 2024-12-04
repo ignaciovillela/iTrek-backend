@@ -25,6 +25,7 @@ const ROUTE_RATING =    'api/routes/{id}/rate/';
 const ROUTE_COMMENT =   'api/routes/{id}/comment/';
 
 const SEARCH_USER =     'api/users/search?q={query}';
+const SEARCH_USER_ID =  'api/users/search?id={id}';
 const PASSWORD_CHANGE = 'api/users/change-password/';
 
 typedef StatusCallback = void Function(http.Response response);

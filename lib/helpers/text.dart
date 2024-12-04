@@ -3,7 +3,7 @@
 import 'package:itrek/helpers/config.dart';
 
 final apiUrl = '$BASE_URL/api';
-final shareRouteUrl = '$apiUrl/share/route';
+final shareRouteUrl = '$BASE_URL/share/route';
 
 String shareRoute(String routeId) {
   final url = '$shareRouteUrl/$routeId/';

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:itrek/helpers/config.dart';
 import 'package:itrek/helpers/db.dart';
 import 'package:itrek/helpers/img.dart';
+import 'package:itrek/helpers/numbers.dart';
 import 'package:itrek/helpers/request.dart';
 import 'package:itrek/helpers/widgets.dart';
 import 'package:itrek/pages/auth/login.dart';
@@ -153,7 +154,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'Días trekkeando: ${userStats?['dias_creacion_cuenta'] ?? 0}',
+                                        'Días trekkeando: ${sinDecimales.format(userStats?['dias_creacion_cuenta'] ?? 0)}',
                                         style: const TextStyle(
                                           fontSize: 16,
                                           color: Colors.grey,
@@ -161,7 +162,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'Distancia recorrida: ${userStats?['distancia_trek']?.toStringAsFixed(2) ?? '0.00'} km',
+                                        'Distancia recorrida: ${formatDistancia(userStats?['distancia_trek'])} km',
                                         style: const TextStyle(
                                           fontSize: 16,
                                           color: Colors.grey,
@@ -169,7 +170,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'Minutos totales: ${userStats?['minutos_trek'] ?? 0}',
+                                        'Tiempo total: ${formatTiempo(userStats?['minutos_trek'] ?? 0)}',
                                         style: const TextStyle(
                                           fontSize: 16,
                                           color: Colors.grey,
@@ -177,7 +178,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'Puntos acumulados: ${userStats?['puntos_trek'] ?? 0}',
+                                        'Puntos acumulados: ${sinDecimales.format(userStats?['puntos_trek'] ?? 0)}',
                                         style: const TextStyle(
                                           fontSize: 16,
                                           color: Colors.grey,

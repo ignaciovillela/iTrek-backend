@@ -39,27 +39,27 @@ class AppLinksDeepLink {
     print('Received link: $uri');
     print('Path segments: ${uri.pathSegments}');
 
-    // Your existing logic for handling incoming links
-    if (uri.pathSegments.length >= 3) {
-      final apiIndex = 0;
-      final resourceIndex = 1;
-      final actionIndex = 2;
+    // Define regex patterns for different actions
+    final shareRouteRegex = RegExp(r'^share/route/(\d+)$');
+    final confirmEmailRegex = RegExp(r'^api/users/confirm-email$');
 
-      if (uri.pathSegments[apiIndex] == 'api') {
-        if (uri.pathSegments[resourceIndex] == 'share' && uri.pathSegments[actionIndex] == 'route' && uri.pathSegments.length > 3) {
-          // Navigate to the route detail screen
-          _navigateToRouteDetail(uri.pathSegments[3]);
-        } else if (uri.pathSegments[resourceIndex] == 'users' && uri.pathSegments[actionIndex] == 'confirm-email') {
-          // Handle email confirmation
-          _handleEmailConfirmation(uri);
-        } else {
-          print("Unrecognized route: ${uri.pathSegments}");
-        }
-      } else {
-        print("The link does not belong to the expected endpoint.");
+    // Combine path segments into a single string
+    final path = uri.pathSegments.join('/');
+
+    if (shareRouteRegex.hasMatch(path)) {
+      // Extract route ID from the path using the regex
+      final match = shareRouteRegex.firstMatch(path);
+      final routeId = match?.group(1);
+      if (routeId != null) {
+        print('Navigating to route detail for route ID: $routeId');
+        _navigateToRouteDetail(routeId);
       }
+    } else if (confirmEmailRegex.hasMatch(path)) {
+      // Handle email confirmation logic
+      print('Handling email confirmation link');
+      _handleEmailConfirmation(uri);
     } else {
-      print('The link does not have enough path segments.');
+      print('Unrecognized or invalid link: $path');
     }
   }
 
