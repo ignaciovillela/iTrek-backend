@@ -236,7 +236,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   const PerfilUsuarioScreen(),
                                 ),
                               );
-                              setState(() {});
+                              await _fetchAndSetUserStats();
                             },
                           ),
                           DashboardCircleButton(

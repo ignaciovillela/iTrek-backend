@@ -170,7 +170,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   // Widget para los filtros adicionales: Dificultad, Nombre, Estrellas
   Widget _buildFiltrosAdicionales() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 4.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
