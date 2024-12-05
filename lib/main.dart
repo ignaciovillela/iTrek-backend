@@ -5,6 +5,8 @@ import 'package:itrek/helpers/db.dart';
 import 'package:itrek/helpers/deep_link.dart';
 import 'package:itrek/pages/dashboard.dart';
 
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -17,13 +19,14 @@ void main() async {
 class MyApp extends StatelessWidget {
   MyApp({Key? key}) : super(key: key);
 
-  final AppLinksDeepLink _appLinksDeepLink = AppLinksDeepLink.instance;
+  final AppLinksHandler _appLinksHandler = AppLinksHandler.instance;
 
   @override
   Widget build(BuildContext context) {
-    _appLinksDeepLink.initDeepLinks();
+    _appLinksHandler.initDeepLinks();
 
     return GetMaterialApp(
+      scaffoldMessengerKey: scaffoldMessengerKey,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
