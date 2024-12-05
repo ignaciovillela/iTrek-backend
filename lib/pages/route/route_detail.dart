@@ -217,8 +217,8 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     }
   }
 
-  Future<void> _enviarValoracion(double rating) async {
-    if (rating <= 0.0) {
+  Future<void> _enviarValoracion(double? rating) async {
+    if (rating != null && rating <= 0.0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No se puede enviar una calificación de 0')),
       );
@@ -891,13 +891,7 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                                       setState(() {
                                         _myRate = _myRate == rating ? null : rating;
                                       });
-                                      if (_myRate != null) {
-                                        _enviarValoracion(_myRate!);
-                                      } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Se canceló la calificación')),
-                                        );
-                                      }
+                                      _enviarValoracion(_myRate);
                                     },
                                   ),
                                 ],

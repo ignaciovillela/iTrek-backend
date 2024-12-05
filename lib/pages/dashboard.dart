@@ -8,7 +8,7 @@ import 'package:itrek/helpers/numbers.dart';
 import 'package:itrek/helpers/request.dart';
 import 'package:itrek/helpers/widgets.dart';
 import 'package:itrek/pages/auth/login.dart';
-import 'package:itrek/pages/comunity.dart';
+import 'package:itrek/pages/activity_registry.dart';
 import 'package:itrek/pages/route/route_list.dart';
 import 'package:itrek/pages/route/route_register.dart';
 import 'package:itrek/pages/user/user_profile.dart';
@@ -254,7 +254,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             },
                           ),
                           DashboardCircleButton(
-                            label: 'Comunidad',
+                            label: 'Registro de Actividad',
                             icon: Icons.people,
                             iconColor: Colors.purple,
                             onPressed: () async {
@@ -262,7 +262,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
-                                  const RutasCompartidasScreen(),
+                                  const ActivtyScreen(),
                                 ),
                               );
                             },

@@ -18,6 +18,12 @@ const USER_CREATE =     'api/users/create/';
 const USER_UPDATE =     'api/users/update-profile/';
 const USER_DELETE =     'api/users/delete-account/';
 
+const USER_ACTIVITY =                       'api/users/actividad/';
+const USER_ACTIVITY_DELETE_ROUTE =          'api/users/actividad/rutas_creadas/{id}/?user_id={user_id}';
+const USER_ACTIVITY_DELETE_SHARED_ROUTE =   'api/users/actividad/rutas_compartidas/{id}/';
+const USER_ACTIVITY_DELETE_COMMENT =        'api/users/actividad/comentarios/{id}/';
+const USER_ACTIVITY_DELETE_SCORE =          'api/users/actividad/puntajes/{id}/';
+
 const ROUTES =          'api/routes/';
 const ROUTE_DETAIL =    'api/routes/{id}/';
 const ROUTE_SHARE =     'api/routes/{id}/share/{usuarioId}/';
