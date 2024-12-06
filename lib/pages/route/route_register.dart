@@ -571,42 +571,46 @@ class RegistrarRutaState extends State<RegistrarRuta> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        ElevatedButton.icon(
-                          onPressed: imagen != null
-                              ? null
-                              : () async {
-                            final ImagePicker picker = ImagePicker();
-                            final XFile? imageFile = await picker.pickImage(source: ImageSource.camera);
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: imagen != null
+                                ? null
+                                : () async {
+                              final ImagePicker picker = ImagePicker();
+                              final XFile? imageFile = await picker.pickImage(source: ImageSource.camera);
 
-                            if (imageFile != null) {
-                              Uint8List originalImageBytes = await imageFile.readAsBytes();
-                              Uint8List resizedImageBytes = await _resizeImage(originalImageBytes, 800, 800);
-                              setModalState(() {
-                                imagen = resizedImageBytes;
-                              });
-                            }
-                          },
-                          icon: Icon(Icons.camera_alt),
-                          label: Text('Cámara'),
+                              if (imageFile != null) {
+                                Uint8List originalImageBytes = await imageFile.readAsBytes();
+                                Uint8List resizedImageBytes = await _resizeImage(originalImageBytes, 800, 800);
+                                setModalState(() {
+                                  imagen = resizedImageBytes;
+                                });
+                              }
+                            },
+                            icon: Icon(Icons.camera_alt),
+                            label: Text('Cámara'),
+                          ),
                         ),
-                        const SizedBox(width: 10),
-                        ElevatedButton.icon(
-                          onPressed: imagen != null
-                              ? null
-                              : () async {
-                            final ImagePicker picker = ImagePicker();
-                            final XFile? imageFile = await picker.pickImage(source: ImageSource.gallery);
+                        const SizedBox(width: 10), // Separación entre botones
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: imagen != null
+                                ? null
+                                : () async {
+                              final ImagePicker picker = ImagePicker();
+                              final XFile? imageFile = await picker.pickImage(source: ImageSource.gallery);
 
-                            if (imageFile != null) {
-                              Uint8List originalImageBytes = await imageFile.readAsBytes();
-                              Uint8List resizedImageBytes = await _resizeImage(originalImageBytes, 800, 800);
-                              setModalState(() {
-                                imagen = resizedImageBytes;
-                              });
-                            }
-                          },
-                          icon: Icon(Icons.photo_library),
-                          label: Text('Galería'),
+                              if (imageFile != null) {
+                                Uint8List originalImageBytes = await imageFile.readAsBytes();
+                                Uint8List resizedImageBytes = await _resizeImage(originalImageBytes, 800, 800);
+                                setModalState(() {
+                                  imagen = resizedImageBytes;
+                                });
+                              }
+                            },
+                            icon: Icon(Icons.photo_library),
+                            label: Text('Galería'),
+                          ),
                         ),
                       ],
                     ),
