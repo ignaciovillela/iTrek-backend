@@ -49,25 +49,36 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
   }
 
   Future<void> _fetchRutas() async {
-    rutasLocales = await db.routes.getLocalRoutes();
+    // Obtener rutas locales
+    final localRoutes = await db.routes.getLocalRoutes();
+    rutasLocales = localRoutes?.map((ruta) {
+      return {
+        'id': ruta['id'],
+        'nombre': ruta['nombre'] ?? 'Ruta local',
+        'descripcion': ruta['descripcion'] ?? 'Sin descripción',
+        'dificultad': ruta['dificultad'] ?? 'Desconocida',
+        'local': 1, // Identificador de rutas locales
+        'usuario': {'username': myUsername}, // Asignar al usuario actual
+        'puntaje': null, // No hay puntaje para rutas locales
+      };
+    }).toList();
 
+    print('Rutas locales transformadas: $rutasLocales');
+
+    // Obtener rutas del servidor
     await makeRequest(
       method: GET,
       url: ROUTES,
       onOk: (response) {
         setState(() {
           rutasGuardadas = jsonDecode(response.body);
-          _aplicarFiltro();
+          print('Rutas del servidor cargadas: $rutasGuardadas');
+          _aplicarFiltro(); // Aplicar filtro después de cargar las rutas
         });
       },
       onError: (response) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error al cargar las rutas')),
-        );
-      },
-      onDefault: (response) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error inesperado: ${response.statusCode}')),
         );
       },
       onConnectionError: (errorMessage) {
@@ -78,13 +89,13 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
     );
   }
 
-  // Función para aplicar el filtro de rutas.
+
   void _aplicarFiltro() {
     List<dynamic>? rutas = rutasGuardadas;
 
     switch (filtroSeleccionado) {
       case Filtro.locales:
-        rutas = rutasLocales;
+        rutas = rutasLocales ?? [];
         break;
       case Filtro.misRutas:
         rutas = rutas?.where((ruta) => ruta['usuario']['username'] == myUsername).toList();
@@ -102,9 +113,11 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
         return rutaDificultad == filtroNormalizado;
       }).toList();
     }
+
     if (_filtroNombre.isNotEmpty) {
       rutas = rutas?.where((ruta) => ruta['nombre'].toString().toLowerCase().contains(_filtroNombre.toLowerCase())).toList();
     }
+
     if (_filtroEstrellas != null) {
       rutas = rutas?.where((ruta) {
         if (ruta['puntaje'] != null) {
@@ -119,6 +132,7 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
       rutasFiltradas = rutas;
     });
   }
+
 
   // Widget para los filtros "Todas" y "Locales"
   Widget _buildFiltroButton({required String label, required Filtro filtro}) {
@@ -447,6 +461,9 @@ class _ListadoRutasScreenState extends State<ListadoRutasScreen> {
           ],
         ),
         onTap: () async {
+          if (ruta['local'] == 1) {
+            return;
+          }
           await Navigator.push(
             context,
             MaterialPageRoute(
