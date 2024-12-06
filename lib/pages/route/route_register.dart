@@ -499,22 +499,32 @@ class RegistrarRutaState extends State<RegistrarRuta> {
     final TextEditingController descripcionController = TextEditingController();
     Uint8List? imagen;
 
-    await showDialog(
+    await showModalBottomSheet(
       context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      isScrollControlled: true,
       builder: (context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: Text(
-                'Agregar Punto Clave',
-                style: TextStyle(fontWeight: FontWeight.bold),
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                top: 16,
+                left: 16,
+                right: 16,
               ),
-              content: SingleChildScrollView(
+              child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      'Agregar Punto Clave',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                    ),
+                    const SizedBox(height: 10),
                     Text(
                       'Descripción:',
                       style: TextStyle(fontWeight: FontWeight.bold),
@@ -523,7 +533,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
                     TextField(
                       controller: descripcionController,
                       maxLines: 3,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         hintText: 'Ingrese una descripción',
                         border: OutlineInputBorder(),
                       ),
@@ -534,27 +544,27 @@ class RegistrarRutaState extends State<RegistrarRuta> {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
-                            child: Image.memory(
-                              imagen!,
-                              height: 300,
-                              fit: BoxFit.cover,
+                            child: SizedBox(
+                              width: double.infinity, // Ajustar al ancho completo
+                              child: Image.memory(
+                                imagen!,
+                                fit: BoxFit.fitWidth, // Ajustar ancho de la imagen
+                              ),
                             ),
                           ),
                           Positioned(
                             top: 10,
                             right: 10,
-                            child: CircleIconButton(
-                              icon: Icons.delete,
-                              size: 40,
-                              iconSize: 20,
-                              color: Colors.white,
-                              iconColor: Colors.red,
-                              onPressed: () {
-                                setModalState(() {
-                                  imagen = null;
-                                });
-                              },
-                              opacity: 0.7,
+                            child: CircleAvatar(
+                              backgroundColor: Colors.white.withOpacity(0.8),
+                              child: IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () {
+                                  setModalState(() {
+                                    imagen = null;
+                                  });
+                                },
+                              ),
                             ),
                           ),
                         ],
@@ -577,71 +587,82 @@ class RegistrarRutaState extends State<RegistrarRuta> {
                                 ? null
                                 : () async {
                               final ImagePicker picker = ImagePicker();
-                              final XFile? imageFile = await picker.pickImage(source: ImageSource.camera);
+                              final XFile? imageFile =
+                              await picker.pickImage(source: ImageSource.camera);
 
                               if (imageFile != null) {
                                 Uint8List originalImageBytes = await imageFile.readAsBytes();
-                                Uint8List resizedImageBytes = await _resizeImage(originalImageBytes, 800, 800);
+                                Uint8List resizedImageBytes =
+                                await _resizeImage(originalImageBytes, 800, 800);
                                 setModalState(() {
                                   imagen = resizedImageBytes;
                                 });
                               }
                             },
-                            icon: Icon(Icons.camera_alt),
-                            label: Text('Cámara'),
+                            icon: const Icon(Icons.camera_alt),
+                            label: const Text('Cámara'),
                           ),
                         ),
-                        const SizedBox(width: 10), // Separación entre botones
+                        const SizedBox(width: 10),
                         Expanded(
                           child: ElevatedButton.icon(
                             onPressed: imagen != null
                                 ? null
                                 : () async {
                               final ImagePicker picker = ImagePicker();
-                              final XFile? imageFile = await picker.pickImage(source: ImageSource.gallery);
+                              final XFile? imageFile =
+                              await picker.pickImage(source: ImageSource.gallery);
 
                               if (imageFile != null) {
                                 Uint8List originalImageBytes = await imageFile.readAsBytes();
-                                Uint8List resizedImageBytes = await _resizeImage(originalImageBytes, 800, 800);
+                                Uint8List resizedImageBytes =
+                                await _resizeImage(originalImageBytes, 800, 800);
                                 setModalState(() {
                                   imagen = resizedImageBytes;
                                 });
                               }
                             },
-                            icon: Icon(Icons.photo_library),
-                            label: Text('Galería'),
+                            icon: const Icon(Icons.photo_library),
+                            label: const Text('Galería'),
                           ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text('Cancelar'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            if (descripcionController.text.trim().isEmpty && imagen == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Debe ingresar una descripción o seleccionar una imagen'),
+                                ),
+                              );
+                              return;
+                            }
+                            // Guardar datos
+                            final data = {
+                              'interes_descripcion': descripcionController.text.trim(),
+                              'interes_imagen': imagen != null ? base64Encode(imagen!) : null,
+                            };
+                            db.routes.updatePunto(_lastPointId!, data);
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text('Guardar'),
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: Text('Cancelar'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    if (descripcionController.text.trim().isEmpty && imagen == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Debe ingresar una descripción o seleccionar una imagen')),
-                      );
-                      return;
-                    }
-                    final data = {
-                      'interes_descripcion': descripcionController.text.trim().isNotEmpty ? descripcionController.text.trim() : null,
-                      'interes_imagen': imagen != null ? base64Encode(imagen!) : null,
-                    };
-                    db.routes.updatePunto(_lastPointId!, data);
-                    Navigator.of(context).pop();
-                  },
-                  child: Text('Guardar'),
-                ),
-              ],
             );
           },
         );
