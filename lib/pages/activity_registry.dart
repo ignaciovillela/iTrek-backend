@@ -89,7 +89,7 @@ class _ActivityScreenState extends State<ActivtyScreen> {
       {'label': 'Mis Rutas Creadas', 'value': 'creadas'},
       {'label': 'Rutas Compartidas Conmigo', 'value': 'compartidas'},
       {'label': 'Mis Rutas Compartidas', 'value': 'compartidas_por_mi'},
-      {'label': 'Mis Comntarios', 'value': 'comentarios'},
+      {'label': 'Mis Comentarios', 'value': 'comentarios'},
       {'label': 'Mis Calificaciones', 'value': 'puntajes'},
     ];
 
@@ -168,7 +168,7 @@ class _ActivityScreenState extends State<ActivtyScreen> {
         );
       case 'comentarios':
         return _buildSection(
-          title: 'Mis Comntarios',
+          title: 'Mis Comentarios',
           items: userStats!['comentarios'],
           itemBuilder: (item) => _buildRutaCard(
             item['ruta'],

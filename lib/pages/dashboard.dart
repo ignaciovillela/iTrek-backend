@@ -254,7 +254,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             },
                           ),
                           DashboardCircleButton(
-                            label: 'Actividad',
+                            label: 'Mi Actividad',
                             icon: Icons.people,
                             iconColor: Colors.purple,
                             onPressed: () async {
