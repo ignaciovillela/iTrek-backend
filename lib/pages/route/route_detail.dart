@@ -153,10 +153,10 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
         point: points.first,
         width: 50.0,
         height: 50.0,
-        child: const Icon(
-          Icons.flag,
-          color: Colors.green,
-          size: 40.0,
+        alignment: Alignment.topCenter,
+        child: Text(
+          "📍",
+          style: TextStyle(fontSize: 40),
         ),
       );
 
@@ -164,10 +164,10 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
         point: points.last,
         width: 50.0,
         height: 50.0,
-        child: const Icon(
-          Icons.flag,
-          color: Colors.red,
-          size: 40.0,
+        alignment: Alignment(0.65, -1.0),
+        child: Text(
+          "🚩",
+          style: TextStyle(fontSize: 40),
         ),
       );
     }

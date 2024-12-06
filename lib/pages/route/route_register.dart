@@ -196,7 +196,10 @@ class RegistrarRutaState extends State<RegistrarRuta> {
 
     if (widget.initialRouteId != null) {
       db.routes.getPuntosByRutaId(widget.initialRouteId!).then((pointsData) {
-        final List<LatLng> routeCoords = pointsData.map((point) {
+        final List<LatLng> routeCoords = pointsData.asMap().entries.map((entry) {
+          final index = entry.key;
+          final point = entry.value;
+
           final position = LatLng(point['latitud'], point['longitud']);
           if (point['interes_descripcion'] != null || point['interes_imagen'] != null) {
             _interestPoints.add(buildInterestMarker(
@@ -206,6 +209,31 @@ class RegistrarRutaState extends State<RegistrarRuta> {
               context: context,
             ));
           }
+          if (index == 0) {
+            _startPointMarker = Marker(
+              point: position,
+              width: 50.0,
+              height: 50.0,
+              alignment: Alignment.topCenter,
+              child: Text(
+                "📍",
+                style: TextStyle(fontSize: 40),
+              ),
+            );
+          }
+          if (index == pointsData.length - 1 || true) {
+            _endPointMarker = Marker(
+              point: position,
+              width: 50.0,
+              height: 50.0,
+              alignment: Alignment(0.65, -1.0),
+              child: Text(
+                "🚩", // Emoji para el marcador final
+                style: TextStyle(fontSize: 40),
+              ),
+            );
+          }
+
           return position;
         }).toList();
         _previousRoutePolyline = buildPreviousPloyline(routeCoords);
@@ -350,20 +378,6 @@ class RegistrarRutaState extends State<RegistrarRuta> {
 
       LatLng nuevaPosicion = LatLng(latitude, longitude);
 
-      // Agregar marcador de inicio si es el primer punto
-      if (_routeCoords.isEmpty) {
-        _startPointMarker = Marker(
-          point: nuevaPosicion,
-          width: 50.0,
-          height: 50.0,
-          child: const Icon(
-            Icons.flag,
-            color: Colors.green, // Color para el punto de inicio
-            size: 40.0,
-          ),
-        );
-      }
-
       // Actualizar distancia si ya hay puntos en la ruta
       if (_routeCoords.isNotEmpty) {
         _distanceTraveled +=
@@ -390,7 +404,6 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       }
     }
   }
-
 
   void _borrarRegistro() async {
     _routeId = null;
@@ -426,22 +439,6 @@ class RegistrarRutaState extends State<RegistrarRuta> {
     );
 
     try {
-      if (_routeCoords.isNotEmpty) {
-        LatLng ultimaPosicion = _routeCoords.last;
-
-        // Crear el marcador de final
-        _endPointMarker = Marker(
-          point: ultimaPosicion,
-          width: 50.0,
-          height: 50.0,
-          child: const Icon(
-            Icons.flag,
-            color: Colors.red, // Color para el punto de finalización
-            size: 40.0,
-          ),
-        );
-      }
-
       // Procesa y guarda los datos de la ruta
       final routeData = await getPostRouteData(_routeId!, _seconds, _distanceTraveled);
       int? rutaId = await postRuta(routeData);
@@ -458,8 +455,6 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       print('Error durante la finalización de la ruta: $e');
     }
   }
-
-
 
   Future<void> _mostrarFormularioRuta(int rutaId) async {
     await Navigator.push(
