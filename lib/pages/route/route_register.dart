@@ -172,6 +172,8 @@ class RegistrarRutaState extends State<RegistrarRuta> {
   StreamSubscription<Position>? _positionStreamSubscription;
   MapController mapController = MapController();
   bool _mapReady = false;
+  Marker? _startPointMarker;
+  Marker? _endPointMarker;
 
   // Variable para el plugin de notificaciones renombrada a notification
   FlutterLocalNotificationsPlugin notification = FlutterLocalNotificationsPlugin();
@@ -194,7 +196,10 @@ class RegistrarRutaState extends State<RegistrarRuta> {
 
     if (widget.initialRouteId != null) {
       db.routes.getPuntosByRutaId(widget.initialRouteId!).then((pointsData) {
-        final List<LatLng> routeCoords = pointsData.map((point) {
+        final List<LatLng> routeCoords = pointsData.asMap().entries.map((entry) {
+          final index = entry.key;
+          final point = entry.value;
+
           final position = LatLng(point['latitud'], point['longitud']);
           if (point['interes_descripcion'] != null || point['interes_imagen'] != null) {
             _interestPoints.add(buildInterestMarker(
@@ -204,6 +209,31 @@ class RegistrarRutaState extends State<RegistrarRuta> {
               context: context,
             ));
           }
+          if (index == 0) {
+            _startPointMarker = Marker(
+              point: position,
+              width: 50.0,
+              height: 50.0,
+              alignment: Alignment.topCenter,
+              child: Text(
+                "📍",
+                style: TextStyle(fontSize: 40),
+              ),
+            );
+          }
+          if (index == pointsData.length - 1 || true) {
+            _endPointMarker = Marker(
+              point: position,
+              width: 50.0,
+              height: 50.0,
+              alignment: Alignment(0.65, -1.0),
+              child: Text(
+                "🚩", // Emoji para el marcador final
+                style: TextStyle(fontSize: 40),
+              ),
+            );
+          }
+
           return position;
         }).toList();
         _previousRoutePolyline = buildPreviousPloyline(routeCoords);
@@ -345,11 +375,16 @@ class RegistrarRutaState extends State<RegistrarRuta> {
         'longitud': longitude,
         'orden': _routeCoords.length + 1, // Ajustar el orden
       });
+
       LatLng nuevaPosicion = LatLng(latitude, longitude);
+
+      // Actualizar distancia si ya hay puntos en la ruta
       if (_routeCoords.isNotEmpty) {
         _distanceTraveled +=
             Distance().as(LengthUnit.Meter, _routeCoords.last, nuevaPosicion);
       }
+
+      // Agregar la nueva posición a la lista de coordenadas
       _routeCoords.add(nuevaPosicion);
 
       if (mounted) {
@@ -404,6 +439,7 @@ class RegistrarRutaState extends State<RegistrarRuta> {
     );
 
     try {
+      // Procesa y guarda los datos de la ruta
       final routeData = await getPostRouteData(_routeId!, _seconds, _distanceTraveled);
       int? rutaId = await postRuta(routeData);
       if (rutaId != null) {
@@ -419,7 +455,6 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       print('Error durante la finalización de la ruta: $e');
     }
   }
-
 
   Future<void> _mostrarFormularioRuta(int rutaId) async {
     await Navigator.push(
@@ -716,7 +751,6 @@ class RegistrarRutaState extends State<RegistrarRuta> {
       )
           : Stack(
         children: [
-          // Mapa
           buildMap(
             mapController: mapController,
             initialPosition: _currentPosition,
@@ -728,12 +762,13 @@ class RegistrarRutaState extends State<RegistrarRuta> {
               });
             },
             markers: [
+              if (_startPointMarker != null) _startPointMarker!, // Marcador de inicio
+              if (_endPointMarker != null) _endPointMarker!,     // Marcador de final
               ..._markers,
               if (_currentPositionMarker != null) _currentPositionMarker!,
               ..._interestPoints,
             ],
           ),
-
           // Indicadores de tiempo y distancia en la parte superior
           Positioned(
             top: 20,

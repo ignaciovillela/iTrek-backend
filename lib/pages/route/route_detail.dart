@@ -42,6 +42,9 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
   List<Map<String, dynamic>> _comments = [];
   late Timer _timer;
   late Timer _timer2;
+  Marker? _startPointMarker;
+  Marker? _endPointMarker;
+
 
   @override
   void initState() {
@@ -127,7 +130,6 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
     double distanciaKm = 0.0;
 
     if (widget.ruta['local'] == 1) {
-      // Obtener puntos de la ruta local
       final pointsData = await db.routes.getPuntosByRutaId(widget.ruta['id'].toString());
       if (pointsData.isNotEmpty) {
         points = pointsData.map((point) => LatLng(point['latitud'], point['longitud'])).toList();
@@ -137,26 +139,46 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
           distanciaKm += Distance().as(LengthUnit.Kilometer, points[i], points[i + 1]);
         }
 
-        // Mostrar el tiempo desde la base de datos local
         final tiempoGrabadoMinutos = widget.ruta['tiempo_estimado_minutos'] ?? 0;
-
-        // Actualizar la información en el widget
         widget.ruta['tiempo_estimado_minutos'] = tiempoGrabadoMinutos;
         widget.ruta['distancia_km'] = distanciaKm;
       }
     } else {
-      // Cargar puntos desde un origen remoto
       points = await _fetchRoutePoints();
     }
 
-    // Actualizar el estado con los puntos cargados
+    // Configurar marcadores de inicio y final
+    if (points != null && points.isNotEmpty) {
+      _startPointMarker = Marker(
+        point: points.first,
+        width: 50.0,
+        height: 50.0,
+        alignment: Alignment.topCenter,
+        child: Text(
+          "📍",
+          style: TextStyle(fontSize: 40),
+        ),
+      );
+
+      _endPointMarker = Marker(
+        point: points.last,
+        width: 50.0,
+        height: 50.0,
+        alignment: Alignment(0.65, -1.0),
+        child: Text(
+          "🚩",
+          style: TextStyle(fontSize: 40),
+        ),
+      );
+    }
+
+    // Actualizar estado con los puntos y marcadores
     setState(() {
       routePoints = points!;
+      _updateInterestPoints(); // Actualizar puntos de interés
     });
-
-    // Actualizar puntos clave (si corresponde)
-    _updateInterestPoints();
   }
+
 
   Future<List<LatLng>?> _fetchRoutePoints({bool onlyComments = false}) async {
     final List<LatLng> points = [];
@@ -693,12 +715,16 @@ class _DetalleRutaScreenState extends State<DetalleRutaScreen> {
                         height: MediaQuery.of(context).size.height * 0.4,
                         child: routePoints.isEmpty
                             ? const Center(child: CircularProgressIndicator())
-                            : buildMap(
+                        : buildMap(
                           mapController: _mapController,
                           initialPosition: getCenterAndZoomForBounds(routePoints)['center'],
                           initialZoom: getCenterAndZoomForBounds(routePoints)['zoom'],
                           routePolylines: [buildPreviousPloyline(routePoints)],
-                          markers: _interestPoints,
+                          markers: [
+                            if (_startPointMarker != null) _startPointMarker!, // Marcador de inicio
+                            if (_endPointMarker != null) _endPointMarker!,     // Marcador de final
+                            ..._interestPoints, // Marcadores de puntos de interés
+                          ],
                         ),
                       ),
                       Positioned(
